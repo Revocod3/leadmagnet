@@ -1,0 +1,91 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sessions   Session[]
+  diagnoses  Diagnosis[]
+
+  @@map("users")
+}
+
+model Session {
+  id                String    @id @default(cuid())
+  userId            String?
+  userName          String?
+  userEmail         String?
+  language          String    @default("es")
+  diagnosticType    String?   // "chat" | "quiz"
+  step              String    @default("initial")
+  imageAnalysisText String?
+  assistantId       String?
+  threadId          String?
+  startTime         DateTime  @default(now())
+  completionTime    DateTime?
+  expiresAt         DateTime
+
+  user              User?     @relation(fields: [userId], references: [id])
+  messages          Message[]
+  quizAnswers       QuizAnswer[]
+  diagnosis         Diagnosis?
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  sessionId String
+  role      String   // "user" | "assistant"
+  content   String   @db.Text
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  session   Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@map("messages")
+}
+
+model QuizAnswer {
+  id         String   @id @default(cuid())
+  sessionId  String
+  questionId Int
+  answer     String
+  points     Int
+  createdAt  DateTime @default(now())
+
+  session    Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@map("quiz_answers")
+}
+
+model Diagnosis {
+  id               String   @id @default(cuid())
+  sessionId        String   @unique
+  userId           String?
+  content          String   @db.Text
+  totalScore       Int?
+  scorePercentage  Float?
+  pdfGenerated     Boolean  @default(false)
+  createdAt        DateTime @default(now())
+
+  session          Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user             User?    @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("diagnoses")
+}
