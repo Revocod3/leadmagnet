@@ -74,11 +74,10 @@ export const QuizContainer = () => {
               <button
                 key={index}
                 onClick={() => handleAnswer(option)}
-                className={`w-full p-4 rounded-xl border-2 transition-all duration-200 text-left ${
-                  answers[question.id] === option
+                className={`w-full p-4 rounded-xl border-2 transition-all duration-200 text-left ${answers[question.id] === option
                     ? 'border-indigo-500 bg-indigo-50 shadow-lg'
                     : 'border-gray-200 hover:border-indigo-300 hover:bg-gray-50'
-                }`}
+                  }`}
               >
                 <span className="font-medium text-gray-900">{option}</span>
               </button>
@@ -95,11 +94,10 @@ export const QuizContainer = () => {
             <button
               onClick={handleNext}
               disabled={!answers[question.id]}
-              className={`flex-1 py-3 px-6 rounded-xl font-semibold transition-colors ${
-                answers[question.id]
+              className={`flex-1 py-3 px-6 rounded-xl font-semibold transition-colors ${answers[question.id]
                   ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              }`}
+                }`}
             >
               {currentQuestion === mockQuestions.length - 1 ? 'Ver Diagnóstico' : 'Siguiente'}
             </button>

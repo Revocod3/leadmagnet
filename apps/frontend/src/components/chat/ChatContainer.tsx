@@ -53,11 +53,10 @@ export const ChatContainer = () => {
               className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               <div
-                className={`max-w-[80%] rounded-2xl p-4 ${
-                  message.role === 'user'
+                className={`max-w-[80%] rounded-2xl p-4 ${message.role === 'user'
                     ? 'bg-indigo-600 text-white'
                     : 'bg-white text-gray-900 shadow-md border border-gray-200'
-                }`}
+                  }`}
               >
                 {message.content}
               </div>

@@ -28,11 +28,10 @@ export const IntroScreen = () => {
         <div className="space-y-4 mb-8">
           <button
             onClick={() => setSelectedOption('chat')}
-            className={`w-full p-6 rounded-xl border-2 transition-all duration-200 ${
-              selectedOption === 'chat'
+            className={`w-full p-6 rounded-xl border-2 transition-all duration-200 ${selectedOption === 'chat'
                 ? 'border-indigo-500 bg-indigo-50 shadow-lg'
                 : 'border-gray-200 hover:border-indigo-300 hover:bg-gray-50'
-            }`}
+              }`}
           >
             <div className="flex items-start">
               <div className="flex-shrink-0 text-3xl mr-4">💬</div>
@@ -49,11 +48,10 @@ export const IntroScreen = () => {
 
           <button
             onClick={() => setSelectedOption('quiz')}
-            className={`w-full p-6 rounded-xl border-2 transition-all duration-200 ${
-              selectedOption === 'quiz'
+            className={`w-full p-6 rounded-xl border-2 transition-all duration-200 ${selectedOption === 'quiz'
                 ? 'border-indigo-500 bg-indigo-50 shadow-lg'
                 : 'border-gray-200 hover:border-indigo-300 hover:bg-gray-50'
-            }`}
+              }`}
           >
             <div className="flex items-start">
               <div className="flex-shrink-0 text-3xl mr-4">📋</div>
@@ -72,11 +70,10 @@ export const IntroScreen = () => {
         <button
           onClick={handleStart}
           disabled={!selectedOption}
-          className={`w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-200 ${
-            selectedOption
+          className={`w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-200 ${selectedOption
               ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg hover:shadow-xl'
               : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-          }`}
+            }`}
         >
           Comenzar Diagnóstico
         </button>
