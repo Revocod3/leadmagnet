@@ -116,7 +116,7 @@ export interface SubmitQuizAnswerRequest {
 
 export interface UploadImageRequest {
   sessionId: string;
-  image: File | Buffer;
+  image: File | Uint8Array;
 }
 
 // Validation types
