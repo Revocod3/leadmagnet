@@ -1,7 +1,7 @@
+// packages/shared/src/types/index.ts
+
 export type Language = 'es' | 'en';
-
 export type DiagnosticType = 'chat' | 'quiz';
-
 export type SessionStep =
   | 'initial'
   | 'name_question_sent'
@@ -9,6 +9,7 @@ export type SessionStep =
   | 'pdf_question_sent'
   | 'cta_sent';
 
+// User types
 export interface User {
   id: string;
   email: string;
@@ -17,6 +18,7 @@ export interface User {
   updatedAt: Date;
 }
 
+// Session types
 export interface SessionData {
   id: string;
   userId?: string;
@@ -33,6 +35,7 @@ export interface SessionData {
   expiresAt: Date;
 }
 
+// Chat types
 export interface ChatMessage {
   id?: string;
   role: 'user' | 'assistant';
@@ -41,6 +44,7 @@ export interface ChatMessage {
   createdAt?: Date;
 }
 
+// Quiz types
 export interface QuestionData {
   id: number;
   question: string;
@@ -64,32 +68,34 @@ export interface QuizOption {
 }
 
 export interface QuizAnswer {
-  id?: string;
+  id: string;
   sessionId: string;
   questionId: number;
   answer: string;
   points: number;
-  createdAt?: Date;
+  createdAt: Date;
+  empathicComment?: string;
 }
 
+// Diagnosis types
 export interface DiagnosisResponse {
-  id?: string;
+  id: string;
   sessionId: string;
-  userId?: string;
   content: string;
   totalScore?: number;
   scorePercentage?: number;
-  pdfGenerated?: boolean;
-  createdAt?: Date;
+  pdfGenerated: boolean;
+  createdAt: Date;
 }
 
+// API types
 export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: string;
-  message?: string;
 }
 
+// Request types
 export interface CreateSessionRequest {
   userName?: string;
   userEmail?: string;
@@ -99,7 +105,7 @@ export interface CreateSessionRequest {
 export interface SendMessageRequest {
   sessionId: string;
   message: string;
-  language?: Language;
+  language: Language;
 }
 
 export interface SubmitQuizAnswerRequest {
@@ -110,5 +116,11 @@ export interface SubmitQuizAnswerRequest {
 
 export interface UploadImageRequest {
   sessionId: string;
-  image: File;
+  image: File | Buffer;
+}
+
+// Validation types
+export interface ValidationResult {
+  isValid: boolean;
+  feedback?: string;
 }
