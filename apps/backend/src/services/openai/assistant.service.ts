@@ -1,6 +1,6 @@
-import { openai, MODELS, ASSISTANT_INSTRUCTIONS } from '../config/openai';
-import { env } from '../config/env';
-import type { Language, ChatMessage, DiagnosisResponse } from '../types';
+import { openai, MODELS, ASSISTANT_INSTRUCTIONS } from '../../config/openai';
+import { env } from '../../config/env';
+import type { Language, ChatMessage, DiagnosisResponse } from '../../types';
 
 export class AssistantService {
   private assistantId: string;

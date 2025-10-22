@@ -1,6 +1,6 @@
-import { prisma } from '../config/database';
+import { prisma } from '../../config/database';
 import { AssistantService } from './assistant.service';
-import type { Language, DiagnosisResponse, QuizAnswer } from '../types';
+import type { Language, DiagnosisResponse, QuizAnswer } from '../../types';
 
 export class DiagnosisService {
   constructor(private assistantService: AssistantService) { }

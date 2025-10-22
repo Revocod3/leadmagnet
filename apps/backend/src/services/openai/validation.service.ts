@@ -1,4 +1,4 @@
-import type { ValidationResult } from '../types';
+import type { ValidationResult } from '../../types';
 
 export class ValidationService {
   validateEmail(email: string): ValidationResult {

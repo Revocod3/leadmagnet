@@ -1,6 +1,6 @@
 import OpenAI from 'openai';
-import { openai, MODELS } from '../config/openai';
-import type { Language } from '../types';
+import { openai, MODELS } from '../../config/openai';
+import type { Language } from '../../types';
 
 export class VisionService {
   async analyzeImage(imageBuffer: Buffer, language: Language): Promise<string> {
