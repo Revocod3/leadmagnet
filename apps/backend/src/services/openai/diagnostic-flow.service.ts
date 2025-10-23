@@ -132,10 +132,10 @@ export class DiagnosticFlowService {
       currentQuestionIndex: 1, // Empezamos desde la pregunta 2 (índice 1)
     };
 
+    // NO enviar nextQuestion aquí porque el message YA ES la pregunta
     return {
       message: firstQuestion.question,
       newState,
-      nextQuestion: firstQuestion.question,
       questionDetails: firstQuestion.questionDetails,
       type: 'question',
     };
@@ -197,11 +197,10 @@ export class DiagnosticFlowService {
 
     if (!validation.isValid) {
       // Respuesta inválida - pedir al usuario que responda de nuevo
+      // NO enviar nextQuestion para evitar que se repita en el frontend
       return {
         message: validation.feedback || 'Por favor, proporciona una respuesta más detallada.',
         newState: currentState,
-        nextQuestion: currentQuestion.question,
-        questionDetails: currentQuestion.questionDetails,
         type: 'validation_error',
       };
     }
@@ -255,10 +254,12 @@ export class DiagnosticFlowService {
         imageAnalysis,
       };
 
+      // Combinar comentario empático + siguiente pregunta en UN SOLO mensaje
+      const fullMessage = `${comment}\n\n${nextQuestion.question}`;
+
       return {
-        message: comment,
+        message: fullMessage,
         newState,
-        nextQuestion: nextQuestion.question,
         questionDetails: nextQuestion.questionDetails,
         type: 'comment',
       };
@@ -427,50 +428,31 @@ export class DiagnosticFlowService {
     answer: string,
     language: Language
   ): Promise<{ isValid: boolean; feedback: string }> {
-    try {
-      const prompt =
-        language === 'es'
-          ? `Valida si esta respuesta es coherente para la pregunta del cuestionario de salud digestiva.
+    // Validación básica: rechazar solo respuestas obviamente inválidas
+    const trimmedAnswer = answer.trim();
 
-Pregunta: "${question}"
-Respuesta: "${answer}"
-
-Responde SOLO con JSON:
-{
-  "isValid": boolean,
-  "feedback": "mensaje de validación si no es válido, vacío si es válido"
-}`
-          : `Validate if this answer is coherent for the digestive health questionnaire question.
-
-Question: "${question}"
-Answer: "${answer}"
-
-Respond ONLY with JSON:
-{
-  "isValid": boolean,
-  "feedback": "validation message if invalid, empty if valid"
-}`;
-
-      const response = await openai.chat.completions.create({
-        model: MODELS.TEXT,
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0,
-        max_tokens: 100,
-        response_format: { type: 'json_object' },
-      });
-
-      const content = response.choices[0]?.message?.content;
-      if (!content) {
-        return { isValid: true, feedback: '' };
-      }
-
-      const result = JSON.parse(content);
-      return result;
-    } catch (error) {
-      console.error('Error validating answer:', error);
-      // Default to valid on error to avoid blocking user
-      return { isValid: true, feedback: '' };
+    // Aceptar cualquier respuesta con al menos 1 carácter
+    if (trimmedAnswer.length === 0) {
+      return {
+        isValid: false,
+        feedback: language === 'es'
+          ? 'Por favor, escribe una respuesta.'
+          : 'Please write an answer.',
+      };
     }
+
+    // Rechazar solo respuestas sin sentido o spam
+    if (trimmedAnswer.length < 2 && !/[a-zA-Z0-9]/.test(trimmedAnswer)) {
+      return {
+        isValid: false,
+        feedback: language === 'es'
+          ? 'Por favor, proporciona una respuesta válida.'
+          : 'Please provide a valid answer.',
+      };
+    }
+
+    // Todas las demás respuestas son válidas (incluyendo "Bien", "Mal", "Sí", "No", etc.)
+    return { isValid: true, feedback: '' };
   }
 
   /**
