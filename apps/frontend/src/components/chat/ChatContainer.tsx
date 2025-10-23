@@ -4,7 +4,7 @@ import { useDiagnosticFlow } from '../../hooks/useDiagnosticFlow';
 import { useSpeechToText } from '../../hooks/useSpeechToText';
 import { usePDFGenerator } from '../../hooks/usePDFGenerator';
 import { useSessionStore } from '../../stores/sessionStore';
-import { Moon, Sun, Mic, Download, ArrowLeft, MoreVertical, Plus, ArrowUp, Image } from 'lucide-react';
+import { Moon, Sun, Mic, Download, ArrowLeft, MoreVertical, Plus, ArrowUp, Camera, Image } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CameraModal } from '../modals/CameraModal';
 import { ImageViewerModal } from '../modals/ImageViewerModal';
@@ -21,6 +21,7 @@ export const ChatContainer = () => {
   const [shareModalText, setShareModalText] = useState('');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [isPlusMenuOpen, setIsPlusMenuOpen] = useState(false);
 
   const {
     messages,
@@ -164,9 +165,9 @@ export const ChatContainer = () => {
 
   return (
     <>
-      <div className={`flex flex-col h-screen ${isDarkMode ? 'dark' : ''} bg-gradient-to-br from-background via-background to-blue-50 dark:to-neutral-900 transition-colors duration-200`}>
+      <div className={`flex flex-col h-screen ${isDarkMode ? 'dark' : ''} bg-neutral-50 dark:bg-neutral-900 transition-colors duration-200`}>
         {/* Header */}
-        <header className="sticky top-0 z-10 backdrop-blur-xl bg-background/80 border-b border-border">
+        <header className="sticky top-0 z-10 backdrop-blur-xl bg-white/80 dark:bg-neutral-900/80 border-b border-neutral-200 dark:border-neutral-800">
           <div className="container-narrow py-3 flex items-center justify-between">
             {/* Left: Back Button */}
             <button
@@ -242,8 +243,8 @@ export const ChatContainer = () => {
                   >
                     {/* Avatar for assistant */}
                     {message.role === 'assistant' && (
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-brand-green-500 flex items-center justify-center text-white text-sm font-semibold">
-                        AI
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-brand-green-500 dark:bg-brand-green-600 flex items-center justify-center text-white text-xs font-bold shadow-sm">
+                        ✨
                       </div>
                     )}
 
@@ -252,9 +253,9 @@ export const ChatContainer = () => {
                       {/* Message Bubble */}
                       <div
                         className={`${message.role === 'user'
-                          ? 'bg-brand-green-500 text-white'
-                          : 'bg-surface border border-border'
-                          } rounded-2xl px-5 py-3 shadow-sm`}
+                          ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100'
+                          : 'bg-transparent text-foreground'
+                          } rounded-2xl px-5 py-3`}
                       >
                         <p className="text-[15px] leading-relaxed whitespace-pre-wrap break-words">
                           {message.content}
@@ -299,7 +300,7 @@ export const ChatContainer = () => {
 
                     {/* Avatar for user */}
                     {message.role === 'user' && (
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-neutral-700 dark:bg-neutral-300 flex items-center justify-center text-white dark:text-neutral-900 text-sm font-semibold">
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-semibold shadow-sm">
                         {state.userName?.charAt(0).toUpperCase() || 'U'}
                       </div>
                     )}
@@ -314,14 +315,14 @@ export const ChatContainer = () => {
                   animate={{ opacity: 1, y: 0 }}
                   className="flex gap-4"
                 >
-                  <div className="w-8 h-8 rounded-full bg-brand-green-500 flex items-center justify-center text-white text-sm font-semibold flex-shrink-0">
-                    AI
+                  <div className="w-8 h-8 rounded-full bg-brand-green-500 dark:bg-brand-green-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0 shadow-sm">
+                    ✨
                   </div>
-                  <div className="bg-surface border border-border rounded-2xl px-5 py-4 shadow-sm">
+                  <div className="bg-transparent rounded-2xl px-5 py-4">
                     <div className="flex gap-1.5">
-                      <span className="w-2 h-2 bg-neutral-400 rounded-full animate-pulse-soft" />
-                      <span className="w-2 h-2 bg-neutral-400 rounded-full animate-pulse-soft [animation-delay:0.2s]" />
-                      <span className="w-2 h-2 bg-neutral-400 rounded-full animate-pulse-soft [animation-delay:0.4s]" />
+                      <span className="w-2 h-2 bg-neutral-400 dark:bg-neutral-500 rounded-full animate-pulse-soft" />
+                      <span className="w-2 h-2 bg-neutral-400 dark:bg-neutral-500 rounded-full animate-pulse-soft [animation-delay:0.2s]" />
+                      <span className="w-2 h-2 bg-neutral-400 dark:bg-neutral-500 rounded-full animate-pulse-soft [animation-delay:0.4s]" />
                     </div>
                   </div>
                 </motion.div>
@@ -333,14 +334,14 @@ export const ChatContainer = () => {
         </main>
 
         {/* Input Area - ChatGPT Style */}
-        <footer className="sticky bottom-0 bg-background pb-safe">
+        <footer className="sticky bottom-0 bg-neutral-50 dark:bg-neutral-900 pb-safe">
           <div className="max-w-3xl mx-auto px-4 py-4">
             {/* Selected Image Preview */}
             {selectedImage && (
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="mb-3 flex items-center gap-3 p-3 bg-surface rounded-xl border border-border"
+                className="mb-3 flex items-center gap-3 p-3 bg-white dark:bg-neutral-800 rounded-xl border border-neutral-300 dark:border-neutral-700 shadow-md"
               >
                 <img
                   src={selectedImage}
@@ -349,12 +350,12 @@ export const ChatContainer = () => {
                   onClick={() => handleImageClick(selectedImage)}
                 />
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-foreground">Imagen seleccionada</p>
-                  <p className="text-xs text-secondary">Se enviará con tu próximo mensaje</p>
+                  <p className="text-sm font-medium text-neutral-900 dark:text-white">Imagen seleccionada</p>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">Se enviará con tu próximo mensaje</p>
                 </div>
                 <button
                   onClick={() => setSelectedImage(null)}
-                  className="p-1.5 rounded-lg hover:bg-surface-hover transition-colors text-secondary"
+                  className="p-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors text-neutral-500 dark:text-neutral-400"
                 >
                   ✕
                 </button>
@@ -362,7 +363,7 @@ export const ChatContainer = () => {
             )}
 
             {/* Input Container */}
-            <form onSubmit={handleSendMessage} className="relative bg-surface rounded-[26px] border border-border shadow-sm p-2 focus-within:border-neutral-400 dark:focus-within:border-neutral-500 transition-colors">
+            <form onSubmit={handleSendMessage} className="relative bg-white dark:bg-neutral-800 rounded-[26px] border border-neutral-300 dark:border-neutral-700 shadow-md p-2 transition-all focus-within:border-neutral-400 dark:focus-within:border-neutral-600 focus-within:shadow-lg">
               {/* File input (hidden) */}
               <input
                 ref={fileInputRef}
@@ -373,58 +374,44 @@ export const ChatContainer = () => {
               />
 
               <div className="flex items-end gap-2">
-                {/* Plus Button with Menu */}
+                {/* Plus Button with React Dropdown Menu */}
                 <div className="relative flex-shrink-0">
                   <button
                     type="button"
-                    onClick={() => {
-                      // Aquí puedes agregar un menú desplegable con opciones
-                      // Por ahora abrimos la cámara y archivo
-                      const menu = document.createElement('div');
-                      menu.className = 'absolute bottom-full left-0 mb-2 bg-surface border border-border rounded-lg shadow-lg p-1 min-w-[200px]';
-                      menu.innerHTML = `
-                        <button class="w-full text-left px-3 py-2 rounded hover:bg-surface-hover text-foreground text-sm flex items-center gap-2" id="menu-file">
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                            <circle cx="8.5" cy="8.5" r="1.5"/>
-                            <polyline points="21 15 16 10 5 21"/>
-                          </svg>
-                          Subir imagen
-                        </button>
-                        <button class="w-full text-left px-3 py-2 rounded hover:bg-surface-hover text-foreground text-sm flex items-center gap-2" id="menu-camera">
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-                            <circle cx="12" cy="13" r="4"/>
-                          </svg>
-                          Tomar foto
-                        </button>
-                      `;
-                      document.body.appendChild(menu);
-
-                      document.getElementById('menu-file')?.addEventListener('click', () => {
-                        fileInputRef.current?.click();
-                        menu.remove();
-                      });
-
-                      document.getElementById('menu-camera')?.addEventListener('click', () => {
-                        setIsCameraOpen(true);
-                        menu.remove();
-                      });
-
-                      const closeMenu = (e: MouseEvent) => {
-                        if (!menu.contains(e.target as Node)) {
-                          menu.remove();
-                          document.removeEventListener('click', closeMenu);
-                        }
-                      };
-
-                      setTimeout(() => document.addEventListener('click', closeMenu), 100);
-                    }}
-                    className="p-2 text-secondary hover:text-foreground rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+                    onClick={() => setIsPlusMenuOpen((v) => !v)}
+                    className="p-2 text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
                     title="Más opciones"
                   >
                     <Plus className="w-5 h-5" />
                   </button>
+                  {isPlusMenuOpen && (
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/3 mb-3 z-20">
+                      <div className="flex items-center gap-2 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-full shadow-xl p-1">
+                        <button
+                          type="button"
+                          className="p-2.5 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 transition-colors"
+                          title="Subir imagen"
+                          onClick={() => {
+                            fileInputRef.current?.click();
+                            setIsPlusMenuOpen(false);
+                          }}
+                        >
+                          <Image className="w-5 h-5 text-neutral-700 dark:text-neutral-300" />
+                        </button>
+                        <button
+                          type="button"
+                          className="p-2.5 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 transition-colors"
+                          title="Tomar foto"
+                          onClick={() => {
+                            setIsCameraOpen(true);
+                            setIsPlusMenuOpen(false);
+                          }}
+                        >
+                          <Camera className="w-5 h-5 text-neutral-700 dark:text-neutral-300" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Textarea */}
@@ -433,32 +420,23 @@ export const ChatContainer = () => {
                   value={inputMessage}
                   onChange={(e) => setInputMessage(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="Pregunta lo que quieras"
+                  placeholder="Escribe tu mensaje..."
                   rows={1}
-                  className="flex-1 resize-none bg-transparent px-2 py-2 text-foreground placeholder:text-tertiary focus:outline-none text-[15px] max-h-[200px]"
+                  className="flex-1 resize-none bg-transparent px-2 pb-[6px] text-neutral-900 dark:text-white border-none placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-0 focus:border-transparent focus-visible:outline-none text-[15px] max-h-[200px]"
                   style={{ minHeight: '24px' }}
                 />
 
                 {/* Right Side Actions */}
                 <div className="flex items-center gap-1 flex-shrink-0">
-                  {/* Image Button */}
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="p-2 text-secondary hover:text-foreground rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
-                    title="Subir imagen"
-                  >
-                    <Image className="w-5 h-5" />
-                  </button>
 
                   {/* Voice Button */}
                   {isSpeechSupported && (
                     <button
                       type="button"
                       onClick={handleVoiceInput}
-                      className={`p-2 rounded-full transition-colors ${isListening
-                        ? 'text-brand-green-500 bg-brand-green-50 dark:bg-brand-green-500/10'
-                        : 'text-secondary hover:text-foreground hover:bg-neutral-100 dark:hover:bg-neutral-800'
+                      className={`p-2 rounded-lg transition-colors ${isListening
+                        ? 'text-brand-green-600 bg-brand-green-50 dark:bg-brand-green-500/10'
+                        : 'text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-700'
                         }`}
                       title={isListening ? 'Detener grabación' : 'Escribir por voz'}
                     >
@@ -471,8 +449,8 @@ export const ChatContainer = () => {
                     type="submit"
                     disabled={!inputMessage.trim() || isProcessing}
                     className={`p-2 rounded-full transition-all ${inputMessage.trim() && !isProcessing
-                      ? 'text-white bg-brand-green-500 hover:bg-brand-green-600'
-                      : 'text-secondary bg-neutral-100 dark:bg-neutral-800 cursor-not-allowed'
+                      ? 'text-white bg-neutral-900 dark:bg-white dark:text-black hover:bg-neutral-700 dark:hover:bg-neutral-200'
+                      : 'text-neutral-400 bg-transparent cursor-not-allowed'
                       }`}
                     title="Enviar mensaje"
                   >
@@ -483,15 +461,15 @@ export const ChatContainer = () => {
             </form>
 
             {/* Footer Note */}
-            <p className="text-center text-xs text-tertiary mt-3">
-              ChatGPT puede cometer errores. Comprueba la información importante.
+            <p className="text-center text-[10px] text-tertiary mt-3">
+              ChatOVP puede cometer errores. Comprueba la información importante.
             </p>
           </div>
-        </footer>
-      </div>
+        </footer >
+      </div >
 
       {/* Modals */}
-      <CameraModal
+      < CameraModal
         isOpen={isCameraOpen}
         onClose={() => setIsCameraOpen(false)}
         onCapture={handleCameraCapture}

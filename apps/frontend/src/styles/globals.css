@@ -91,6 +91,22 @@
     @apply outline-none ring-2 ring-brand-green-500 ring-offset-2 ring-offset-background;
   }
 
+  /* Input & Textarea Reset */
+  input,
+  textarea {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+  }
+
+  textarea {
+    background-color: transparent !important;
+    background-image: none !important;
+    box-shadow: none !important;
+    border: none !important;
+    outline: none !important;
+  }
+
   /* Scrollbar */
   ::-webkit-scrollbar {
     @apply w-2 h-2;
