@@ -27,7 +27,7 @@ export const ChatContainer = () => {
     isProcessing,
     initialize,
     processMessage,
-  } = useDiagnosticFlow();  const { generatePDF } = usePDFGenerator();
+  } = useDiagnosticFlow(); const { generatePDF } = usePDFGenerator();
   const { isListening, transcript, startListening, stopListening, isSupported: isSpeechSupported } = useSpeechToText();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);

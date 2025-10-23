@@ -16,13 +16,13 @@ export interface FlowMessage {
   role: 'user' | 'assistant';
   content: string;
   type?:
-    | 'welcome'
-    | 'greeting'
-    | 'question'
-    | 'comment'
-    | 'diagnosis'
-    | 'validation_error'
-    | 'cta';
+  | 'welcome'
+  | 'greeting'
+  | 'question'
+  | 'comment'
+  | 'diagnosis'
+  | 'validation_error'
+  | 'cta';
   question?: DiagnosticQuestion;
   timestamp?: string;
 }

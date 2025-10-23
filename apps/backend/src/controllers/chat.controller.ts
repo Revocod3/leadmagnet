@@ -68,7 +68,7 @@ export class ChatController {
 
       // Echo back a simple response
       const assistantContent = '¡Hola! Gracias por tu mensaje.';
-      
+
       await prisma.message.create({
         data: {
           sessionId,
