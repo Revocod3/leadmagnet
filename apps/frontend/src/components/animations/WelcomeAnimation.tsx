@@ -38,17 +38,17 @@ export const WelcomeAnimation = ({
       if (etymology) {
         setShowEtymology(true);
       }
-    }, 1500);
+    }, 2000);
 
-    // Start fade out
+    // Start fade out - dar más tiempo para leer la etimología
     const fadeTimer = setTimeout(() => {
       setFadeOut(true);
-    }, 3500);
+    }, 9000);
 
     // Complete animation
     const completeTimer = setTimeout(() => {
       onComplete();
-    }, 4200);
+    }, 8800);
 
     return () => {
       clearTimeout(etymologyTimer);
