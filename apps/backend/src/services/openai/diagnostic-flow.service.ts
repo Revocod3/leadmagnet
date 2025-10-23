@@ -1,5 +1,5 @@
 import { openai, MODELS, ASSISTANT_INSTRUCTIONS } from '../../config/openai';
-import { getDiagnosticQuestions, WELCOME_MESSAGES, GREETING_MESSAGES, DID_YOU_KNOW, PDF_QUESTION, FINAL_CTA } from '../../constants/questions';
+import { getDiagnosticQuestions, WELCOME_MESSAGES, GREETING_MESSAGES, DID_YOU_KNOW, PDF_QUESTION, FINAL_CTA, OCCUPATION_PATTERNS, OCCUPATION_INSIGHTS, type CollectedInfo } from '../../constants/questions';
 import type { Language } from '../../types';
 import { VisionService } from './vision.service';
 
@@ -16,9 +16,11 @@ export type FlowStep =
 export interface DiagnosticFlowState {
   step: FlowStep;
   currentQuestionIndex: number;
+  currentBlockId: number; // NEW: Track current block
   userName: string | null;
   language: Language;
   answers: Array<{ question: string; answer: string }>;
+  collectedInfo: CollectedInfo; // NEW: Collected information from answers
   imageAnalysis: string | null;
   diagnosisContent: string | null;
 }
@@ -41,15 +43,231 @@ export class DiagnosticFlowService {
   }
 
   /**
+   * Detects occupation type from occupation string
+   */
+  private detectOccupationType(occupation: string): string {
+    for (const [type, pattern] of Object.entries(OCCUPATION_PATTERNS)) {
+      if (pattern.test(occupation)) {
+        return type;
+      }
+    }
+    return 'default';
+  }
+
+  /**
+   * Generates occupation-specific comment
+   */
+  private generateOccupationComment(
+    age: number,
+    occupation: string,
+    language: Language
+  ): string {
+    const occupationType = this.detectOccupationType(occupation);
+    const insight = OCCUPATION_INSIGHTS[occupationType as keyof typeof OCCUPATION_INSIGHTS] || OCCUPATION_INSIGHTS.default;
+
+    // Select random insight
+    const randomInsight = insight.insights[
+      Math.floor(Math.random() * insight.insights.length)
+    ];
+
+    const ageText = language === 'es' ? `${age} años` : `${age} years old`;
+    const workText = language === 'es' ? `trabajas como` : `you work as`;
+
+    return `${ageText} y ${workText} ${occupation}. ${randomInsight} ${insight.tips}`;
+  }
+
+  /**
+   * Extracts information from user answers
+   */
+  private extractInfoFromAnswer(
+    questionId: number,
+    answer: string,
+    currentInfo: CollectedInfo
+  ): Partial<CollectedInfo> {
+    const info: Partial<CollectedInfo> = {};
+    const lowerAnswer = answer.toLowerCase();
+
+    // Question 1: Age and occupation
+    if (questionId === 1) {
+      // Extract age
+      const ageMatch = answer.match(/(\d+)\s*años?|años?\s*(\d+)/i);
+      if (ageMatch && (ageMatch[1] || ageMatch[2])) {
+        const ageValue = ageMatch[1] || ageMatch[2];
+        if (ageValue) {
+          info.age = parseInt(ageValue);
+        }
+      }
+
+      // Extract occupation (everything else)
+      const occupationText = answer.replace(/(\d+)\s*años?|años?\s*(\d+)/gi, '').trim();
+      if (occupationText) {
+        info.occupation = occupationText;
+        info.occupationType = this.detectOccupationType(occupationText);
+      }
+    }
+
+    // Question 2: Main problem
+    if (questionId === 2) {
+      info.mainProblem = answer;
+
+      // Extract problematic foods if mentioned here
+      if (lowerAnswer.includes('lácteos') || lowerAnswer.includes('leche')) {
+        info.badFoods = [...(info.badFoods || []), 'lácteos'];
+      }
+      if (lowerAnswer.includes('gluten') || lowerAnswer.includes('pan') || lowerAnswer.includes('pasta')) {
+        info.badFoods = [...(info.badFoods || []), 'gluten'];
+      }
+    }
+
+    // Question 3: Duration
+    if (questionId === 3) {
+      info.duration = answer;
+    }
+
+    // Question 4: Diet
+    if (questionId === 4) {
+      info.diet = answer;
+
+      // Detect exercise mention here
+      if (lowerAnswer.includes('no hago ejercicio') || lowerAnswer.includes('sedentario')) {
+        info.exercise = 'sedentario';
+      }
+    }
+
+    // Question 5: Bad foods
+    if (questionId === 5) {
+      const problematicFoods = [];
+      if (lowerAnswer.includes('lácteos') || lowerAnswer.includes('leche')) {
+        problematicFoods.push('lácteos');
+      }
+      if (lowerAnswer.includes('gluten') || lowerAnswer.includes('pan') || lowerAnswer.includes('pasta')) {
+        problematicFoods.push('gluten');
+      }
+      if (lowerAnswer.includes('legumbres') || lowerAnswer.includes('frijoles')) {
+        problematicFoods.push('legumbres');
+      }
+      if (problematicFoods.length > 0) {
+        info.badFoods = [...(currentInfo.badFoods || []), ...problematicFoods];
+      }
+    }
+
+    // Question 6: Water intake
+    if (questionId === 6) {
+      info.waterIntake = answer;
+    }
+
+    // Question 7: Exercise
+    if (questionId === 7) {
+      info.exercise = answer;
+    }
+
+    // Question 8: Sleep
+    if (questionId === 8) {
+      info.sleep = answer;
+    }
+
+    // Question 9: Stress
+    if (questionId === 9) {
+      info.stress = answer;
+
+      // If sleep mentioned here too
+      if (lowerAnswer.includes('duermo mal') || lowerAnswer.includes('insomnio')) {
+        info.sleep = 'mal';
+      }
+    }
+
+    // Question 10: Medical conditions
+    if (questionId === 10) {
+      const conditions = [];
+      if (lowerAnswer.includes('hipotiroidismo')) conditions.push('hipotiroidismo');
+      if (lowerAnswer.includes('sii') || lowerAnswer.includes('intestino irritable')) conditions.push('SII');
+      if (lowerAnswer.includes('intolerancia')) conditions.push('intolerancias');
+
+      if (conditions.length > 0) {
+        info.medicalConditions = conditions;
+      }
+
+      // Extract medications
+      if (lowerAnswer.includes('medicamento') || lowerAnswer.includes('tomo')) {
+        info.medications = [answer];
+      }
+    }
+
+    // Question 11: Goal
+    if (questionId === 11) {
+      info.goal = answer;
+    }
+
+    // Question 12: Motivation
+    if (questionId === 12) {
+      const motivationMatch = answer.match(/(\d+)/);
+      if (motivationMatch && motivationMatch[1]) {
+        info.motivation = parseInt(motivationMatch[1]);
+      }
+    }
+
+    return info;
+  }
+
+  /**
+   * Determines if a question should be asked based on collected info
+   */
+  private shouldAskQuestion(
+    question: any,
+    collectedInfo: CollectedInfo
+  ): boolean {
+    if (!question.isConditional) {
+      return true; // Mandatory questions always asked
+    }
+
+    // If question has condition check, use it
+    if (question.conditionCheck) {
+      return question.conditionCheck(collectedInfo);
+    }
+
+    return true;
+  }
+
+  /**
+   * Generates block transition messages
+   */
+  private generateBlockTransition(
+    toBlockId: number,
+    state: DiagnosticFlowState
+  ): string {
+    const userName = state.userName || 'amigo/a';
+
+    switch (toBlockId) {
+      case 2: // Problem
+        return `Perfecto ${userName}, ahora cuéntame qué te trae aquí...`;
+
+      case 3: // Lifestyle
+        const problem = state.collectedInfo.mainProblem || 'tu molestia';
+        return `Entiendo, ${problem} puede ser muy incómodo. Ahora hablemos un poco de tus hábitos diarios.`;
+
+      case 4: // Health
+        return `Gracias por compartir eso, ${userName}. Ahora, sobre tu salud en general...`;
+
+      case 5: // Motivation
+        return `${userName}, ya casi terminamos. Hablemos de tus objetivos y expectativas.`;
+
+      default:
+        return '';
+    }
+  }
+
+  /**
    * Inicializa una nueva sesión de diagnóstico con el nombre del usuario
    */
   initializeFlow(language: Language = 'es', userName?: string): { message: string; state: DiagnosticFlowState } {
     const state: DiagnosticFlowState = {
       step: 'initial',
-      currentQuestionIndex: 1, // Empezamos desde la pregunta 2 (índice 1)
+      currentQuestionIndex: 0, // Start from first question (index 0)
+      currentBlockId: 1, // Start with block 1
       userName: userName || null,
       language,
       answers: [],
+      collectedInfo: {}, // Initialize empty collected info
       imageAnalysis: null,
       diagnosisContent: null,
     };
@@ -119,7 +337,7 @@ export class DiagnosticFlowService {
     // Solo esperamos confirmación para empezar las preguntas
 
     const questions = getDiagnosticQuestions(currentState.language);
-    const firstQuestion = questions[1]; // Empezamos desde la pregunta 2 (índice 1)
+    const firstQuestion = questions[0]; // Start from first question (index 0)
 
     if (!firstQuestion) {
       throw new Error('No questions available');
@@ -129,7 +347,8 @@ export class DiagnosticFlowService {
     const newState: DiagnosticFlowState = {
       ...currentState,
       step: 'asking_questions',
-      currentQuestionIndex: 1, // Empezamos desde la pregunta 2 (índice 1)
+      currentQuestionIndex: 0, // Start from first question (index 0)
+      currentBlockId: firstQuestion.blockId,
     };
 
     // NO enviar nextQuestion aquí porque el message YA ES la pregunta
@@ -142,29 +361,30 @@ export class DiagnosticFlowService {
   }
 
   /**
-   * Después del saludo, envía la segunda pregunta
+   * Después del saludo, envía la primera pregunta
    */
   private async handleGreetingAcknowledgment(
     currentState: DiagnosticFlowState
   ): Promise<FlowResponse> {
     const questions = getDiagnosticQuestions(currentState.language);
-    const nextQuestion = questions[1]; // Segunda pregunta (índice 1)
+    const firstQuestion = questions[0]; // First question (index 0)
 
-    if (!nextQuestion) {
-      throw new Error('Next question not found');
+    if (!firstQuestion) {
+      throw new Error('First question not found');
     }
 
     const newState: DiagnosticFlowState = {
       ...currentState,
       step: 'asking_questions',
-      currentQuestionIndex: 1,
+      currentQuestionIndex: 0,
+      currentBlockId: firstQuestion.blockId,
     };
 
     return {
-      message: nextQuestion.question,
+      message: firstQuestion.question,
       newState,
-      nextQuestion: nextQuestion.question,
-      questionDetails: nextQuestion.questionDetails,
+      nextQuestion: firstQuestion.question,
+      questionDetails: firstQuestion.questionDetails,
       type: 'question',
     };
   }
@@ -196,8 +416,6 @@ export class DiagnosticFlowService {
     );
 
     if (!validation.isValid) {
-      // Respuesta inválida - pedir al usuario que responda de nuevo
-      // NO enviar nextQuestion para evitar que se repita en el frontend
       return {
         message: validation.feedback || 'Por favor, proporciona una respuesta más detallada.',
         newState: currentState,
@@ -205,7 +423,20 @@ export class DiagnosticFlowService {
       };
     }
 
-    // Respuesta válida - guardar y continuar
+    // Extraer información de la respuesta
+    const extractedInfo = this.extractInfoFromAnswer(
+      currentQuestion.id,
+      userAnswer,
+      currentState.collectedInfo
+    );
+
+    // Actualizar información recopilada
+    const updatedInfo = {
+      ...currentState.collectedInfo,
+      ...extractedInfo,
+    };
+
+    // Guardar respuesta
     const newAnswers = [
       ...currentState.answers,
       {
@@ -214,16 +445,49 @@ export class DiagnosticFlowService {
       },
     ];
 
-    // Analizar imagen si es la pregunta 17
+    // CASO ESPECIAL: Pregunta 1 (edad y ocupación)
+    if (currentQuestion.id === 1 && extractedInfo.age && extractedInfo.occupation) {
+      const occupationComment = this.generateOccupationComment(
+        extractedInfo.age!,
+        extractedInfo.occupation!,
+        currentState.language
+      );
+
+      const nextQuestion = questions[currentState.currentQuestionIndex + 1];
+      if (!nextQuestion) {
+        throw new Error('Next question not found');
+      }
+
+      const newState: DiagnosticFlowState = {
+        ...currentState,
+        currentQuestionIndex: currentState.currentQuestionIndex + 1,
+        currentBlockId: nextQuestion.blockId,
+        answers: newAnswers,
+        collectedInfo: updatedInfo,
+      };
+
+      // Combinar comentario de ocupación + transición de bloque + siguiente pregunta
+      const blockTransition = this.generateBlockTransition(nextQuestion.blockId, newState);
+      const fullMessage = `${occupationComment}\n\n${blockTransition}\n\n${nextQuestion.question}`;
+
+      return {
+        message: fullMessage,
+        newState,
+        questionDetails: nextQuestion.questionDetails,
+        type: 'comment',
+      };
+    }
+
+    // Analizar imagen si es la pregunta 13
     let imageAnalysis = currentState.imageAnalysis;
-    if (currentState.currentQuestionIndex === 16 && imageData) {
+    if (currentQuestion.id === 13 && imageData) {
       try {
-        // Convert base64 string to Buffer
         const imageBuffer = Buffer.from(imageData.base64, 'base64');
         imageAnalysis = await this.visionService.analyzeImage(
           imageBuffer,
           currentState.language
         );
+        updatedInfo.imageAnalysis = imageAnalysis;
       } catch (error) {
         console.error('Error analyzing image:', error);
         imageAnalysis = null;
@@ -237,25 +501,33 @@ export class DiagnosticFlowService {
       currentState.language
     );
 
-    // Verificar si hay más preguntas
-    const nextIndex = currentState.currentQuestionIndex + 1;
+    // Buscar la SIGUIENTE pregunta NO condicional o que cumpla su condición
+    let nextIndex = currentState.currentQuestionIndex + 1;
+    let nextQuestion = questions[nextIndex];
 
-    if (nextIndex < questions.length) {
+    while (nextQuestion && !this.shouldAskQuestion(nextQuestion, updatedInfo)) {
+      nextIndex++;
+      nextQuestion = questions[nextIndex];
+    }
+
+    if (nextQuestion) {
       // Hay más preguntas
-      const nextQuestion = questions[nextIndex];
-      if (!nextQuestion) {
-        throw new Error('Next question not found');
-      }
-
       const newState: DiagnosticFlowState = {
         ...currentState,
         currentQuestionIndex: nextIndex,
+        currentBlockId: nextQuestion.blockId,
         answers: newAnswers,
+        collectedInfo: updatedInfo,
         imageAnalysis,
       };
 
-      // Combinar comentario empático + siguiente pregunta en UN SOLO mensaje
-      const fullMessage = `${comment}\n\n${nextQuestion.question}`;
+      // Verificar si cambió de bloque
+      let fullMessage = comment;
+      if (nextQuestion.blockId !== currentQuestion.blockId) {
+        const blockTransition = this.generateBlockTransition(nextQuestion.blockId, newState);
+        fullMessage += `\n\n${blockTransition}`;
+      }
+      fullMessage += `\n\n${nextQuestion.question}`;
 
       return {
         message: fullMessage,
@@ -269,18 +541,19 @@ export class DiagnosticFlowService {
         currentState.userName!,
         newAnswers,
         imageAnalysis,
-        currentState.language
+        currentState.language,
+        updatedInfo
       );
 
       const newState: DiagnosticFlowState = {
         ...currentState,
         step: 'pdf_question',
         answers: newAnswers,
+        collectedInfo: updatedInfo,
         imageAnalysis,
         diagnosisContent: diagnosis,
       };
 
-      // Retornar comentario + diagnóstico + pregunta de PDF
       const fullMessage = `${comment}\n\n${diagnosis}\n\n${PDF_QUESTION[currentState.language as 'es' | 'en']}`;
 
       return {
@@ -510,7 +783,8 @@ REQUIREMENTS:
     userName: string,
     answers: Array<{ question: string; answer: string }>,
     imageAnalysis: string | null,
-    language: Language
+    language: Language,
+    collectedInfo?: CollectedInfo
   ): Promise<string> {
     try {
       // Formatear respuestas
@@ -523,12 +797,31 @@ REQUIREMENTS:
 
       const imageSection = imageAnalysis ? `\n\n📸 Análisis de imagen:\n${imageAnalysis}` : '';
 
+      // Add collected info context
+      const contextSection = collectedInfo ? `
+
+**INFORMACIÓN RECOPILADA:**
+- Edad: ${collectedInfo.age || 'No especificada'}
+- Ocupación: ${collectedInfo.occupation || 'No especificada'} (${collectedInfo.occupationType || 'default'})
+- Problema principal: ${collectedInfo.mainProblem || 'No especificado'}
+- Duración: ${collectedInfo.duration || 'No especificada'}
+- Alimentación: ${collectedInfo.diet || 'No especificada'}
+- Alimentos problemáticos: ${collectedInfo.badFoods?.join(', ') || 'Ninguno mencionado'}
+- Agua: ${collectedInfo.waterIntake || 'No especificada'}
+- Ejercicio: ${collectedInfo.exercise || 'No especificado'}
+- Sueño: ${collectedInfo.sleep || 'No especificado'}
+- Estrés: ${collectedInfo.stress || 'No especificado'}
+- Condiciones médicas: ${collectedInfo.medicalConditions?.join(', ') || 'Ninguna'}
+- Medicamentos: ${collectedInfo.medications?.join(', ') || 'Ninguno'}
+- Objetivo: ${collectedInfo.goal || 'No especificado'}
+- Motivación: ${collectedInfo.motivation ? `${collectedInfo.motivation}/10` : 'No especificada'}` : '';
+
       const prompt =
         language === 'es'
           ? `Genera un diagnóstico personalizado para ${userName} basado en sus respuestas al cuestionario de salud digestiva.
 
 RESPUESTAS DEL CUESTIONARIO:
-${answersText}${imageSection}
+${answersText}${imageSection}${contextSection}
 
 INSTRUCCIONES:
 1. Saludo personalizado con el nombre
@@ -547,7 +840,7 @@ REQUISITOS:
           : `Generate a personalized diagnosis for ${userName} based on their digestive health questionnaire responses.
 
 QUESTIONNAIRE RESPONSES:
-${answersText}${imageSection}
+${answersText}${imageSection}${contextSection}
 
 INSTRUCTIONS:
 1. Personalized greeting with name

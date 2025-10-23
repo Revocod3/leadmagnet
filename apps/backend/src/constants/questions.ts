@@ -1,205 +1,419 @@
 import type { Language } from '../types';
 
 export interface DiagnosticQuestion {
+  id: number;
+  blockId: 1 | 2 | 3 | 4 | 5;
+  blockName: string;
   question: string;
   questionDetails?: string;
+  isConditional?: boolean;
+  conditionCheck?: (info: CollectedInfo) => boolean;
   options?: string[];
 }
 
-// 17 preguntas de diagnóstico personalizado
+export interface CollectedInfo {
+  age?: number;
+  occupation?: string;
+  occupationType?: string;
+  mainProblem?: string;
+  duration?: string;
+  diet?: string;
+  badFoods?: string[];
+  waterIntake?: string;
+  exercise?: string;
+  sleep?: string;
+  stress?: string;
+  medicalConditions?: string[];
+  medications?: string[];
+  goal?: string;
+  motivation?: number;
+  imageAnalysis?: string;
+}
+
+// Occupation patterns for detecting occupation types
+export const OCCUPATION_PATTERNS: Record<string, RegExp> = {
+  'oficina': /oficina|administrativo|escritorio|contable|contador|secretari/i,
+  'salud': /enferm|médico|doctor|hospital|clínica/i,
+  'creativo': /diseñ|program|desarroll|freelance|creativ|artista/i,
+  'estudiante': /estudiant|universit|college/i,
+  'casa': /ama de casa|casa|hogar/i,
+  'profesor': /profesor|maestr|docent|enseñ/i,
+  'servicio': /vended|camarer|meser|retail|atención/i,
+  'físico': /construcción|obrer|mecánico|técnico/i,
+  'cocina': /cocin|chef/i,
+  'emprendedor': /emprendedor|empresari|negocio propio/i,
+  'desempleado': /desemplead|busco trabajo|sin trabajo/i,
+  'jubilado': /jubilad|pensionad|retirad/i,
+};
+
+// Occupation insights and tips
+export const OCCUPATION_INSIGHTS = {
+  oficina: {
+    insights: [
+      'Las largas horas sentado pueden ralentizar el tránsito intestinal.',
+      'El estrés laboral de oficina suele manifestarse en el abdomen.',
+      'Los horarios de oficina a veces dificultan comer bien.'
+    ],
+    tips: 'Levantarte cada hora puede marcar la diferencia.'
+  },
+  salud: {
+    insights: [
+      'Los turnos irregulares pueden descontrolar tu sistema digestivo.',
+      'El estrés hospitalario puede hacer estragos en el cuerpo.',
+      'Las guardias nocturnas afectan profundamente la digestión.'
+    ],
+    tips: 'Mantener horarios de comida regulares será clave para ti.'
+  },
+  creativo: {
+    insights: [
+      'El trabajo freelance puede generar horarios muy irregulares.',
+      'La concentración intensa nos hace olvidar comer bien.',
+      'Estar frente al ordenador tantas horas afecta la postura y digestión.'
+    ],
+    tips: 'Crear rutinas será fundamental para ti.'
+  },
+  estudiante: {
+    insights: [
+      'El estrés académico afecta directamente el estómago.',
+      'Horarios irregulares + comida rápida = combinación difícil.',
+      'Los exámenes y la ansiedad se reflejan en tu abdomen.'
+    ],
+    tips: 'Gestionar el estrés académico será esencial.'
+  },
+  casa: {
+    insights: [
+      'Cuidar de otros nos hace olvidar cuidarnos a nosotras mismas.',
+      'El estrés silencioso del hogar también cuenta.',
+      'Es fácil picotear mientras cocinas para la familia.'
+    ],
+    tips: 'Priorizarte a ti misma no es egoísmo, es necesario.'
+  },
+  profesor: {
+    insights: [
+      'La enseñanza es demandante física y emocionalmente.',
+      'Los horarios escolares a veces impiden comer tranquilamente.',
+      'El estrés de estar frente a un grupo se somatiza en el abdomen.'
+    ],
+    tips: 'Encontrar momentos para desconectar será clave.'
+  },
+  servicio: {
+    insights: [
+      'Estar de pie tantas horas puede causar tensión abdominal.',
+      'El ritmo acelerado dificulta comer tranquilamente.',
+      'Tratar con público puede generar estrés que afecta la digestión.'
+    ],
+    tips: 'Aprovechar los descansos para comer sentado/a es importante.'
+  },
+  físico: {
+    insights: [
+      'El trabajo físico intenso puede enmascarar problemas digestivos.',
+      'Los horarios irregulares y comidas rápidas no ayudan.',
+      'El esfuerzo físico constante necesita nutrición adecuada.'
+    ],
+    tips: 'Balancear el esfuerzo físico con buena alimentación es vital.'
+  },
+  cocina: {
+    insights: [
+      '¡Irónico trabajar con comida pero no tener tiempo de comer bien!',
+      'La cocina profesional es estresante con horarios complicados.',
+      'Estar rodeado de comida todo el día puede descontrolar tus hábitos.'
+    ],
+    tips: 'Cuidarte a ti mismo/a es tan importante como cuidar a tus comensales.'
+  },
+  emprendedor: {
+    insights: [
+      'El emprendimiento es emocionante pero estresante.',
+      'Las preocupaciones constantes se reflejan en el cuerpo.',
+      'Los horarios irregulares del emprendedor afectan todo.'
+    ],
+    tips: 'Tu salud es tu mejor inversión empresarial.'
+  },
+  desempleado: {
+    insights: [
+      'La incertidumbre laboral genera ansiedad que impacta la digestión.',
+      'El estrés emocional también se refleja físicamente.',
+      'Esta etapa es temporal, pero cuidarte ahora es importante.'
+    ],
+    tips: 'Mantener rutinas saludables te ayudará en este proceso.'
+  },
+  jubilado: {
+    insights: [
+      'La jubilación es un cambio grande que puede afectar rutinas.',
+      'Más tiempo libre puede significar hábitos más saludables.',
+      'O puede llevar al sedentarismo si no tenemos cuidado.'
+    ],
+    tips: 'Esta etapa es perfecta para enfocarte en tu bienestar.'
+  },
+  default: {
+    insights: [
+      'Tu trabajo seguramente tiene sus propios desafíos para mantener hábitos saludables.',
+      'Cada profesión tiene su forma de afectar nuestro bienestar digestivo.',
+      'El equilibrio entre vida laboral y personal siempre es un reto.'
+    ],
+    tips: 'Vamos a encontrar soluciones que se adapten a tu rutina.'
+  }
+};
+
+// 13 preguntas de diagnóstico personalizado organizadas en 5 bloques
 export const DIAGNOSTIC_QUESTIONS_ES: DiagnosticQuestion[] = [
+  // BLOQUE 1: Conocerte Mejor
   {
-    question: '👋 1. Para empezar… ¿Cómo te llamas, qué edad tienes y a qué te dedicas?',
+    id: 1,
+    blockId: 1,
+    blockName: 'Conocerte Mejor',
+    question: '¿Qué edad tienes y a qué te dedicas?',
+    questionDetails: 'Cuéntame un poco sobre ti',
+    isConditional: false,
+    options: [],
+  },
+  // BLOQUE 2: El Problema Principal
+  {
+    id: 2,
+    blockId: 2,
+    blockName: 'El Problema Principal',
+    question: '¿Qué es lo que más te molesta de tu abdomen o digestión ahora mismo?',
+    questionDetails: 'Puede ser hinchazón, gases, pesadez, estreñimiento, digestiones lentas...\n\nNo te preocupes si no sabes el término exacto. Dímelo con tus propias palabras.',
+    isConditional: false,
     options: [],
   },
   {
-    question: '🤔 2. ¿Cómo te sientes contigo mismo/a en este momento de tu vida?',
-    questionDetails: '¿Estás satisfecho/a con tu camino actual? ¿Qué parte de ti te gustaría reconectar?',
+    id: 3,
+    blockId: 2,
+    blockName: 'El Problema Principal',
+    question: '¿Cuánto tiempo llevas sintiendo esto?',
+    questionDetails: 'Semanas, meses, años...',
+    isConditional: false,
+    options: [],
   },
+
+  // BLOQUE 3: Estilo de Vida
   {
-    question: '🎯 3. ¿Qué es lo que más te molesta de tu abdomen o digestión ahora mismo?',
-    questionDetails:
-      'Puede ser hinchazón, gases, pesadez, estreñimiento, digestiones lentas, retención de líquidos…\n\nNo te preocupes si no sabes el término exacto. Dímelo con tus propias palabras.',
+    id: 4,
+    blockId: 3,
+    blockName: 'Estilo de Vida',
+    question: '¿Cómo describirías tu alimentación en general?',
+    questionDetails: '¿Es equilibrada? ¿Comes muchos procesados? ¿Saltas comidas?',
+    isConditional: false,
     options: [],
   },
   {
-    question: '⏰ 4. ¿Cuánto tiempo llevas sintiendo esto?',
-    questionDetails: 'Semanas, meses, años…',
-    options: [],
-  },
-  {
-    question:
-      '💊 5. ¿Has probado algún método antes para solucionarlo? ¿Qué tal te fue?',
-    questionDetails:
-      'Por ejemplo: dietas, ejercicios, productos…\nO quizá no has probado nada todavía, y está bien también.',
-    options: [],
-  },
-  {
-    question: '🍽️ 6. ¿Cómo describirías tu alimentación en general?',
-    questionDetails:
-      '¿Es equilibrada? ¿Comes muchos procesados? ¿Saltas comidas? ¿Comes rápido?',
-    options: [],
-  },
-  {
-    question: '😣 7. ¿Tienes algún alimento que notes que te sienta mal?',
+    id: 5,
+    blockId: 3,
+    blockName: 'Estilo de Vida',
+    question: '¿Hay algún alimento que notes que te sienta mal?',
     questionDetails: 'Lácteos, gluten, legumbres, picantes, fritos...',
+    isConditional: true,
+    conditionCheck: (info) => !info.badFoods || info.badFoods.length === 0,
     options: [],
   },
   {
-    question: '💧 8. ¿Cuánta agua sueles beber al día?',
-    questionDetails:
-      'Una estimación aproximada es suficiente (en vasos, litros o botellas).',
+    id: 6,
+    blockId: 3,
+    blockName: 'Estilo de Vida',
+    question: '¿Cuánta agua sueles beber al día?',
+    questionDetails: 'Una estimación aproximada es suficiente',
+    isConditional: false,
     options: [],
   },
   {
-    question: '🏃 9. ¿Haces ejercicio regularmente? Si es así, ¿qué tipo y con qué frecuencia?',
-    questionDetails:
-      'Si no haces nada, también puedes decírmelo sin problema. Estoy aquí para ayudarte, no para juzgarte.',
+    id: 7,
+    blockId: 3,
+    blockName: 'Estilo de Vida',
+    question: '¿Haces ejercicio regularmente?',
+    questionDetails: 'Si no haces nada, también puedes decírmelo sin problema. Estoy aquí para ayudarte, no para juzgarte.',
+    isConditional: true,
+    conditionCheck: (info) => !info.exercise,
+    options: [],
+  },
+
+  // BLOQUE 4: Salud & Bienestar
+  {
+    id: 8,
+    blockId: 4,
+    blockName: 'Salud & Bienestar',
+    question: '¿Cómo duermes habitualmente?',
+    questionDetails: '¿Bien? ¿Poco? ¿Te cuesta conciliar el sueño?',
+    isConditional: true,
+    conditionCheck: (info) => !info.sleep,
     options: [],
   },
   {
-    question: '� 10. ¿Cómo duermes habitualmente?',
-    questionDetails: '¿Bien? ¿Poco? ¿Te cuesta conciliar el sueño o te despiertas mucho?',
-    options: [],
-  },
-  {
-    question: '😰 11. ¿Sientes que el estrés o la ansiedad afectan tu cuerpo?',
+    id: 9,
+    blockId: 4,
+    blockName: 'Salud & Bienestar',
+    question: '¿Sientes que el estrés o la ansiedad afectan tu cuerpo?',
     questionDetails: '¿Notas tensión, malestar digestivo o cambios cuando estás nervioso/a?',
+    isConditional: false,
     options: [],
   },
   {
-    question: '🩺 12. ¿Tienes alguna condición médica diagnosticada?',
-    questionDetails:
-      'Hipotiroidismo, SII, intolerancias, resistencia a la insulina, problemas hormonales…\nSi no tienes nada diagnosticado, simplemente dímelo.',
+    id: 10,
+    blockId: 4,
+    blockName: 'Salud & Bienestar',
+    question: '¿Tienes alguna condición médica o tomas medicamentos regularmente?',
+    questionDetails: 'Hipotiroidismo, SII, intolerancias, suplementos...\n\nSi no tienes nada, simplemente dímelo.',
+    isConditional: false,
+    options: [],
+  },
+
+  // BLOQUE 5: Motivación
+  {
+    id: 11,
+    blockId: 5,
+    blockName: 'Motivación',
+    question: '¿Qué te gustaría cambiar de tu salud o tu cuerpo en los próximos 3 meses?',
+    questionDetails: 'Puede ser algo físico, emocional, de energía... lo que sea más importante para ti.',
+    isConditional: false,
     options: [],
   },
   {
-    question: '💊 13. ¿Tomas algún medicamento o suplemento con regularidad?',
-    questionDetails: 'Si es así, ¿cuáles?',
+    id: 12,
+    blockId: 5,
+    blockName: 'Motivación',
+    question: 'Del 1 al 10, ¿qué tan motivado/a estás para hacer cambios reales ahora?',
+    questionDetails: 'Siendo 1 = "casi nada" y 10 = "totalmente comprometido/a".\n\nRecuerda: no hay respuestas malas.',
+    isConditional: false,
     options: [],
   },
   {
-    question: '🚻 14. (Solo para mujeres) ¿Tienes ciclos menstruales regulares?',
-    questionDetails:
-      '¿Notas hinchazón o cambios en tu abdomen dependiendo del momento del ciclo?\nSi eres hombre, simplemente escribe "N/A" o "No aplica".',
-    options: [],
-  },
-  {
-    question: '🌟 15. Si pudieras cambiar algo de tu salud o tu cuerpo en 3 meses, ¿qué sería?',
-    questionDetails:
-      'Puede ser algo físico, emocional, de energía, de bienestar… lo que sea más importante para ti.',
-    options: [],
-  },
-  {
-    question: '🔥 16. Del 1 al 10, ¿qué tan motivado/a estás para hacer cambios reales ahora?',
-    questionDetails:
-      'Siendo 1 = "casi nada" y 10 = "totalmente comprometido/a".\n\nRecuerda: no hay respuestas malas. Solo quiero saber dónde estás hoy.',
-    options: [],
-  },
-  {
-    question:
-      '💬 17. (Opcional) ¿Te gustaría compartir una foto de tu abdomen para completar el diagnóstico?',
-    questionDetails:
-      'Puede ser útil para detectar inflamación visible y darte orientación más visual.\nNo es obligatorio, pero si te sientes cómodo/a, me encantaría analizarla contigo.\n\n🔸 Tu privacidad es sagrada. Solo compartes lo que tú decidas. Estamos aquí para ayudar, sin presión.',
+    id: 13,
+    blockId: 5,
+    blockName: 'Motivación',
+    question: '(Opcional) ¿Te gustaría compartir una foto de tu abdomen para completar el diagnóstico?',
+    questionDetails: 'Puede ser útil para detectar inflamación visible.\n\n🔸 Tu privacidad es sagrada. Solo si te sientes cómodo/a.',
+    isConditional: false,
     options: [],
   },
 ];
 
 export const DIAGNOSTIC_QUESTIONS_EN: DiagnosticQuestion[] = [
+  // BLOQUE 1: Conocerte Mejor
   {
-    question: "👋 1. To start... What's your name, age, and what do you do?",
+    id: 1,
+    blockId: 1,
+    blockName: 'Get to Know You',
+    question: 'How old are you and what do you do?',
+    questionDetails: 'Tell me a bit about yourself',
+    isConditional: false,
+    options: [],
+  },
+
+  // BLOQUE 2: El Problema Principal
+  {
+    id: 2,
+    blockId: 2,
+    blockName: 'The Main Problem',
+    question: 'What bothers you most about your abdomen or digestion right now?',
+    questionDetails: 'It could be bloating, gas, heaviness, constipation, slow digestion...\n\nDon\'t worry if you don\'t know the exact term. Tell me in your own words.',
+    isConditional: false,
     options: [],
   },
   {
-    question: '🤔 2. How do you feel about yourself at this moment in your life?',
-    questionDetails: 'Are you satisfied with your current path? What part of you would you like to reconnect with?',
-  },
-  {
-    question: '🎯 3. What bothers you most about your abdomen or digestion right now?',
-    questionDetails:
-      "It could be bloating, gas, heaviness, constipation, slow digestion, water retention...\n\nDon't worry if you don't know the exact term. Tell me in your own words.",
-    options: [],
-  },
-  {
-    question: '⏰ 4. How long have you been feeling this?',
+    id: 3,
+    blockId: 2,
+    blockName: 'The Main Problem',
+    question: 'How long have you been feeling this?',
     questionDetails: 'Weeks, months, years...',
+    isConditional: false,
+    options: [],
+  },
+
+  // BLOQUE 3: Estilo de Vida
+  {
+    id: 4,
+    blockId: 3,
+    blockName: 'Lifestyle',
+    question: 'How would you describe your diet in general?',
+    questionDetails: 'Is it balanced? Do you eat a lot of processed foods? Do you skip meals?',
+    isConditional: false,
     options: [],
   },
   {
-    question: '💊 5. Have you tried any method before to solve it? How did it go?',
-    questionDetails:
-      "For example: diets, exercises, products...\nOr maybe you haven't tried anything yet, and that's okay too.",
-    options: [],
-  },
-  {
-    question: '🍽️ 6. How would you describe your diet in general?',
-    questionDetails:
-      'Is it balanced? Do you eat a lot of processed foods? Do you skip meals? Do you eat fast?',
-    options: [],
-  },
-  {
-    question: '😣 7. Do you have any food that you notice makes you feel bad?',
+    id: 5,
+    blockId: 3,
+    blockName: 'Lifestyle',
+    question: 'Are there any foods that you notice make you feel bad?',
     questionDetails: 'Dairy, gluten, legumes, spicy foods, fried foods...',
+    isConditional: true,
+    conditionCheck: (info) => !info.badFoods || info.badFoods.length === 0,
     options: [],
   },
   {
-    question: '💧 8. How much water do you usually drink per day?',
-    questionDetails: 'An approximate estimate is enough (in glasses, liters, or bottles).',
+    id: 6,
+    blockId: 3,
+    blockName: 'Lifestyle',
+    question: 'How much water do you usually drink per day?',
+    questionDetails: 'An approximate estimate is enough',
+    isConditional: false,
     options: [],
   },
   {
-    question: '🏃 9. Do you exercise regularly? If so, what type and how often?',
-    questionDetails:
-      "If you don't do anything, you can also tell me without a problem. I'm here to help you, not to judge you.",
+    id: 7,
+    blockId: 3,
+    blockName: 'Lifestyle',
+    question: 'Do you exercise regularly?',
+    questionDetails: 'If you don\'t do anything, you can also tell me without a problem. I\'m here to help you, not to judge you.',
+    isConditional: true,
+    conditionCheck: (info) => !info.exercise,
+    options: [],
+  },
+
+  // BLOQUE 4: Salud & Bienestar
+  {
+    id: 8,
+    blockId: 4,
+    blockName: 'Health & Wellness',
+    question: 'How do you usually sleep?',
+    questionDetails: 'Well? Little? Do you have trouble falling asleep?',
+    isConditional: true,
+    conditionCheck: (info) => !info.sleep,
     options: [],
   },
   {
-    question: '😴 10. How do you usually sleep?',
-    questionDetails:
-      'Well? Little? Do you have trouble falling asleep or do you wake up a lot?',
+    id: 9,
+    blockId: 4,
+    blockName: 'Health & Wellness',
+    question: 'Do you feel that stress or anxiety affects your body?',
+    questionDetails: 'Do you notice tension, digestive discomfort or changes when you are nervous?',
+    isConditional: false,
     options: [],
   },
   {
-    question: '😰 11. Do you feel that stress or anxiety affects your body?',
-    questionDetails:
-      'Do you notice tension, digestive discomfort or changes when you are nervous?',
+    id: 10,
+    blockId: 4,
+    blockName: 'Health & Wellness',
+    question: 'Do you have any medical conditions or take medications regularly?',
+    questionDetails: 'Hypothyroidism, IBS, intolerances, supplements...\n\nIf you don\'t have anything, just tell me.',
+    isConditional: false,
+    options: [],
+  },
+
+  // BLOQUE 5: Motivación
+  {
+    id: 11,
+    blockId: 5,
+    blockName: 'Motivation',
+    question: 'What would you like to change about your health or body in the next 3 months?',
+    questionDetails: 'It can be something physical, emotional, energy... whatever is most important to you.',
+    isConditional: false,
     options: [],
   },
   {
-    question: '🩺 12. Do you have any diagnosed medical condition?',
-    questionDetails:
-      "Hypothyroidism, IBS, intolerances, insulin resistance, hormonal problems...\nIf you don't have anything diagnosed, just tell me.",
+    id: 12,
+    blockId: 5,
+    blockName: 'Motivation',
+    question: 'From 1 to 10, how motivated are you to make real changes now?',
+    questionDetails: 'Being 1 = "almost nothing" and 10 = "totally committed".\n\nRemember: there are no wrong answers.',
+    isConditional: false,
     options: [],
   },
   {
-    question: '💊 13. Do you take any medication or supplement regularly?',
-    questionDetails: 'If so, which ones?',
-    options: [],
-  },
-  {
-    question: '🚻 14. (For women only) Do you have regular menstrual cycles?',
-    questionDetails:
-      'Do you notice bloating or changes in your abdomen depending on the moment of the cycle?\nIf you are male, simply write "N/A" or "Not applicable".',
-    options: [],
-  },
-  {
-    question:
-      '🌟 15. If you could change something about your health or your body in 3 months, what would it be?',
-    questionDetails:
-      'It can be something physical, emotional, energy, wellness... whatever is most important to you.',
-    options: [],
-  },
-  {
-    question: '🔥 16. From 1 to 10, how motivated are you to make real changes now?',
-    questionDetails:
-      'Being 1 = "almost nothing" and 10 = "totally committed".\n\nRemember: there are no wrong answers. I just want to know where you are today.',
-    options: [],
-  },
-  {
-    question:
-      '💬 17. (Optional) Would you like to share a picture of your abdomen to complete the diagnosis?',
-    questionDetails:
-      "It can be useful to detect visible inflammation and give you more visual guidance.\nIt's not mandatory, but if you feel comfortable, I'd be happy to analyze it with you.\n\n🔸 Your privacy is sacred. Only share what you decide. We're here to help, no pressure.",
+    id: 13,
+    blockId: 5,
+    blockName: 'Motivation',
+    question: '(Optional) Would you like to share a picture of your abdomen to complete the diagnosis?',
+    questionDetails: 'It can be useful to detect visible inflammation.\n\n🔸 Your privacy is sacred. Only if you feel comfortable.',
+    isConditional: false,
     options: [],
   },
 ];
