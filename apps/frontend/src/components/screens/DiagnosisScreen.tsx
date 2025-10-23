@@ -1,7 +1,68 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { usePDFGenerator } from '../../hooks/usePDFGenerator';
+import { Download } from 'lucide-react';
 
 export const DiagnosisScreen = () => {
   const navigate = useNavigate();
+  const { generatePDF } = usePDFGenerator();
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  // Mock data - esto debería venir del estado/API
+  const userName = sessionStorage.getItem('userData')
+    ? JSON.parse(sessionStorage.getItem('userData')!).name
+    : 'Usuario';
+
+  const diagnosisContent = `**🎯 Tu Diagnóstico Personalizado**
+
+Gracias por completar el cuestionario. Basándonos en tus respuestas, hemos identificado varios aspectos importantes sobre tu salud digestiva y bienestar general.
+
+**💪 Áreas de Fortaleza**
+
+• Muestras compromiso con tu bienestar al buscar activamente soluciones
+• Tienes consciencia sobre los aspectos que necesitan mejora
+• Demuestras disposición para hacer cambios en tu estilo de vida
+
+**🎯 Áreas de Oportunidad**
+
+• Digestión: Es importante prestar atención a cómo te sientes después de las comidas
+• Energía: Trabajar en mantener niveles de energía estables durante el día
+• Hábitos: Implementar rutinas consistentes que apoyen tu objetivo
+
+**🌟 Recomendaciones Iniciales**
+
+1. Enfócate en una alimentación consciente y equilibrada
+2. Mantén horarios regulares de comida
+3. Incorpora actividad física moderada de forma regular
+4. Presta atención a las señales de tu cuerpo
+5. Considera llevar un registro de tu progreso
+
+**💡 Próximos Pasos**
+
+Este diagnóstico es el primer paso hacia el cambio que buscas. Para resultados duraderos y personalizados, te recomendamos trabajar con un especialista que pueda guiarte en tu proceso de transformación.
+
+Recuerda: Los cambios reales requieren tiempo, constancia y el apoyo adecuado. ¡Estás en el camino correcto!`;
+
+  const handleDownloadPDF = () => {
+    setIsGenerating(true);
+    try {
+      const success = generatePDF({
+        userName,
+        diagnosisContent,
+        language: 'es',
+      });
+
+      if (success) {
+        // Opcional: Mostrar mensaje de éxito
+        console.log('PDF generado exitosamente');
+      }
+    } catch (error) {
+      console.error('Error al generar PDF:', error);
+      alert('Hubo un error al generar el PDF. Por favor, intenta nuevamente.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
@@ -56,10 +117,21 @@ export const DiagnosisScreen = () => {
               Volver al inicio
             </button>
             <button
-              onClick={() => alert('Funcionalidad de descarga en desarrollo')}
-              className="flex-1 py-3 px-6 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold transition-colors"
+              onClick={handleDownloadPDF}
+              disabled={isGenerating}
+              className="flex-1 py-3 px-6 rounded-xl bg-brand-green hover:bg-brand-green/90 text-black font-semibold transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Descargar PDF
+              {isGenerating ? (
+                <>
+                  <span className="animate-spin">⏳</span>
+                  Generando PDF...
+                </>
+              ) : (
+                <>
+                  <Download className="w-5 h-5" />
+                  Descargar PDF
+                </>
+              )}
             </button>
           </div>
         </div>
