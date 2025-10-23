@@ -27,14 +27,13 @@ export const MessageActions = ({ messageText, onShare, isUserMessage = false }: 
 
   return (
     <div
-      className={`flex gap-3 mt-4 pt-3 px-2.5 border-t border-black/5 dark:border-white/10 opacity-100 transition-opacity duration-300 ${
-        isUserMessage ? 'justify-end pr-0 pl-2.5' : 'justify-start pl-2.5 pr-0'
-      }`}
+      className={`flex gap-3 mt-2.5 pt-2.5 px-2.5 opacity-60 hover:opacity-100 transition-opacity duration-300 ${isUserMessage ? 'justify-end pr-0 pl-2.5' : 'justify-start pl-2.5 pr-0'
+        }`}
     >
       {/* Copy */}
       <button
         onClick={handleCopy}
-        className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all duration-200 hover:scale-115"
+        className="p-1 text-foreground/70 hover:text-foreground transition-colors duration-200 rounded hover:bg-surface/50"
         title={copied ? 'Copiado!' : 'Copiar'}
       >
         <Copy className="w-4 h-4" />
@@ -43,7 +42,7 @@ export const MessageActions = ({ messageText, onShare, isUserMessage = false }: 
       {/* Share */}
       <button
         onClick={onShare}
-        className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all duration-200 hover:scale-115"
+        className="p-1 text-foreground/70 hover:text-foreground transition-colors duration-200 rounded hover:bg-surface/50"
         title="Compartir"
       >
         <Share2 className="w-4 h-4" />
@@ -52,11 +51,10 @@ export const MessageActions = ({ messageText, onShare, isUserMessage = false }: 
       {/* Like */}
       <button
         onClick={handleLike}
-        className={`transition-all duration-200 hover:scale-115 ${
-          liked
-            ? 'text-brand-green dark:text-brand-green fill-brand-green'
-            : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-        }`}
+        className={`p-1 transition-colors duration-200 rounded ${liked
+            ? 'text-brand-green-500'
+            : 'text-foreground/70 hover:text-foreground'
+          }`}
         title={liked ? 'Me gusta' : 'Dar me gusta'}
       >
         <Heart className={`w-4 h-4 ${liked ? 'fill-current' : ''}`} />

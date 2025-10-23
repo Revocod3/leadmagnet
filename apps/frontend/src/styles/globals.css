@@ -223,21 +223,42 @@
 
   /* Chat Message Bubbles */
   .message-bubble {
-    @apply rounded-2xl px-4 py-3;
-    @apply max-w-[85%] sm:max-w-[75%];
+    @apply rounded-2xl px-5 py-3;
     @apply break-words;
+    @apply text-sm leading-relaxed;
+    @apply whitespace-normal;
   }
 
   .message-bubble-user {
     @apply message-bubble;
     @apply bg-brand-green-500 text-white;
     @apply shadow-sm;
+    @apply max-w-[85%] sm:max-w-[75%];
   }
 
   .message-bubble-assistant {
     @apply message-bubble;
     @apply bg-surface border border-border;
     @apply text-foreground;
+    @apply w-full;
+  }
+
+  /* Diagnosis Message - Long Form Content */
+  .message-diagnosis {
+    @apply space-y-3;
+    @apply text-sm leading-relaxed;
+  }
+
+  .message-diagnosis p {
+    @apply mb-2;
+  }
+
+  .message-diagnosis h3 {
+    @apply font-semibold text-base mt-4 mb-2;
+  }
+
+  .message-diagnosis ul {
+    @apply list-disc list-inside space-y-1 ml-2;
   }
 
   /* Loading States */
@@ -352,6 +373,11 @@
     50% {
       background-position: 100% 50%;
     }
+  }
+
+  /* Ring Offset Background */
+  .ring-offset-background {
+    --tw-ring-offset-color: rgb(var(--color-background));
   }
 }
 
