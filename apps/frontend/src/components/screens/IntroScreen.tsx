@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { Mail, User, Sparkles, Shield, ArrowRight } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 interface IntroScreenProps {
   onComplete: (name: string, email: string) => void;
@@ -8,6 +10,7 @@ export const IntroScreen = ({ onComplete }: IntroScreenProps) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [errors, setErrors] = useState({ name: '', email: '' });
+  const [focusedField, setFocusedField] = useState<string | null>(null);
 
   const validateForm = () => {
     const newErrors = { name: '', email: '' };
@@ -15,6 +18,9 @@ export const IntroScreen = ({ onComplete }: IntroScreenProps) => {
 
     if (!name.trim()) {
       newErrors.name = 'Por favor ingresa tu nombre';
+      isValid = false;
+    } else if (name.trim().length < 2) {
+      newErrors.name = 'El nombre debe tener al menos 2 caracteres';
       isValid = false;
     }
 
@@ -38,98 +44,207 @@ export const IntroScreen = ({ onComplete }: IntroScreenProps) => {
   };
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center z-[9999] p-5 bg-gradient-to-br from-[#F4E8D8] to-[#E8D5C4]">
-      <div className="bg-white rounded-3xl p-10 max-w-[480px] w-[90%] shadow-2xl animate-slide-in-up">
-        {/* Logo */}
-        <div className="text-center mb-6">
-          <div className="max-w-[200px] h-auto mx-auto">
-            <span className="text-2xl font-bold text-primary">
-              Objetivo Vientre Plano
-            </span>
+    <div className="min-h-screen bg-gradient-to-br from-brand-cream-100 via-brand-cream-50 to-white relative overflow-hidden">
+      {/* Background Pattern */}
+      <div className="absolute inset-0 bg-[url('/pattern.svg')] opacity-5" />
+
+      {/* Floating Shapes */}
+      <div className="absolute top-20 left-10 w-72 h-72 bg-brand-green-200/20 rounded-full blur-3xl" />
+      <div className="absolute bottom-20 right-10 w-96 h-96 bg-brand-green-100/20 rounded-full blur-3xl" />
+
+      {/* Content */}
+      <div className="relative min-h-screen flex items-center justify-center p-4 sm:p-6 lg:p-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
+          className="w-full max-w-md"
+        >
+          {/* Card */}
+          <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-soft-lg border border-white/20 overflow-hidden">
+            {/* Header */}
+            <div className="px-8 pt-10 pb-8 text-center">
+              {/* Logo/Icon */}
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+                className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-brand-green-400 to-brand-green-600 mb-6 shadow-lg"
+              >
+                <Sparkles className="w-8 h-8 text-white" />
+              </motion.div>
+
+              {/* Title */}
+              <motion.h1
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="text-3xl sm:text-4xl font-bold text-neutral-900 mb-3 tracking-tight"
+              >
+                Diagnóstico Gratuito
+              </motion.h1>
+
+              {/* Subtitle */}
+              <motion.p
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                className="text-neutral-600 text-base sm:text-lg leading-relaxed"
+              >
+                Descubre tu camino hacia un bienestar digestivo óptimo
+              </motion.p>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleSubmit} className="px-8 pb-10 space-y-5">
+              {/* Name Input */}
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.5 }}
+              >
+                <label
+                  htmlFor="name"
+                  className="block text-sm font-medium text-neutral-700 mb-2"
+                >
+                  Tu nombre
+                </label>
+                <div className="relative">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400">
+                    <User className="w-5 h-5" />
+                  </div>
+                  <input
+                    type="text"
+                    id="name"
+                    value={name}
+                    onChange={(e) => {
+                      setName(e.target.value);
+                      if (errors.name) setErrors({ ...errors, name: '' });
+                    }}
+                    onFocus={() => setFocusedField('name')}
+                    onBlur={() => setFocusedField(null)}
+                    placeholder="María García"
+                    className={`
+                      w-full pl-12 pr-4 py-3.5 rounded-xl
+                      bg-neutral-50 border-2
+                      text-neutral-900 placeholder:text-neutral-400
+                      transition-all duration-200
+                      ${errors.name
+                        ? 'border-error focus:border-error focus:ring-4 focus:ring-error/10'
+                        : focusedField === 'name'
+                          ? 'border-brand-green-500 ring-4 ring-brand-green-500/10'
+                          : 'border-transparent hover:border-neutral-200'
+                      }
+                      focus:outline-none
+                    `}
+                  />
+                </div>
+                {errors.name && (
+                  <motion.p
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-2 text-sm text-error flex items-center gap-1"
+                  >
+                    <span className="w-1 h-1 rounded-full bg-error" />
+                    {errors.name}
+                  </motion.p>
+                )}
+              </motion.div>
+
+              {/* Email Input */}
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.6 }}
+              >
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-medium text-neutral-700 mb-2"
+                >
+                  Tu correo electrónico
+                </label>
+                <div className="relative">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400">
+                    <Mail className="w-5 h-5" />
+                  </div>
+                  <input
+                    type="email"
+                    id="email"
+                    value={email}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      if (errors.email) setErrors({ ...errors, email: '' });
+                    }}
+                    onFocus={() => setFocusedField('email')}
+                    onBlur={() => setFocusedField(null)}
+                    placeholder="maria@ejemplo.com"
+                    className={`
+                      w-full pl-12 pr-4 py-3.5 rounded-xl
+                      bg-neutral-50 border-2
+                      text-neutral-900 placeholder:text-neutral-400
+                      transition-all duration-200
+                      ${errors.email
+                        ? 'border-error focus:border-error focus:ring-4 focus:ring-error/10'
+                        : focusedField === 'email'
+                          ? 'border-brand-green-500 ring-4 ring-brand-green-500/10'
+                          : 'border-transparent hover:border-neutral-200'
+                      }
+                      focus:outline-none
+                    `}
+                  />
+                </div>
+                {errors.email && (
+                  <motion.p
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-2 text-sm text-error flex items-center gap-1"
+                  >
+                    <span className="w-1 h-1 rounded-full bg-error" />
+                    {errors.email}
+                  </motion.p>
+                )}
+              </motion.div>
+
+              {/* Submit Button */}
+              <motion.button
+                type="submit"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.7 }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="w-full mt-6 px-6 py-4 rounded-xl bg-gradient-to-r from-brand-green-500 to-brand-green-600 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center gap-2 group"
+              >
+                <span>Comenzar mi diagnóstico</span>
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </motion.button>
+
+              {/* Privacy Notice */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.8 }}
+                className="mt-6 flex items-start gap-3 p-4 bg-brand-green-50 rounded-xl border border-brand-green-100"
+              >
+                <Shield className="w-5 h-5 text-brand-green-600 flex-shrink-0 mt-0.5" />
+                <p className="text-xs text-neutral-600 leading-relaxed">
+                  Tu información está protegida y es completamente confidencial.
+                  Solo se usará para personalizar tu experiencia.
+                </p>
+              </motion.div>
+            </form>
           </div>
-        </div>
 
-        {/* Title */}
-        <h1 className="text-3xl font-semibold text-ovp-text-dark text-center mb-3">
-          Bienvenido/a a tu Diagnóstico Gratuito
-        </h1>
-
-        {/* Subtitle */}
-        <p className="text-base text-gray-500 text-center mb-8 leading-relaxed">
-          Para comenzar tu diagnóstico personalizado, necesitamos algunos datos:
-        </p>
-
-        {/* Form */}
-        <form onSubmit={handleSubmit}>
-          {/* Name Input */}
-          <div className="mb-6">
-            <label
-              htmlFor="user-name-input"
-              className="block text-sm font-medium text-gray-700 mb-2"
-            >
-              Tu nombre
-            </label>
-            <input
-              type="text"
-              id="user-name-input"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Ej: María"
-              autoComplete="given-name"
-              className={`w-full px-4 py-3.5 border-2 rounded-xl text-base transition-all duration-300 ${
-                errors.name
-                  ? 'border-red-500 animate-shake'
-                  : 'border-gray-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(151,170,121,0.1)]'
-              } focus:outline-none`}
-            />
-            {errors.name && (
-              <span className="block text-red-500 text-sm mt-1.5 animate-fade-in">
-                {errors.name}
-              </span>
-            )}
-          </div>
-
-          {/* Email Input */}
-          <div className="mb-6">
-            <label
-              htmlFor="user-email-input"
-              className="block text-sm font-medium text-gray-700 mb-2"
-            >
-              Tu correo electrónico
-            </label>
-            <input
-              type="email"
-              id="user-email-input"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Ej: maria@email.com"
-              autoComplete="email"
-              className={`w-full px-4 py-3.5 border-2 rounded-xl text-base transition-all duration-300 ${
-                errors.email
-                  ? 'border-red-500 animate-shake'
-                  : 'border-gray-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(151,170,121,0.1)]'
-              } focus:outline-none`}
-            />
-            {errors.email && (
-              <span className="block text-red-500 text-sm mt-1.5 animate-fade-in">
-                {errors.email}
-              </span>
-            )}
-          </div>
-
-          {/* Submit Button */}
-          <button
-            type="submit"
-            className="w-full px-4 py-4 bg-gradient-to-r from-primary to-primary-light text-white border-none rounded-xl text-lg font-semibold cursor-pointer transition-all duration-300 shadow-[0_4px_15px_rgba(151,170,121,0.3)] hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(151,170,121,0.4)] active:translate-y-0"
+          {/* Footer Text */}
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.9 }}
+            className="text-center mt-8 text-sm text-neutral-500"
           >
-            Comenzar Diagnóstico ✨
-          </button>
-        </form>
-
-        {/* Privacy Note */}
-        <p className="text-center text-sm text-gray-400 mt-5">
-          🔒 Tus datos están seguros y son confidenciales
-        </p>
+            100% gratuito • Sin compromiso • Resultados inmediatos
+          </motion.p>
+        </motion.div>
       </div>
     </div>
   );

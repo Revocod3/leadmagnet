@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Sparkles } from 'lucide-react';
 
 interface WelcomeAnimationProps {
   userName: string;
@@ -13,81 +15,152 @@ export const WelcomeAnimation = ({
   onComplete,
   language = 'es',
 }: WelcomeAnimationProps) => {
-  const [fadeOut, setFadeOut] = useState(false);
   const [showEtymology, setShowEtymology] = useState(false);
+  const [fadeOut, setFadeOut] = useState(false);
 
   const messages = {
     es: {
-      greeting: `Hola, ${userName}. ✨`,
-      subtitle: 'Bienvenido/a a tu diagnóstico gratuito',
-      loader: 'Preparando algo especial para ti...',
+      greeting: `Hola, ${userName}`,
+      subtitle: 'Preparando tu experiencia personalizada',
+      preparing: 'Analizando tu perfil...',
     },
     en: {
-      greeting: `Hello, ${userName}. ✨`,
-      subtitle: 'Welcome to your free diagnosis',
-      loader: 'Preparing something special for you...',
+      greeting: `Hello, ${userName}`,
+      subtitle: 'Preparing your personalized experience',
+      preparing: 'Analyzing your profile...',
     },
   };
 
   const content = messages[language];
 
   useEffect(() => {
-    // Show etymology after a short delay
-    if (etymology) {
-      const etymologyTimer = setTimeout(() => {
+    // Show etymology after delay
+    const etymologyTimer = setTimeout(() => {
+      if (etymology) {
         setShowEtymology(true);
-      }, 1000);
+      }
+    }, 1500);
 
-      return () => clearTimeout(etymologyTimer);
-    }
-    return undefined;
-  }, [etymology]);
-
-  useEffect(() => {
-    // Start fade out after 4 seconds
+    // Start fade out
     const fadeTimer = setTimeout(() => {
       setFadeOut(true);
-    }, 4000);
+    }, 3500);
 
-    // Complete animation and call onComplete after fade out
+    // Complete animation
     const completeTimer = setTimeout(() => {
       onComplete();
-    }, 4800);
+    }, 4200);
 
     return () => {
+      clearTimeout(etymologyTimer);
       clearTimeout(fadeTimer);
       clearTimeout(completeTimer);
     };
-  }, [onComplete]);
+  }, [etymology, onComplete]);
 
   return (
-    <div
-      className={`fixed inset-0 z-[10000] flex items-center justify-center transition-opacity duration-800 ${
-        fadeOut ? 'opacity-0' : 'opacity-100'
-      }`}
-      style={{
-        background: 'linear-gradient(135deg, #97aa79 0%, #a2ae5a 100%)',
-      }}
-    >
-      <div className="welcome-content-wrapper text-center p-5 animate-fade-in-scale">
-        <h1 className="welcome-greeting text-5xl md:text-6xl font-semibold text-white mb-4 drop-shadow-lg">
-          {content.greeting}
-        </h1>
-        <p className="welcome-subtext text-xl md:text-2xl text-white/90 mb-8">
-          {content.subtitle}
-        </p>
-        <div className="welcome-etymology max-w-lg mx-auto p-5 bg-white/15 rounded-2xl backdrop-blur-md">
-          {!showEtymology ? (
-            <div className="etymology-loader text-white/80 text-base animate-pulse-slow">
-              {content.loader}
-            </div>
-          ) : (
-            <p className="etymology-text text-white text-lg leading-relaxed animate-fade-in">
-              {etymology}
-            </p>
-          )}
-        </div>
-      </div>
-    </div>
+    <AnimatePresence>
+      {!fadeOut && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.5 }}
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-gradient-to-br from-brand-cream-100 via-brand-cream-50 to-white"
+        >
+          {/* Content */}
+          <div className="text-center px-6 max-w-2xl">
+            {/* Icon */}
+            <motion.div
+              initial={{ scale: 0, rotate: -180 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{
+                type: "spring",
+                stiffness: 200,
+                damping: 20,
+                delay: 0.2,
+              }}
+              className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-br from-brand-green-400 to-brand-green-600 mb-8 shadow-xl"
+            >
+              <Sparkles className="w-10 h-10 text-white" />
+            </motion.div>
+
+            {/* Greeting */}
+            <motion.h1
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4, duration: 0.6 }}
+              className="text-5xl sm:text-6xl font-bold text-neutral-900 mb-4 tracking-tight"
+            >
+              {content.greeting}
+            </motion.h1>
+
+            {/* Subtitle */}
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6, duration: 0.6 }}
+              className="text-xl text-neutral-600 mb-8"
+            >
+              {content.subtitle}
+            </motion.p>
+
+            {/* Etymology Box */}
+            <AnimatePresence mode="wait">
+              {!showEtymology ? (
+                <motion.div
+                  key="loading"
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  transition={{ delay: 0.8, duration: 0.3 }}
+                  className="inline-flex items-center gap-3 px-6 py-4 bg-white/80 backdrop-blur-sm rounded-2xl border border-neutral-200 shadow-soft"
+                >
+                  <div className="flex gap-1">
+                    <span className="w-2 h-2 bg-brand-green-500 rounded-full animate-pulse-soft" />
+                    <span className="w-2 h-2 bg-brand-green-500 rounded-full animate-pulse-soft [animation-delay:0.2s]" />
+                    <span className="w-2 h-2 bg-brand-green-500 rounded-full animate-pulse-soft [animation-delay:0.4s]" />
+                  </div>
+                  <span className="text-sm text-neutral-600">
+                    {content.preparing}
+                  </span>
+                </motion.div>
+              ) : etymology ? (
+                <motion.div
+                  key="etymology"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5 }}
+                  className="max-w-lg mx-auto px-6 py-5 bg-white/80 backdrop-blur-sm rounded-2xl border border-brand-green-200 shadow-soft"
+                >
+                  <p className="text-base text-neutral-700 leading-relaxed">
+                    {etymology}
+                  </p>
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
+
+            {/* Progress Indicator */}
+            <motion.div
+              initial={{ opacity: 0, scaleX: 0 }}
+              animate={{ opacity: 1, scaleX: 1 }}
+              transition={{ delay: 1, duration: 2 }}
+              className="mt-12 w-48 h-1 bg-neutral-200 rounded-full mx-auto overflow-hidden"
+            >
+              <motion.div
+                initial={{ x: '-100%' }}
+                animate={{ x: '100%' }}
+                transition={{
+                  duration: 2,
+                  ease: "easeInOut",
+                  repeat: 1,
+                }}
+                className="h-full w-1/2 bg-gradient-to-r from-brand-green-400 to-brand-green-600 rounded-full"
+              />
+            </motion.div>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };

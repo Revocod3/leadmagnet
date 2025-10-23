@@ -1,87 +1,144 @@
+import { MessageSquare, ClipboardList, ArrowRight, Zap, Brain } from 'lucide-react';
+import { motion } from 'framer-motion';
+
 interface ChoiceScreenProps {
   onSelect: (choice: 'chat' | 'quiz') => void;
 }
 
 export const ChoiceScreen = ({ onSelect }: ChoiceScreenProps) => {
   return (
-    <div className="fixed inset-0 flex items-center justify-center z-[9998] p-5 bg-gradient-to-br from-[#FAF6ED] via-[#F4E8D8] to-[#D3D379] opacity-100 transition-opacity duration-500">
-      <div className="max-w-[1000px] w-full animate-slide-in-up">
-        {/* Title */}
-        <h2 className="text-4xl font-semibold text-ovp-text-dark text-center mb-3">
-          ¿Cómo prefieres hacer tu diagnóstico?
-        </h2>
+    <div className="min-h-screen bg-gradient-to-b from-brand-cream-50 to-white relative overflow-hidden">
+      {/* Subtle Background Pattern */}
+      <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-[0.02]" />
 
-        {/* Subtitle */}
-        <p className="text-lg text-gray-500 text-center mb-10">
-          Elige la opción que mejor se adapte a ti:
-        </p>
-
-        {/* Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mx-auto max-w-[800px]">
-          {/* Quiz Card */}
-          <div
-            onClick={() => onSelect('quiz')}
-            className="relative bg-white rounded-2xl p-10 shadow-[0_4px_20px_rgba(0,0,0,0.08)] transition-all duration-300 cursor-pointer flex flex-col items-center text-center hover:-translate-y-2 hover:shadow-[0_12px_35px_rgba(151,170,121,0.2)]"
+      <div className="relative min-h-screen flex items-center justify-center p-4 sm:p-6">
+        <div className="w-full max-w-4xl">
+          {/* Header */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="text-center mb-12"
           >
-            <div className="text-6xl mb-5 filter drop-shadow-[0_4px_6px_rgba(0,0,0,0.1)]">
-              ⚡
-            </div>
-            <h3 className="text-2xl font-semibold text-ovp-text-dark mb-2">
-              Test Rápido
-            </h3>
-            <p className="text-base text-gray-500 mb-6">
-              Quiz de 5-7 preguntas clave
+            <h1 className="text-4xl sm:text-5xl font-bold text-neutral-900 mb-4 tracking-tight">
+              Elige tu método preferido
+            </h1>
+            <p className="text-lg text-neutral-600 max-w-2xl mx-auto">
+              Selecciona cómo te gustaría realizar tu diagnóstico personalizado
             </p>
-            <ul className="list-none p-0 m-0 mb-8 w-full">
-              <li className="py-2.5 text-gray-700 text-sm border-b border-gray-200">
-                ✓ Solo 3-5 minutos
-              </li>
-              <li className="py-2.5 text-gray-700 text-sm border-b border-gray-200">
-                ✓ Resultados inmediatos
-              </li>
-              <li className="py-2.5 text-gray-700 text-sm">
-                ✓ Ideal para comenzar
-              </li>
-            </ul>
-            <button className="w-full py-3.5 px-6 bg-white border-2 border-primary text-primary rounded-xl text-base font-semibold cursor-pointer transition-all duration-300 hover:bg-primary hover:text-white hover:scale-105">
-              Elegir Test Rápido
-            </button>
+          </motion.div>
+
+          {/* Cards Grid */}
+          <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+            {/* Chat Option */}
+            <motion.button
+              onClick={() => onSelect('chat')}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2, duration: 0.5 }}
+              whileHover={{ y: -4 }}
+              whileTap={{ scale: 0.98 }}
+              className="group relative bg-white rounded-2xl p-8 shadow-soft hover:shadow-soft-lg border border-neutral-200 hover:border-brand-green-300 transition-all duration-300 text-left"
+            >
+              {/* Badge */}
+              <div className="absolute -top-3 -right-3">
+                <div className="bg-gradient-to-r from-brand-green-500 to-brand-green-600 text-white text-xs font-semibold px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1">
+                  <Zap className="w-3 h-3" />
+                  Recomendado
+                </div>
+              </div>
+
+              {/* Icon */}
+              <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-brand-green-100 to-brand-green-200 mb-6 group-hover:scale-110 transition-transform duration-300">
+                <MessageSquare className="w-7 h-7 text-brand-green-700" />
+              </div>
+
+              {/* Content */}
+              <h3 className="text-2xl font-bold text-neutral-900 mb-3">
+                Chat IA Personalizado
+              </h3>
+              <p className="text-neutral-600 mb-6 leading-relaxed">
+                Conversación natural y adaptativa con nuestro asistente especializado
+              </p>
+
+              {/* Features */}
+              <ul className="space-y-3 mb-8">
+                {[
+                  'Análisis profundo y detallado',
+                  'Respuestas en tiempo real',
+                  'Recomendaciones personalizadas',
+                  'Soporte con imágenes',
+                ].map((feature, index) => (
+                  <li key={index} className="flex items-center gap-3 text-sm text-neutral-700">
+                    <div className="w-1.5 h-1.5 rounded-full bg-brand-green-500 flex-shrink-0" />
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+
+              {/* CTA */}
+              <div className="flex items-center gap-2 text-brand-green-600 font-semibold group-hover:gap-3 transition-all">
+                <span>Iniciar chat</span>
+                <ArrowRight className="w-5 h-5" />
+              </div>
+            </motion.button>
+
+            {/* Quiz Option */}
+            <motion.button
+              onClick={() => onSelect('quiz')}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.3, duration: 0.5 }}
+              whileHover={{ y: -4 }}
+              whileTap={{ scale: 0.98 }}
+              className="group relative bg-white rounded-2xl p-8 shadow-soft hover:shadow-soft-lg border border-neutral-200 hover:border-brand-green-300 transition-all duration-300 text-left"
+            >
+              {/* Icon */}
+              <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-neutral-100 to-neutral-200 mb-6 group-hover:scale-110 transition-transform duration-300">
+                <ClipboardList className="w-7 h-7 text-neutral-700" />
+              </div>
+
+              {/* Content */}
+              <h3 className="text-2xl font-bold text-neutral-900 mb-3">
+                Cuestionario Rápido
+              </h3>
+              <p className="text-neutral-600 mb-6 leading-relaxed">
+                Responde preguntas específicas para un diagnóstico estructurado
+              </p>
+
+              {/* Features */}
+              <ul className="space-y-3 mb-8">
+                {[
+                  'Solo 5-7 minutos',
+                  'Preguntas claras y directas',
+                  'Progreso visible',
+                  'Resultados inmediatos',
+                ].map((feature, index) => (
+                  <li key={index} className="flex items-center gap-3 text-sm text-neutral-700">
+                    <div className="w-1.5 h-1.5 rounded-full bg-neutral-400 flex-shrink-0" />
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+
+              {/* CTA */}
+              <div className="flex items-center gap-2 text-neutral-700 font-semibold group-hover:gap-3 transition-all">
+                <span>Comenzar test</span>
+                <ArrowRight className="w-5 h-5" />
+              </div>
+            </motion.button>
           </div>
 
-          {/* Chat Card - Featured */}
-          <div
-            onClick={() => onSelect('chat')}
-            className="relative bg-gradient-to-br from-[#FAF6ED] to-[#F4E8D8] border-3 border-primary rounded-2xl p-10 shadow-[0_4px_20px_rgba(0,0,0,0.08)] transition-all duration-300 cursor-pointer flex flex-col items-center text-center hover:-translate-y-2 hover:shadow-[0_12px_35px_rgba(151,170,121,0.2)]"
+          {/* Bottom Info */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="mt-12 flex items-center justify-center gap-2 text-sm text-neutral-500"
           >
-            {/* Badge */}
-            <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-accent text-white px-5 py-1.5 rounded-full text-sm font-semibold shadow-[0_2px_10px_rgba(211,211,121,0.3)]">
-              Recomendado
-            </div>
-
-            <div className="text-6xl mb-5 filter drop-shadow-[0_4px_6px_rgba(0,0,0,0.1)]">
-              💬
-            </div>
-            <h3 className="text-2xl font-semibold text-ovp-text-dark mb-2">
-              Chat IA Personalizado
-            </h3>
-            <p className="text-base text-gray-500 mb-6">
-              Conversación profunda y adaptativa
-            </p>
-            <ul className="list-none p-0 m-0 mb-8 w-full">
-              <li className="py-2.5 text-gray-700 text-sm border-b border-gray-200">
-                ✓ Diagnóstico completo
-              </li>
-              <li className="py-2.5 text-gray-700 text-sm border-b border-gray-200">
-                ✓ Respuestas personalizadas
-              </li>
-              <li className="py-2.5 text-gray-700 text-sm">
-                ✓ Análisis profesional
-              </li>
-            </ul>
-            <button className="w-full py-3.5 px-6 bg-gradient-to-r from-primary to-primary-light text-white border-none rounded-xl text-base font-semibold cursor-pointer transition-all duration-300 shadow-[0_4px_15px_rgba(151,170,121,0.3)] hover:scale-105 hover:shadow-[0_6px_20px_rgba(151,170,121,0.4)]">
-              Elegir Chat IA
-            </button>
-          </div>
+            <Brain className="w-4 h-4" />
+            <span>Ambas opciones usan tecnología IA avanzada para tu diagnóstico</span>
+          </motion.div>
         </div>
       </div>
     </div>

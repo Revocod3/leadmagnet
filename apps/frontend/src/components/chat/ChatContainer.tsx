@@ -4,12 +4,12 @@ import { useDiagnosticFlow } from '../../hooks/useDiagnosticFlow';
 import { useSpeechToText } from '../../hooks/useSpeechToText';
 import { usePDFGenerator } from '../../hooks/usePDFGenerator';
 import { useSessionStore } from '../../stores/sessionStore';
-import { Moon, Sun, Send, Mic, Camera, Paperclip, Download, ArrowLeft } from 'lucide-react';
+import { Send, Moon, Sun, Mic, Camera, Paperclip, Download, ArrowLeft, MoreVertical } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { CameraModal } from '../modals/CameraModal';
 import { ImageViewerModal } from '../modals/ImageViewerModal';
 import { ShareModal } from '../modals/ShareModal';
 import { MessageActions } from './MessageActions';
-import { WelcomeAnimation } from '../animations/WelcomeAnimation';
 
 export const ChatContainer = () => {
   const navigate = useNavigate();
@@ -26,12 +26,10 @@ export const ChatContainer = () => {
     messages,
     state,
     isProcessing,
-    showWelcome,
-    etymology,
     initialize,
     processMessage,
-    handleWelcomeComplete,
   } = useDiagnosticFlow();
+
   const { generatePDF } = usePDFGenerator();
   const { isListening, transcript, startListening, stopListening, isSupported: isSpeechSupported } = useSpeechToText();
 
@@ -39,14 +37,14 @@ export const ChatContainer = () => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Initialize diagnostic flow
+  // Initialize
   useEffect(() => {
     if (messages.length === 0) {
       initialize();
     }
   }, []);
 
-  // Auto-scroll to bottom when new messages arrive
+  // Auto-scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -58,6 +56,13 @@ export const ChatContainer = () => {
       textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
     }
   }, [inputMessage]);
+
+  // Handle speech-to-text transcript
+  useEffect(() => {
+    if (transcript) {
+      setInputMessage((prev) => prev + (prev ? ' ' : '') + transcript);
+    }
+  }, [transcript]);
 
   const handleSendMessage = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -111,19 +116,12 @@ export const ChatContainer = () => {
     document.documentElement.classList.toggle('dark');
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
   };
-
-  // Handle speech-to-text transcript
-  useEffect(() => {
-    if (transcript) {
-      setInputMessage((prev) => prev + (prev ? ' ' : '') + transcript);
-    }
-  }, [transcript]);
 
   const handleVoiceInput = () => {
     if (isListening) {
@@ -135,8 +133,6 @@ export const ChatContainer = () => {
 
   const handleCameraCapture = (imageDataUrl: string) => {
     setSelectedImage(imageDataUrl);
-    // You can send the image to the backend here
-    // For now, we'll just store it
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -160,172 +156,187 @@ export const ChatContainer = () => {
   };
 
   const handleBackToStart = () => {
-    // Limpiar toda la información de la sesión
     sessionStorage.removeItem('userData');
     clearSession();
-    // Navegar al inicio
     navigate('/', { replace: true });
-    // Recargar la página para resetear el estado completo
     window.location.href = '/';
   };
 
   return (
     <>
-      {/* Welcome Animation Overlay */}
-      {showWelcome && state.userName && (
-        <WelcomeAnimation
-          userName={state.userName}
-          etymology={etymology}
-          onComplete={handleWelcomeComplete}
-          language={state.language}
-        />
-      )}
-
-      <div className={`flex flex-col h-screen ${isDarkMode ? 'dark' : ''}`}>
+      <div className={`flex flex-col h-screen ${isDarkMode ? 'dark' : ''} bg-background transition-colors duration-200`}>
         {/* Header */}
-        <header
-        className="px-5 py-2.5 border-b transition-colors duration-300"
-        style={{
-          backgroundColor: 'var(--color-header-bg)',
-          borderColor: 'var(--color-border)'
-        }}
-      >
-        <div className="max-w-3xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <header className="sticky top-0 z-10 backdrop-blur-xl bg-background/80 border-b border-border">
+          <div className="container-narrow py-3 flex items-center justify-between">
+            {/* Left: Back Button */}
             <button
               onClick={handleBackToStart}
-              className="p-2 rounded-full transition-colors duration-300 hover:bg-black/5 dark:hover:bg-white/10"
+              className="p-2 rounded-lg hover:bg-surface transition-colors"
               title="Volver al inicio"
             >
-              <ArrowLeft className="w-5 h-5" style={{ color: 'var(--color-text)' }} />
+              <ArrowLeft className="w-5 h-5 text-foreground" />
             </button>
 
-            <a
-              href="https://www.objetivovientreplano.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-block transition-transform duration-200 hover:scale-105"
-            >
-              <div className="h-10 flex items-center">
-                <span className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>
-                  Objetivo Vientre Plano
-                </span>
-              </div>
-            </a>
+            {/* Center: Title */}
+            <div className="flex items-center gap-3">
+              <div className="w-2 h-2 rounded-full bg-brand-green-500 animate-pulse-soft" />
+              <span className="text-sm font-medium text-foreground">
+                Asistente de Diagnóstico
+              </span>
+            </div>
+
+            {/* Right: Actions */}
+            <div className="flex items-center gap-1">
+              <button
+                onClick={toggleDarkMode}
+                className="p-2 rounded-lg hover:bg-surface transition-colors"
+              >
+                {isDarkMode ? (
+                  <Sun className="w-5 h-5 text-foreground" />
+                ) : (
+                  <Moon className="w-5 h-5 text-foreground" />
+                )}
+              </button>
+              <button className="p-2 rounded-lg hover:bg-surface transition-colors">
+                <MoreVertical className="w-5 h-5 text-foreground" />
+              </button>
+            </div>
           </div>
+        </header>
 
-          <button
-            onClick={toggleDarkMode}
-            className="p-2 rounded-full transition-colors duration-300 hover:bg-black/5 dark:hover:bg-white/10"
-            title="Cambiar tema"
-          >
-            {isDarkMode ? (
-              <Moon className="w-6 h-6" style={{ color: 'var(--color-text)' }} />
-            ) : (
-              <Sun className="w-6 h-6" style={{ color: 'var(--color-text)' }} />
-            )}
-          </button>
-        </div>
-      </header>
-
-      {/* Messages Area */}
-      <main
-        className="flex-1 px-md-fluid py-md-fluid overflow-y-auto smooth-scroll"
-        style={{ backgroundColor: 'var(--color-bg)' }}
-      >
-        <div className="max-w-3xl mx-auto flex flex-col gap-md-fluid">
-          {messages.length === 0 && (
-            <div className="flex justify-start animate-fade-in">
-              <div className="max-w-[80%] message-bubble-ai">
-                <p className="m-0">
-                  ¡Hola! 👋 Soy tu asistente para el diagnóstico de vientre plano. ¿En qué puedo ayudarte hoy?
+        {/* Messages Area */}
+        <main className="flex-1 overflow-y-auto smooth-scroll">
+          <div className="container-narrow py-8">
+            {/* Empty State */}
+            {messages.length === 0 && (
+              <div className="flex flex-col items-center justify-center min-h-[50vh] text-center px-4">
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: "spring", duration: 0.5 }}
+                  className="w-16 h-16 rounded-2xl bg-gradient-to-br from-brand-green-400 to-brand-green-600 flex items-center justify-center mb-6"
+                >
+                  <span className="text-3xl">✨</span>
+                </motion.div>
+                <h2 className="text-2xl font-bold text-foreground mb-2">
+                  Comencemos tu diagnóstico
+                </h2>
+                <p className="text-secondary max-w-md">
+                  Estoy aquí para ayudarte a entender mejor tu salud digestiva
                 </p>
               </div>
-            </div>
-          )}
+            )}
 
-          {messages.map((message, index) => (
-            <div
-              key={index}
-              className={`flex animate-fade-in ${message.role === 'user' ? 'justify-end' : 'justify-start'
-                }`}
-            >
-              <div className={`max-w-[80%] flex flex-col`}>
-                <div
-                  className={`${message.role === 'user'
-                    ? 'message-bubble-user'
-                    : 'message-bubble-ai'
-                    }`}
+            {/* Messages */}
+            <div className="space-y-6">
+              <AnimatePresence mode="popLayout">
+                {messages.map((message, index) => (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ duration: 0.3 }}
+                    className={`flex gap-4 ${message.role === 'user' ? 'justify-end' : 'justify-start'
+                      }`}
+                  >
+                    {/* Avatar for assistant */}
+                    {message.role === 'assistant' && (
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-brand-green-500 flex items-center justify-center text-white text-sm font-semibold">
+                        AI
+                      </div>
+                    )}
+
+                    {/* Message Content Wrapper */}
+                    <div className="flex flex-col max-w-[85%] sm:max-w-[75%]">
+                      {/* Message Bubble */}
+                      <div
+                        className={`${message.role === 'user'
+                          ? 'bg-brand-green-500 text-white'
+                          : 'bg-surface border border-border'
+                          } rounded-2xl px-5 py-3 shadow-sm`}
+                      >
+                        <p className="text-[15px] leading-relaxed whitespace-pre-wrap break-words">
+                          {message.content}
+                        </p>
+
+                        {/* Show download button for diagnosis */}
+                        {message.type === 'diagnosis' && state.diagnosisContent && (
+                          <button
+                            onClick={handleDownloadPDF}
+                            disabled={isGeneratingPDF}
+                            className="mt-4 w-full py-2.5 px-4 rounded-lg bg-brand-green-600 hover:bg-brand-green-700 text-white font-medium text-sm flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {isGeneratingPDF ? (
+                              <>
+                                <span className="animate-spin">⏳</span>
+                                Generando PDF...
+                              </>
+                            ) : (
+                              <>
+                                <Download className="w-4 h-4" />
+                                Descargar diagnóstico
+                              </>
+                            )}
+                          </button>
+                        )}
+
+                        {/* Show question details if available */}
+                        {message.question?.questionDetails && (
+                          <p className="mt-2 text-sm opacity-80 whitespace-pre-wrap">
+                            {message.question.questionDetails}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Message Actions */}
+                      <MessageActions
+                        messageText={message.content}
+                        onShare={() => handleShareMessage(message.content)}
+                        isUserMessage={message.role === 'user'}
+                      />
+                    </div>
+
+                    {/* Avatar for user */}
+                    {message.role === 'user' && (
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-neutral-700 dark:bg-neutral-300 flex items-center justify-center text-white dark:text-neutral-900 text-sm font-semibold">
+                        {state.userName?.charAt(0).toUpperCase() || 'U'}
+                      </div>
+                    )}
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+
+              {/* Typing Indicator */}
+              {isProcessing && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex gap-4"
                 >
-                  <p className="m-0 whitespace-pre-wrap">{message.content}</p>
+                  <div className="w-8 h-8 rounded-full bg-brand-green-500 flex items-center justify-center text-white text-sm font-semibold flex-shrink-0">
+                    AI
+                  </div>
+                  <div className="bg-surface border border-border rounded-2xl px-5 py-4 shadow-sm">
+                    <div className="flex gap-1.5">
+                      <span className="w-2 h-2 bg-neutral-400 rounded-full animate-pulse-soft" />
+                      <span className="w-2 h-2 bg-neutral-400 rounded-full animate-pulse-soft [animation-delay:0.2s]" />
+                      <span className="w-2 h-2 bg-neutral-400 rounded-full animate-pulse-soft [animation-delay:0.4s]" />
+                    </div>
+                  </div>
+                </motion.div>
+              )}
 
-                  {/* Show question details if available */}
-                  {message.question?.questionDetails && (
-                    <p className="m-0 mt-2 text-sm opacity-80 whitespace-pre-wrap">
-                      {message.question.questionDetails}
-                    </p>
-                  )}
-
-                  {/* Show PDF download button after diagnosis */}
-                  {message.type === 'diagnosis' && state.diagnosisContent && (
-                    <button
-                      onClick={handleDownloadPDF}
-                      disabled={isGeneratingPDF}
-                      className="mt-4 py-2 px-4 rounded-xl bg-brand-green hover:bg-brand-green/90 text-black font-semibold transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isGeneratingPDF ? (
-                        <>
-                          <span className="animate-spin">⏳</span>
-                          Generando PDF...
-                        </>
-                      ) : (
-                        <>
-                          <Download className="w-5 h-5" />
-                          Descargar Diagnóstico PDF
-                        </>
-                      )}
-                    </button>
-                  )}
-                </div>
-
-                {/* Message Actions */}
-                <MessageActions
-                  messageText={message.content}
-                  onShare={() => handleShareMessage(message.content)}
-                  isUserMessage={message.role === 'user'}
-                />
-              </div>
+              <div ref={messagesEndRef} />
             </div>
-          ))}
+          </div>
+        </main>
 
-          {isProcessing && (
-            <div className="flex justify-start animate-fade-in">
-              <div className="max-w-[80%] message-bubble-ai">
-                <div className="flex gap-1">
-                  <span className="animate-bounce">•</span>
-                  <span className="animate-bounce" style={{ animationDelay: '0.2s' }}>•</span>
-                  <span className="animate-bounce" style={{ animationDelay: '0.4s' }}>•</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div ref={messagesEndRef} />
-        </div>
-      </main>
-
-      {/* Input Area */}
-      <footer
-        className="px-md-fluid py-sm-fluid border-t transition-colors duration-300"
-        style={{
-          backgroundColor: 'var(--color-input-bg)',
-          borderColor: 'var(--color-border)'
-        }}
-      >
-        <div className="max-w-3xl mx-auto">
-          <form onSubmit={handleSendMessage} className="flex items-end gap-2">
-            {/* Attachment Buttons */}
-            <div className="flex items-center gap-1">
+        {/* Input Area */}
+        <footer className="sticky bottom-0 backdrop-blur-xl bg-background/80 border-t border-border pb-safe">
+          <div className="container-narrow py-4">
+            <form onSubmit={handleSendMessage} className="flex items-end gap-2">
+              {/* File input (hidden) */}
               <input
                 ref={fileInputRef}
                 type="file"
@@ -334,92 +345,101 @@ export const ChatContainer = () => {
                 className="hidden"
               />
 
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="p-2 rounded-full transition-colors duration-200 hover:bg-black/5 dark:hover:bg-white/10"
-                title="Adjuntar imagen"
-              >
-                <Paperclip className="w-5 h-5" style={{ color: 'var(--color-text)' }} />
-              </button>
+              {/* Attachment Buttons */}
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="p-2 rounded-lg hover:bg-surface transition-colors"
+                  title="Adjuntar imagen"
+                >
+                  <Paperclip className="w-5 h-5 text-foreground" />
+                </button>
 
-              <button
-                type="button"
-                onClick={() => setIsCameraOpen(true)}
-                className="p-2 rounded-full transition-colors duration-200 hover:bg-black/5 dark:hover:bg-white/10"
-                title="Tomar foto"
-              >
-                <Camera className="w-5 h-5" style={{ color: 'var(--color-text)' }} />
-              </button>
-            </div>
+                <button
+                  type="button"
+                  onClick={() => setIsCameraOpen(true)}
+                  className="p-2 rounded-lg hover:bg-surface transition-colors"
+                  title="Tomar foto"
+                >
+                  <Camera className="w-5 h-5 text-foreground" />
+                </button>
+              </div>
 
-            {/* Textarea */}
-            <textarea
-              ref={textareaRef}
-              value={inputMessage}
-              onChange={(e) => setInputMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Escribe tu mensaje..."
-              rows={1}
-              className="flex-1 px-4 py-3 border rounded-3xl resize-none overflow-y-auto transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-brand-green text-base-fluid"
-              style={{
-                backgroundColor: 'var(--color-bg)',
-                color: 'var(--color-text)',
-                borderColor: 'var(--color-input-border)',
-                maxHeight: 'clamp(100px, 30vh, 200px)',
-                fontSize: '16px' // Evita zoom en iOS
-              }}
-            />
+              {/* Textarea Container */}
+              <div className="flex-1 relative">
+                <textarea
+                  ref={textareaRef}
+                  value={inputMessage}
+                  onChange={(e) => setInputMessage(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Escribe tu mensaje..."
+                  rows={1}
+                  className="w-full resize-none rounded-2xl bg-surface border-2 border-border px-4 py-3 pr-24 text-foreground placeholder:text-tertiary focus:outline-none focus:border-brand-green-500 focus:ring-4 focus:ring-brand-green-500/10 transition-all duration-200 text-[15px]"
+                  style={{ minHeight: '52px', maxHeight: '200px' }}
+                />
 
-            {/* Voice Button */}
-            {isSpeechSupported && (
-              <button
-                type="button"
-                onClick={handleVoiceInput}
-                className={`p-2 rounded-full transition-all duration-200 ${isListening
-                    ? 'bg-brand-green text-black animate-pulse'
-                    : 'hover:bg-black/5 dark:hover:bg-white/10'
-                  }`}
-                title={isListening ? 'Detener grabación' : 'Escribir por voz'}
+                {/* Voice and Send buttons inside textarea */}
+                <div className="absolute right-2 bottom-2 flex items-center gap-1">
+                  {/* Voice Button */}
+                  {isSpeechSupported && (
+                    <button
+                      type="button"
+                      onClick={handleVoiceInput}
+                      className={`p-2 rounded-lg transition-all duration-200 ${isListening
+                        ? 'bg-brand-green-500 text-white animate-pulse-soft'
+                        : 'hover:bg-surface-hover'
+                        }`}
+                      title={isListening ? 'Detener grabación' : 'Escribir por voz'}
+                    >
+                      <Mic className="w-5 h-5" />
+                    </button>
+                  )}
+
+                  {/* Send Button */}
+                  <button
+                    type="submit"
+                    disabled={!inputMessage.trim() || isProcessing}
+                    className={`p-2.5 rounded-xl transition-all duration-200 ${inputMessage.trim() && !isProcessing
+                      ? 'bg-brand-green-500 hover:bg-brand-green-600 text-white shadow-sm hover:shadow-md'
+                      : 'bg-neutral-200 dark:bg-neutral-700 text-neutral-400 cursor-not-allowed'
+                      }`}
+                  >
+                    <Send className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            </form>
+
+            {/* Selected Image Preview */}
+            {selectedImage && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-3 flex items-center gap-2"
               >
-                <Mic className="w-5 h-5" style={{ color: isListening ? '#000' : 'var(--color-text)' }} />
-              </button>
+                <img
+                  src={selectedImage}
+                  alt="Preview"
+                  className="w-20 h-20 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity border-2 border-border"
+                  onClick={() => handleImageClick(selectedImage)}
+                />
+                <button
+                  onClick={() => setSelectedImage(null)}
+                  className="text-error hover:text-error-dark text-sm font-medium px-3 py-1.5 rounded-lg hover:bg-error/10 transition-colors"
+                >
+                  Eliminar
+                </button>
+              </motion.div>
             )}
 
-            {/* Send Button */}
-            <button
-              type="submit"
-              disabled={!inputMessage.trim() || isProcessing}
-              className="p-3 rounded-full transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{
-                backgroundColor: inputMessage.trim() ? '#95C11F' : '#e0e0e0',
-                color: inputMessage.trim() ? '#000' : '#999'
-              }}
-              title="Enviar mensaje"
-            >
-              <Send className="w-5 h-5" />
-            </button>
-          </form>
-
-          {/* Selected Image Preview */}
-          {selectedImage && (
-            <div className="mt-3 flex items-center gap-2">
-              <img
-                src={selectedImage}
-                alt="Preview"
-                className="w-20 h-20 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
-                onClick={() => handleImageClick(selectedImage)}
-              />
-              <button
-                onClick={() => setSelectedImage(null)}
-                className="text-red-500 hover:text-red-700 text-sm"
-              >
-                Eliminar
-              </button>
-            </div>
-          )}
-        </div>
-      </footer>
+            {/* Bottom Text */}
+            <p className="text-center text-xs text-tertiary mt-3">
+              El asistente puede cometer errores. Verifica la información importante.
+            </p>
+          </div>
+        </footer>
+      </div>
 
       {/* Modals */}
       <CameraModal
@@ -439,7 +459,6 @@ export const ChatContainer = () => {
         text={shareModalText}
         onClose={() => setShareModalText('')}
       />
-      </div>
     </>
   );
 };
