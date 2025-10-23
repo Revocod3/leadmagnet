@@ -149,8 +149,23 @@ export const ChatContainer = () => {
   };
 
   const handleRegenerateResponse = async () => {
-    // TODO: Implementar lógica de regeneración
-    console.log('Regenerando respuesta...');
+    // Encontrar el último mensaje del usuario
+    let lastUserMessage = null;
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const msg = messages[i];
+      if (msg && msg.role === 'user') {
+        lastUserMessage = msg;
+        break;
+      }
+    }
+
+    if (!lastUserMessage) {
+      console.log('No hay mensaje de usuario para regenerar');
+      return;
+    }
+
+    // Reenviar el mensaje del usuario para obtener una nueva respuesta
+    await processMessage(lastUserMessage.content);
   };
 
   const handleBackToStart = () => {

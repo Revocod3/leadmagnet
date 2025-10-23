@@ -1,4 +1,4 @@
-import { Copy, ThumbsUp, ThumbsDown, RefreshCw } from 'lucide-react';
+import { Copy, ThumbsUp, ThumbsDown, RefreshCw, Check } from 'lucide-react';
 import { useState } from 'react';
 
 interface MessageActionsProps {
@@ -37,10 +37,13 @@ export const MessageActions = ({ messageText, isUserMessage = false, onRegenerat
       {/* Copy */}
       <button
         onClick={handleCopy}
-        className="p-1.5 text-foreground/60 hover:text-foreground hover:bg-surface/50 transition-all duration-200 rounded-lg"
-        title={copied ? 'Copiado!' : 'Copiar'}
+        className={`p-1.5 transition-all duration-200 rounded-lg ${copied
+            ? 'text-brand-green-500 bg-brand-green-50 dark:bg-brand-green-500/10'
+            : 'text-foreground/60 hover:text-foreground hover:bg-surface/50'
+          }`}
+        title={copied ? '¡Copiado!' : 'Copiar'}
       >
-        <Copy className="w-4 h-4" />
+        {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
       </button>
 
       {/* Thumbs Up */}
@@ -70,11 +73,16 @@ export const MessageActions = ({ messageText, isUserMessage = false, onRegenerat
       {/* Regenerate */}
       {!isUserMessage && onRegenerate && (
         <button
-          onClick={onRegenerate}
-          className="p-1.5 text-foreground/60 hover:text-foreground hover:bg-surface/50 transition-all duration-200 rounded-lg"
+          onClick={async () => {
+            const button = document.activeElement as HTMLButtonElement;
+            button?.querySelector('svg')?.classList.add('animate-spin');
+            await onRegenerate();
+            button?.querySelector('svg')?.classList.remove('animate-spin');
+          }}
+          className="p-1.5 text-foreground/60 hover:text-foreground hover:bg-surface/50 transition-all duration-200 rounded-lg group"
           title="Regenerar respuesta"
         >
-          <RefreshCw className="w-4 h-4" />
+          <RefreshCw className="w-4 h-4 group-hover:rotate-180 transition-transform duration-300" />
         </button>
       )}
     </div>
