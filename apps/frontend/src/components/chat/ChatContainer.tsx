@@ -179,9 +179,13 @@ export const ChatContainer = () => {
 
             {/* Center: Title */}
             <div className="flex items-center gap-3">
-              <div className="w-2 h-2 rounded-full bg-brand-green-500 animate-pulse-soft" />
+
               <span className="text-sm font-medium text-foreground">
-                Asistente de Diagnóstico
+                Diagnóstico {
+                  <span className="text-sm font-medium text-brand-green-500 animated-pulse-strong">
+                    En Línea
+                  </span>
+                }
               </span>
             </div>
 
