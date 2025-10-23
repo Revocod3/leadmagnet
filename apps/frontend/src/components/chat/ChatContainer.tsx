@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { useChat } from '../../hooks/useChat';
-import { useSession } from '../../hooks/useSession';
+import { useDiagnosticFlow } from '../../hooks/useDiagnosticFlow';
 import { useSpeechToText } from '../../hooks/useSpeechToText';
-import { Moon, Sun, Send, Mic, Camera, Paperclip } from 'lucide-react';
+import { usePDFGenerator } from '../../hooks/usePDFGenerator';
+import { Moon, Sun, Send, Mic, Camera, Paperclip, Download } from 'lucide-react';
 import { CameraModal } from '../modals/CameraModal';
 import { ImageViewerModal } from '../modals/ImageViewerModal';
 import { ShareModal } from '../modals/ShareModal';
@@ -15,21 +15,22 @@ export const ChatContainer = () => {
   const [imageViewerUrl, setImageViewerUrl] = useState('');
   const [shareModalText, setShareModalText] = useState('');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
-  const { messages, sendMessage, isSending } = useChat();
-  const { session, createSession, isCreatingSession } = useSession();
+  const { messages, state, isProcessing, initialize, processMessage } = useDiagnosticFlow();
+  const { generatePDF } = usePDFGenerator();
   const { isListening, transcript, startListening, stopListening, isSupported: isSpeechSupported } = useSpeechToText();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Create session if it doesn't exist
+  // Initialize diagnostic flow
   useEffect(() => {
-    if (!session && !isCreatingSession) {
-      createSession({});
+    if (messages.length === 0) {
+      initialize();
     }
-  }, [session, isCreatingSession, createSession]);
+  }, []);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -46,11 +47,49 @@ export const ChatContainer = () => {
 
   const handleSendMessage = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    if (!inputMessage.trim() || isSending) return;
+    if (!inputMessage.trim() || isProcessing) return;
 
     const messageToSend = inputMessage;
     setInputMessage('');
-    sendMessage(messageToSend);
+
+    // If we have a selected image and we're on question 17, send it with the message
+    if (selectedImage && state.currentQuestionIndex === 16) {
+      const base64Data = selectedImage.split(',')[1];
+      if (base64Data) {
+        const imageData = {
+          base64: base64Data,
+          mimeType: 'image/jpeg',
+        };
+        await processMessage(messageToSend, imageData);
+        setSelectedImage(null);
+      } else {
+        await processMessage(messageToSend);
+      }
+    } else {
+      await processMessage(messageToSend);
+    }
+  };
+
+  const handleDownloadPDF = () => {
+    if (!state.diagnosisContent) return;
+
+    setIsGeneratingPDF(true);
+    try {
+      const success = generatePDF({
+        userName: state.userName || 'Usuario',
+        diagnosisContent: state.diagnosisContent,
+        language: state.language,
+      });
+
+      if (success) {
+        console.log('PDF generado exitosamente');
+      }
+    } catch (error) {
+      console.error('Error al generar PDF:', error);
+      alert('Hubo un error al generar el PDF. Por favor, intenta nuevamente.');
+    } finally {
+      setIsGeneratingPDF(false);
+    }
   };
 
   const toggleDarkMode = () => {
@@ -173,7 +212,35 @@ export const ChatContainer = () => {
                       : 'message-bubble-ai'
                     }`}
                 >
-                  <p className="m-0">{message.content}</p>
+                  <p className="m-0 whitespace-pre-wrap">{message.content}</p>
+
+                  {/* Show question details if available */}
+                  {message.question?.questionDetails && (
+                    <p className="m-0 mt-2 text-sm opacity-80 whitespace-pre-wrap">
+                      {message.question.questionDetails}
+                    </p>
+                  )}
+
+                  {/* Show PDF download button after diagnosis */}
+                  {message.type === 'diagnosis' && state.diagnosisContent && (
+                    <button
+                      onClick={handleDownloadPDF}
+                      disabled={isGeneratingPDF}
+                      className="mt-4 py-2 px-4 rounded-xl bg-brand-green hover:bg-brand-green/90 text-black font-semibold transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isGeneratingPDF ? (
+                        <>
+                          <span className="animate-spin">⏳</span>
+                          Generando PDF...
+                        </>
+                      ) : (
+                        <>
+                          <Download className="w-5 h-5" />
+                          Descargar Diagnóstico PDF
+                        </>
+                      )}
+                    </button>
+                  )}
                 </div>
 
                 {/* Message Actions */}
@@ -186,7 +253,7 @@ export const ChatContainer = () => {
             </div>
           ))}
 
-          {isSending && (
+          {isProcessing && (
             <div className="flex justify-start animate-fade-in">
               <div className="max-w-[80%] message-bubble-ai">
                 <div className="flex gap-1">
@@ -278,7 +345,7 @@ export const ChatContainer = () => {
             {/* Send Button */}
             <button
               type="submit"
-              disabled={!inputMessage.trim() || isSending}
+              disabled={!inputMessage.trim() || isProcessing}
               className="p-3 rounded-full transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               style={{
                 backgroundColor: inputMessage.trim() ? '#95C11F' : '#e0e0e0',

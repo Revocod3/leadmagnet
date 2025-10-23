@@ -21,13 +21,15 @@ const queryClient = new QueryClient({
 
 function MainFlow() {
   const navigate = useNavigate();
-  const [showIntro, setShowIntro] = useState(true);
+  const [hasCompletedIntro, setHasCompletedIntro] = useState(() => {
+    return !!sessionStorage.getItem('userData');
+  });
   const [showChoice, setShowChoice] = useState(false);
 
   const handleIntroComplete = (name: string, email: string) => {
     // Store user data in session storage or state management
     sessionStorage.setItem('userData', JSON.stringify({ name, email }));
-    setShowIntro(false);
+    setHasCompletedIntro(true);
     setShowChoice(true);
   };
 
@@ -40,14 +42,21 @@ function MainFlow() {
     }
   };
 
+  const handleRestart = () => {
+    sessionStorage.removeItem('userData');
+    setHasCompletedIntro(false);
+    setShowChoice(false);
+    navigate('/');
+  };
+
   return (
     <>
-      {showIntro && <IntroScreen onComplete={handleIntroComplete} />}
-      {showChoice && <ChoiceScreen onSelect={handleChoiceSelect} />}
+      {!hasCompletedIntro && <IntroScreen onComplete={handleIntroComplete} />}
+      {hasCompletedIntro && showChoice && <ChoiceScreen onSelect={handleChoiceSelect} />}
       <Routes>
         <Route path="/" element={<div />} />
         <Route path="/chat" element={<ChatContainer />} />
-        <Route path="/quiz" element={<QuizContainer />} />
+        <Route path="/quiz" element={<QuizContainer onRestart={handleRestart} />} />
         <Route path="/diagnosis" element={<DiagnosisScreen />} />
       </Routes>
     </>
