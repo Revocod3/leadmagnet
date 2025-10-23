@@ -288,6 +288,37 @@ export const useDiagnosticFlow = () => {
     initialize();
   }, [initialize]);
 
+  // Regenerate last assistant response without advancing
+  const regenerateLastResponse = useCallback(
+    async (userMessage: string) => {
+      if (isProcessing) return;
+      
+      // Remove the last assistant message (the one we want to regenerate)
+      setMessages((prev) => {
+        const newMessages = [...prev];
+        // Find and remove the last assistant message
+        for (let i = newMessages.length - 1; i >= 0; i--) {
+          const msg = newMessages[i];
+          if (msg && msg.role === 'assistant') {
+            newMessages.splice(i, 1);
+            break;
+          }
+        }
+        return newMessages;
+      });
+
+      // Decrease the question index by 1 to stay on the same question
+      setState((prev) => ({
+        ...prev,
+        currentQuestionIndex: Math.max(0, prev.currentQuestionIndex - 1),
+      }));
+
+      // Now process the message again (will get a new response for the same question)
+      await processMessage(userMessage);
+    },
+    [isProcessing, processMessage]
+  );
+
   return {
     messages,
     state,
@@ -298,5 +329,6 @@ export const useDiagnosticFlow = () => {
     processMessage,
     handleWelcomeComplete,
     reset,
+    regenerateLastResponse,
   };
 };

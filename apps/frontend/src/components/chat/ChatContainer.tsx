@@ -27,6 +27,7 @@ export const ChatContainer = () => {
     isProcessing,
     initialize,
     processMessage,
+    regenerateLastResponse,
   } = useDiagnosticFlow(); const { generatePDF } = usePDFGenerator();
   const { isListening, transcript, startListening, stopListening, isSupported: isSpeechSupported } = useSpeechToText();
 
@@ -158,17 +159,15 @@ export const ChatContainer = () => {
         break;
       }
     }
-
+    
     if (!lastUserMessage) {
       console.log('No hay mensaje de usuario para regenerar');
       return;
     }
 
-    // Reenviar el mensaje del usuario para obtener una nueva respuesta
-    await processMessage(lastUserMessage.content);
-  };
-
-  const handleBackToStart = () => {
+    // Usar la función especial de regenerar que no avanza el índice
+    await regenerateLastResponse(lastUserMessage.content);
+  };  const handleBackToStart = () => {
     sessionStorage.removeItem('userData');
     clearSession();
     navigate('/', { replace: true });
