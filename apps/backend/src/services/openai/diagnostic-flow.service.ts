@@ -1,5 +1,5 @@
 import { openai, MODELS, ASSISTANT_INSTRUCTIONS } from '../../config/openai';
-import { getDiagnosticQuestions, WELCOME_MESSAGES, GREETING_MESSAGES, DID_YOU_KNOW, PDF_QUESTION, FINAL_CTA, OCCUPATION_PATTERNS, OCCUPATION_INSIGHTS, DIAGNOSIS_INTRO, type CollectedInfo } from '../../constants/questions';
+import { getDiagnosticQuestions, WELCOME_MESSAGES, GREETING_MESSAGES, DID_YOU_KNOW, DIAGNOSIS_READY_MESSAGE, OCCUPATION_PATTERNS, OCCUPATION_INSIGHTS, DIAGNOSIS_INTRO, type CollectedInfo } from '../../constants/questions';
 import type { Language } from '../../types';
 import { VisionService } from './vision.service';
 
@@ -8,9 +8,7 @@ export type FlowStep =
   | 'name_extracted'
   | 'greeting'
   | 'asking_questions'
-  | 'diagnosis'
-  | 'pdf_question'
-  | 'cta'
+  | 'diagnosis_ready' // Nuevo: cuando el diagnóstico está listo (muestra mensaje + 2 botones)
   | 'completed';
 
 export interface DiagnosticFlowState {
@@ -32,7 +30,7 @@ export interface FlowResponse {
   etymology?: string;
   nextQuestion?: string;
   questionDetails?: string | undefined;
-  type?: 'welcome' | 'greeting' | 'question' | 'comment' | 'validation_error' | 'diagnosis' | 'cta' | 'completed';
+  type?: 'welcome' | 'greeting' | 'question' | 'comment' | 'validation_error' | 'diagnosis_ready' | 'completed';
 }
 
 export class DiagnosticFlowService {
@@ -310,10 +308,7 @@ export class DiagnosticFlowService {
       case 'asking_questions':
         return this.handleQuestionResponse(userMessage, currentState, imageData);
 
-      case 'pdf_question':
-        return this.handlePdfResponse(userMessage, currentState);
-
-      case 'cta':
+      case 'diagnosis_ready':
       case 'completed':
         return this.handleCompletedFlow(currentState);
 
@@ -536,10 +531,10 @@ export class DiagnosticFlowService {
         type: 'comment',
       };
     } else {
-      // Todas las preguntas respondidas - generar diagnóstico
+      // Todas las preguntas respondidas - generar diagnóstico y mostrar mensaje con botones
       const userName = currentState.userName || 'amigo/a';
-      const introMessage = DIAGNOSIS_INTRO[currentState.language as 'es' | 'en'].replace('{userName}', userName);
 
+      // Generar el diagnóstico (solo para el PDF, no se muestra en el chat)
       const diagnosis = await this.generateDiagnosis(
         currentState.userName!,
         newAnswers,
@@ -550,53 +545,23 @@ export class DiagnosticFlowService {
 
       const newState: DiagnosticFlowState = {
         ...currentState,
-        step: 'pdf_question',
+        step: 'diagnosis_ready',
         answers: newAnswers,
         collectedInfo: updatedInfo,
         imageAnalysis,
         diagnosisContent: diagnosis,
       };
 
-      const fullMessage = `${comment}\n\n${introMessage}\n\n---\n\n${diagnosis}${PDF_QUESTION[currentState.language as 'es' | 'en']}`;
+      // Mostrar mensaje de venta con los beneficios (NO el diagnóstico completo)
+      const readyMessage = DIAGNOSIS_READY_MESSAGE[currentState.language as 'es' | 'en'].replace('{userName}', userName);
+      const fullMessage = `${comment}\n\n${readyMessage}`;
 
       return {
         message: fullMessage,
         newState,
-        type: 'diagnosis',
+        type: 'diagnosis_ready', // Nuevo tipo para que el frontend muestre los 2 botones
       };
     }
-  }
-
-  /**
-   * Maneja la respuesta a la pregunta del PDF
-   */
-  private async handlePdfResponse(
-    userAnswer: string,
-    currentState: DiagnosticFlowState
-  ): Promise<FlowResponse> {
-    const newState: DiagnosticFlowState = {
-      ...currentState,
-      step: 'cta',
-    };
-
-    const cta = FINAL_CTA[currentState.language as 'es' | 'en'];
-    const userName = currentState.userName || 'amigo/a';
-
-    // Detectar si el usuario quiere el PDF o no
-    const wantsPdf = userAnswer.toLowerCase().includes('si') ||
-      userAnswer.toLowerCase().includes('sí') ||
-      userAnswer.toLowerCase().includes('yes') ||
-      userAnswer.toLowerCase().includes('descargar') ||
-      userAnswer.toLowerCase().includes('download');
-
-    const ctaMessage = wantsPdf ? cta.withPdf : cta.withoutPdf;
-    const fullMessage = ctaMessage.replace('{userName}', userName);
-
-    return {
-      message: fullMessage,
-      newState,
-      type: 'cta',
-    };
   }
 
   /**

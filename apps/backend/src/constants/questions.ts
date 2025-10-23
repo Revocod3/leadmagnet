@@ -437,10 +437,70 @@ export const DID_YOU_KNOW = {
   en: ' By the way, did you know that ',
 };
 
+// Mensaje que se muestra después de la última pregunta (en lugar de mostrar el diagnóstico)
+export const DIAGNOSIS_READY_MESSAGE = {
+  es: `✨ Perfecto, {userName}. He analizado toda la información que me has compartido.
+
+<strong>Tu diagnóstico digestivo personalizado está listo.</strong>
+
+Basándome en tus respuestas, he identificado:
+• Patrones específicos en tu digestión
+• Posibles causas de tu malestar
+• Recomendaciones personalizadas para ti
+
+📄 <strong>Todo esto está en tu diagnóstico completo en PDF</strong> - un análisis profesional que puedes guardar y consultar cuando quieras.
+
+<strong>Pero déjame contarte algo importante...</strong>
+
+Este diagnóstico es solo el <em>primer paso</em>. Es el mapa que te muestra dónde estás.
+
+<strong>El Método Objetivo Vientre Plano</strong> es el <em>camino completo</em>: un sistema paso a paso, diseñado específicamente para transformar tu salud digestiva de raíz.
+
+No es teoría. No son consejos genéricos. Es un protocolo probado que ha ayudado a cientos de personas a:
+
+✨ Eliminar la hinchazón persistente (incluso esa que llevas años sintiendo)
+🎯 Descubrir exactamente qué alimentos te inflaman y cuáles te sanan
+💪 Recuperar tu energía y bienestar digestivo real
+🌟 Volver a sentirte cómodo/a y seguro/a en tu propio cuerpo
+
+Vi en tus respuestas que tu motivación es alta. Tu situación está clara en el diagnóstico. <strong>Solo te falta el sistema correcto para lograrlo.</strong>
+
+<strong>¿Qué quieres hacer?</strong>`,
+
+  en: `✨ Perfect, {userName}. I've analyzed all the information you've shared.
+
+<strong>Your personalized digestive diagnosis is ready.</strong>
+
+Based on your answers, I've identified:
+• Specific patterns in your digestion
+• Possible causes of your discomfort
+• Personalized recommendations for you
+
+📄 <strong>All of this is in your complete PDF diagnosis</strong> - a professional analysis you can save and consult whenever you want.
+
+<strong>But let me tell you something important...</strong>
+
+This diagnosis is just the <em>first step</em>. It's the map showing you where you are.
+
+<strong>The Flat Belly Method</strong> is the <em>complete path</em>: a step-by-step system, specifically designed to transform your digestive health from the root.
+
+It's not theory. It's not generic advice. It's a proven protocol that has helped hundreds of people to:
+
+✨ Eliminate persistent bloating (even the one you've been feeling for years)
+🎯 Discover exactly which foods inflame you and which ones heal you
+💪 Recover your energy and real digestive wellness
+🌟 Feel comfortable and confident in your own body again
+
+I saw in your answers that your motivation is high. Your situation is clear in the diagnosis. <strong>You just need the right system to achieve it.</strong>
+
+<strong>What do you want to do?</strong>`,
+};
+
 export const DIAGNOSIS_INTRO = {
   es: '✨ Perfecto, {userName}. Déjame un momento para analizar toda la información que me has compartido y preparar tu diagnóstico digestivo personalizado...',
   en: '✨ Perfect, {userName}. Give me a moment to analyze all the information you\'ve shared and prepare your personalized digestive diagnosis...',
 };
+
 
 export const PDF_QUESTION = {
   es: '\n\n---\n\n📄 **¿Quieres descargar este análisis en PDF?**\n\nTe lo puedo generar ahora mismo con un diseño profesional para que lo guardes y consultes cuando quieras.',
@@ -470,7 +530,7 @@ No es teoría. No son consejos genéricos. Es un protocolo probado que ha ayudad
 
 Y está a un clic de distancia.
 
-👉 **[Ver el Método Completo](link_de_suscripcion)**`,
+👉 **[Descubrir el Método Completo](https://objetivovientreplano.com/suscripcion/)**`,
     withoutPdf: `Entendido, sin problema.
 
 ---
@@ -492,8 +552,8 @@ No es teoría. No son consejos genéricos. Es un protocolo probado que ha ayudad
 
 Y está a un clic de distancia.
 
-👉 **[Ver el Método Completo](link_de_suscripcion)**`,
-    buttonText: `Ver el Método Completo`,
+👉 **[Descubrir el Método Completo](https://objetivovientreplano.com/suscripcion/)**`,
+    buttonText: `Descubrir el Método Completo`,
   },
   en: {
     withPdf: `✅ Perfect! Your PDF is ready to download.
@@ -539,7 +599,7 @@ It's not theory. It's not generic advice. It's a proven protocol that has helped
 
 And it's one click away.
 
-👉 **[See the Complete Method](subscription_link)**`,
-    buttonText: `See the Complete Method`,
+👉 **[Discover the Complete Method](https://objetivovientreplano.com/suscripcion/)**`,
+    buttonText: `Discover the Complete Method`,
   },
 };

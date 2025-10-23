@@ -132,7 +132,7 @@ async function testDiagnosticFlow() {
   console.log(JSON.stringify(step14.newState.collectedInfo, null, 2));
 
   // 16. Probar respuesta PDF
-  if (step14.newState.step === 'pdf_question') {
+  if (step14.newState.step === 'completed') {
     console.log('\n📋 PASO 16: Responder a pregunta del PDF');
     const step15 = await flowService.processMessage('no', step14.newState);
     console.log('✅ CTA recibido:', step15.message.substring(0, 200) + '...');

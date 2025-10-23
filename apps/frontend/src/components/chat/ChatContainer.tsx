@@ -159,7 +159,7 @@ export const ChatContainer = () => {
         break;
       }
     }
-    
+
     if (!lastUserMessage) {
       console.log('No hay mensaje de usuario para regenerar');
       return;
@@ -167,7 +167,7 @@ export const ChatContainer = () => {
 
     // Usar la función especial de regenerar que no avanza el índice
     await regenerateLastResponse(lastUserMessage.content);
-  };  const handleBackToStart = () => {
+  }; const handleBackToStart = () => {
     sessionStorage.removeItem('userData');
     clearSession();
     navigate('/', { replace: true });
@@ -272,29 +272,52 @@ export const ChatContainer = () => {
                           : 'bg-transparent text-foreground'
                           } rounded-full px-4 py-2`}
                       >
-                        <p className="text-[15px] leading-relaxed whitespace-pre-wrap break-words">
-                          {message.content}
-                        </p>
+                        {/* Render HTML for diagnosis_ready message, plain text for others */}
+                        {message.type === 'diagnosis_ready' ? (
+                          <div
+                            className="text-[15px] leading-relaxed whitespace-pre-wrap break-words"
+                            dangerouslySetInnerHTML={{ __html: message.content }}
+                          />
+                        ) : (
+                          <p className="text-[15px] leading-relaxed whitespace-pre-wrap break-words">
+                            {message.content}
+                          </p>
+                        )}
 
-                        {/* Show download button for diagnosis */}
-                        {message.type === 'diagnosis' && state.diagnosisContent && (
-                          <button
-                            onClick={handleDownloadPDF}
-                            disabled={isGeneratingPDF}
-                            className="mt-4 w-full py-2.5 px-4 rounded-lg bg-brand-green-600 hover:bg-brand-green-700 text-white font-medium text-sm flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {isGeneratingPDF ? (
-                              <>
-                                <span className="animate-spin">⏳</span>
-                                Generando PDF...
-                              </>
-                            ) : (
-                              <>
-                                <Download className="w-4 h-4" />
-                                Descargar diagnóstico
-                              </>
-                            )}
-                          </button>
+                        {/* Show 2 buttons when diagnosis is ready */}
+                        {message.type === 'diagnosis_ready' && state.diagnosisContent && (
+                          <div className="mt-6 flex flex-col gap-3">
+                            {/* Download PDF Button */}
+                            <button
+                              onClick={handleDownloadPDF}
+                              disabled={isGeneratingPDF}
+                              className="w-full py-3 px-5 rounded-lg bg-brand-green-600 hover:bg-brand-green-700 text-white font-semibold text-base flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {isGeneratingPDF ? (
+                                <>
+                                  <span className="animate-spin">⏳</span>
+                                  Generando PDF...
+                                </>
+                              ) : (
+                                <>
+                                  <Download className="w-5 h-5" />
+                                  Descargar mi diagnóstico
+                                </>
+                              )}
+                            </button>
+
+                            {/* Subscription Button */}
+                            <a
+                              href="https://objetivovientreplano.com/suscripcion/"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="w-full py-3.5 px-6 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold text-base flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                            >
+                              <span>✨</span>
+                              Descubrir el Método Completo
+                              <span>→</span>
+                            </a>
+                          </div>
                         )}
 
 

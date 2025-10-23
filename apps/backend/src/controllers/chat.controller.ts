@@ -118,8 +118,8 @@ export class ChatController {
         updateData.imageAnalysisText = flowResponse.newState.imageAnalysis;
       }
 
-      // Mark completion time if completed
-      if (flowResponse.newState.step === 'completed' || flowResponse.newState.step === 'cta') {
+      // Mark completion time if completed or diagnosis ready
+      if (flowResponse.newState.step === 'completed' || flowResponse.newState.step === 'diagnosis_ready') {
         updateData.completionTime = new Date();
       }
 

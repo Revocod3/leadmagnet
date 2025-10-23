@@ -8,9 +8,7 @@ export type FlowStep =
   | 'name_extracted'
   | 'greeting'
   | 'asking_questions'
-  | 'diagnosis'
-  | 'pdf_question'
-  | 'cta'
+  | 'diagnosis_ready'
   | 'completed';
 
 export interface FlowMessage {
@@ -21,9 +19,9 @@ export interface FlowMessage {
   | 'greeting'
   | 'question'
   | 'comment'
-  | 'diagnosis'
+  | 'diagnosis_ready'
   | 'validation_error'
-  | 'cta';
+  | 'completed';
   question?: DiagnosticQuestion;
   timestamp?: string;
 }
