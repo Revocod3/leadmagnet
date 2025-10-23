@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePDFGenerator } from '../../hooks/usePDFGenerator';
+import { useSessionStore } from '../../stores/sessionStore';
 import { Download } from 'lucide-react';
 
 export const DiagnosisScreen = () => {
   const navigate = useNavigate();
+  const { clearSession } = useSessionStore();
   const { generatePDF } = usePDFGenerator();
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -64,6 +66,16 @@ Recuerda: Los cambios reales requieren tiempo, constancia y el apoyo adecuado. ¬
     }
   };
 
+  const handleBackToStart = () => {
+    // Limpiar toda la informaci√≥n de la sesi√≥n
+    sessionStorage.removeItem('userData');
+    clearSession();
+    // Navegar al inicio
+    navigate('/', { replace: true });
+    // Recargar la p√°gina para resetear el estado completo
+    window.location.href = '/';
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-ovp-bg-light via-[#F4E8D8] to-[#E8D5C4] p-4 animate-fade-in">
       <div className="max-w-4xl mx-auto py-8">
@@ -111,7 +123,7 @@ Recuerda: Los cambios reales requieren tiempo, constancia y el apoyo adecuado. ¬
 
           <div className="flex gap-3">
             <button
-              onClick={() => navigate('/')}
+              onClick={handleBackToStart}
               className="flex-1 py-3 px-6 rounded-xl border-2 border-gray-300 text-gray-700 font-semibold hover:bg-gray-50 transition-colors"
             >
               Volver al inicio

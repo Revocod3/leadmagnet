@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useSessionStore } from '../../stores/sessionStore';
 
 const mockQuestions = [
   {
@@ -25,6 +26,7 @@ interface QuizContainerProps {
 
 export const QuizContainer = ({ onRestart }: QuizContainerProps) => {
   const navigate = useNavigate();
+  const { clearSession } = useSessionStore();
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
 
@@ -49,10 +51,13 @@ export const QuizContainer = ({ onRestart }: QuizContainerProps) => {
       setCurrentQuestion(currentQuestion - 1);
     } else {
       // Reset everything and go back to intro
+      sessionStorage.removeItem('userData');
+      clearSession();
       if (onRestart) {
         onRestart();
       } else {
-        navigate('/');
+        // Recargar la página para resetear el estado completo
+        window.location.href = '/';
       }
     }
   };
@@ -92,11 +97,10 @@ export const QuizContainer = ({ onRestart }: QuizContainerProps) => {
               <button
                 key={index}
                 onClick={() => handleAnswer(option)}
-                className={`w-full p-4 rounded-xl border-2 transition-all duration-200 text-left animate-fade-in ${
-                  answers[question.id] === option
+                className={`w-full p-4 rounded-xl border-2 transition-all duration-200 text-left animate-fade-in ${answers[question.id] === option
                     ? 'border-primary bg-primary/10 shadow-lg scale-[1.02]'
                     : 'border-gray-200 hover:border-primary hover:bg-gray-50'
-                }`}
+                  }`}
                 style={{ animationDelay: `${index * 0.1}s` }}
               >
                 <span className="font-medium text-gray-900">{option}</span>
@@ -114,11 +118,10 @@ export const QuizContainer = ({ onRestart }: QuizContainerProps) => {
             <button
               onClick={handleNext}
               disabled={!answers[question.id]}
-              className={`flex-1 py-3 px-6 rounded-xl font-semibold transition-all duration-200 ${
-                answers[question.id]
+              className={`flex-1 py-3 px-6 rounded-xl font-semibold transition-all duration-200 ${answers[question.id]
                   ? 'bg-brand-green hover:bg-brand-green/90 text-black shadow-lg hover:-translate-y-0.5'
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed opacity-50'
-              }`}
+                }`}
             >
               {currentQuestion === mockQuestions.length - 1 ? 'Ver Diagnóstico' : 'Siguiente'}
             </button>

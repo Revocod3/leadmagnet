@@ -1,14 +1,18 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useDiagnosticFlow } from '../../hooks/useDiagnosticFlow';
 import { useSpeechToText } from '../../hooks/useSpeechToText';
 import { usePDFGenerator } from '../../hooks/usePDFGenerator';
-import { Moon, Sun, Send, Mic, Camera, Paperclip, Download } from 'lucide-react';
+import { useSessionStore } from '../../stores/sessionStore';
+import { Moon, Sun, Send, Mic, Camera, Paperclip, Download, ArrowLeft } from 'lucide-react';
 import { CameraModal } from '../modals/CameraModal';
 import { ImageViewerModal } from '../modals/ImageViewerModal';
 import { ShareModal } from '../modals/ShareModal';
 import { MessageActions } from './MessageActions';
 
 export const ChatContainer = () => {
+  const navigate = useNavigate();
+  const { clearSession } = useSessionStore();
   const [inputMessage, setInputMessage] = useState('');
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
@@ -145,6 +149,16 @@ export const ChatContainer = () => {
     setShareModalText(text);
   };
 
+  const handleBackToStart = () => {
+    // Limpiar toda la información de la sesión
+    sessionStorage.removeItem('userData');
+    clearSession();
+    // Navegar al inicio
+    navigate('/', { replace: true });
+    // Recargar la página para resetear el estado completo
+    window.location.href = '/';
+  };
+
   return (
     <div className={`flex flex-col h-screen ${isDarkMode ? 'dark' : ''}`}>
       {/* Header */}
@@ -156,18 +170,28 @@ export const ChatContainer = () => {
         }}
       >
         <div className="max-w-3xl mx-auto flex items-center justify-between">
-          <a
-            href="https://www.objetivovientreplano.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-block transition-transform duration-200 hover:scale-105"
-          >
-            <div className="h-10 flex items-center">
-              <span className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>
-                Objetivo Vientre Plano
-              </span>
-            </div>
-          </a>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleBackToStart}
+              className="p-2 rounded-full transition-colors duration-300 hover:bg-black/5 dark:hover:bg-white/10"
+              title="Volver al inicio"
+            >
+              <ArrowLeft className="w-5 h-5" style={{ color: 'var(--color-text)' }} />
+            </button>
+
+            <a
+              href="https://www.objetivovientreplano.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block transition-transform duration-200 hover:scale-105"
+            >
+              <div className="h-10 flex items-center">
+                <span className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>
+                  Objetivo Vientre Plano
+                </span>
+              </div>
+            </a>
+          </div>
 
           <button
             onClick={toggleDarkMode}
@@ -208,8 +232,8 @@ export const ChatContainer = () => {
               <div className={`max-w-[80%] flex flex-col`}>
                 <div
                   className={`${message.role === 'user'
-                      ? 'message-bubble-user'
-                      : 'message-bubble-ai'
+                    ? 'message-bubble-user'
+                    : 'message-bubble-ai'
                     }`}
                 >
                   <p className="m-0 whitespace-pre-wrap">{message.content}</p>
@@ -331,11 +355,10 @@ export const ChatContainer = () => {
               <button
                 type="button"
                 onClick={handleVoiceInput}
-                className={`p-2 rounded-full transition-all duration-200 ${
-                  isListening
+                className={`p-2 rounded-full transition-all duration-200 ${isListening
                     ? 'bg-brand-green text-black animate-pulse'
                     : 'hover:bg-black/5 dark:hover:bg-white/10'
-                }`}
+                  }`}
                 title={isListening ? 'Detener grabación' : 'Escribir por voz'}
               >
                 <Mic className="w-5 h-5" style={{ color: isListening ? '#000' : 'var(--color-text)' }} />
