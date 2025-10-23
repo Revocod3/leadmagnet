@@ -209,8 +209,8 @@ export const getDiagnosticQuestions = (language: Language): DiagnosticQuestion[]
 };
 
 export const WELCOME_MESSAGES = {
-  es: '¡Hola! Soy tu asistente virtual para ayudarte a conseguir un vientre plano de forma saludable y duradera.\n\nEstás a punto de empezar un diagnóstico personalizado que me permitirá conocerte mejor y darte recomendaciones adaptadas a ti.\n\nEl proceso es sencillo: yo te haré unas preguntas, tú me respondes con sinceridad, y al final recibirás un análisis completo de tu situación.\n\n¿Estás listo/a para empezar?',
-  en: "Hello! I'm your virtual assistant to help you achieve a flat belly in a healthy and lasting way.\n\nYou're about to start a personalized diagnosis that will allow me to get to know you better and give you recommendations tailored to you.\n\nThe process is simple: I'll ask you some questions, you answer honestly, and at the end you'll receive a complete analysis of your situation.\n\nAre you ready to get started?",
+  es: '¡Hola {userName}! Soy tu asistente virtual para ayudarte a conseguir un vientre plano de forma saludable y duradera.\n\nEstás a punto de empezar un diagnóstico personalizado que me permitirá conocerte mejor y darte recomendaciones adaptadas a ti.\n\nEl proceso es sencillo: yo te haré unas preguntas, tú me respondes con sinceridad, y al final recibirás un análisis completo de tu situación.\n\n¿Estás listo/a para empezar?',
+  en: "Hello {userName}! I'm your virtual assistant to help you achieve a flat belly in a healthy and lasting way.\n\nYou're about to start a personalized diagnosis that will allow me to get to know you better and give you recommendations tailored to you.\n\nThe process is simple: I'll ask you some questions, you answer honestly, and at the end you'll receive a complete analysis of your situation.\n\nAre you ready to get started?",
 };
 
 export const GREETING_MESSAGES = {

@@ -1,10 +1,11 @@
 import { useState, useCallback } from 'react';
 import { diagnosticContent, type DiagnosticQuestion } from '../constants/diagnosticQuestions';
-import { apiClient } from '../services/api';
 import { useSessionStore } from '../stores/sessionStore';
+import { apiClient } from '../services/api';
 
 export type FlowStep =
   | 'initial'
+  | 'name_extracted'
   | 'greeting'
   | 'asking_questions'
   | 'diagnosis'
@@ -55,18 +56,74 @@ export const useDiagnosticFlow = () => {
   const [showWelcome, setShowWelcome] = useState(false);
   const [etymology, setEtymology] = useState<string>('');
 
-  // Initialize chat with welcome message
-  const initialize = useCallback(() => {
-    const content = diagnosticContent[state.language];
-    setMessages([
-      {
-        role: 'assistant',
-        content: content.welcomeMessage,
-        type: 'welcome',
-        timestamp: new Date().toISOString(),
-      },
-    ]);
-  }, [state.language]);
+  // Initialize chat with welcome message from backend
+  const initialize = useCallback(async () => {
+    const sessionStore = useSessionStore.getState();
+    const sessionId = sessionStore.session?.id;
+    const userName = sessionStore.session?.userName;
+
+    if (!sessionId) {
+      console.error('No session ID available');
+      return;
+    }
+
+    // Update state with session info
+    setState((prev) => ({
+      ...prev,
+      userName: userName || '',
+      language: sessionStore.language,
+    }));
+
+    try {
+      // Call backend to initialize diagnostic flow with user name
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/chat/init`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sessionId,
+          language: sessionStore.language,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.data) {
+        // Add welcome message from backend (already personalized with name)
+        setMessages([
+          {
+            role: 'assistant',
+            content: data.data.message,
+            type: 'welcome',
+            timestamp: new Date().toISOString(),
+          },
+        ]);
+
+        // Update state with backend state
+        if (data.data.state) {
+          setState((prev) => ({
+            ...prev,
+            step: data.data.state.step,
+            currentQuestionIndex: data.data.state.currentQuestionIndex,
+            language: data.data.state.language,
+          }));
+        }
+      }
+    } catch (error) {
+      console.error('Error initializing diagnostic:', error);
+      // Fallback to local message
+      const content = diagnosticContent[sessionStore.language];
+      setMessages([
+        {
+          role: 'assistant',
+          content: content.welcomeMessage,
+          type: 'welcome',
+          timestamp: new Date().toISOString(),
+        },
+      ]);
+    }
+  }, []);
 
   // Process user message based on current step
   const processMessage = useCallback(
@@ -74,10 +131,17 @@ export const useDiagnosticFlow = () => {
       if (isProcessing) return;
       setIsProcessing(true);
 
-      const content = diagnosticContent[state.language];
+      const sessionStore = useSessionStore.getState();
+      const sessionId = sessionStore.session?.id;
+
+      if (!sessionId) {
+        console.error('No session ID available');
+        setIsProcessing(false);
+        return;
+      }
 
       try {
-        // Add user message to chat
+        // Add user message to UI immediately
         const userMsg: FlowMessage = {
           role: 'user',
           content: userMessage,
@@ -85,221 +149,62 @@ export const useDiagnosticFlow = () => {
         };
         setMessages((prev) => [...prev, userMsg]);
 
-        let assistantMessage: FlowMessage | null = null;
-        let newState = { ...state };
+        // Send message to backend
+        const requestData: any = {
+          sessionId,
+          message: userMessage,
+          language: state.language,
+        };
 
-        switch (state.step) {
-          case 'initial': {
-            // First message - extract name and language
-            const detectedLang = await openaiService.detectLanguage(userMessage);
-            newState.language = (detectedLang === 'en' ? 'en' : 'es') as 'es' | 'en';
-
-            const extractedName = await openaiService.extractUserName(userMessage);
-            newState.userName =
-              extractedName.charAt(0).toUpperCase() + extractedName.slice(1).toLowerCase();
-
-            // Extract email if present
-            const emailMatch = userMessage.match(/[^\s@]+@[^\s@]+\.[^\s@]+/);
-            if (emailMatch) {
-              newState.userEmail = emailMatch[0];
-            }
-
-            // Generate greeting with etymology
-            const etymologyRaw = await openaiService.generateNameEtymology(
-              newState.userName,
-              newState.language
-            );
-            const localContent = diagnosticContent[newState.language];
-            let greeting = localContent.greeting.replace('{userName}', newState.userName);
-
-            let etymologyText = '';
-            if (etymologyRaw) {
-              const etymologyClean = etymologyRaw.replace(/[.!?]$/, '').trim();
-              etymologyText = `${localContent.didYouKnow}${etymologyClean}?`;
-              greeting += ` ${etymologyText}`;
-            }
-
-            // Show welcome animation
-            setEtymology(etymologyText);
-            setShowWelcome(true);
-
-            // Update state but don't show greeting message yet
-            // The greeting will be shown after welcome animation completes
-            newState.step = 'greeting';
-
-            // Save first answer (name/age/occupation)
-            const firstQuestion = content.diagnosticQuestions[0];
-            if (firstQuestion) {
-              newState.answers.push({
-                question: firstQuestion.question,
-                answer: userMessage,
-              });
-            }
-
-            // Don't add assistant message here - it will be added after welcome animation
-            // The welcome animation will show and then handleWelcomeComplete will show greeting + question
-
-            break;
-          }
-
-          case 'asking_questions': {
-            const currentQuestion =
-              content.diagnosticQuestions[state.currentQuestionIndex];
-
-            if (!currentQuestion) {
-              console.error('No question found at index:', state.currentQuestionIndex);
-              break;
-            }
-
-            // Validate response
-            const validation = await openaiService.validateResponse(
-              currentQuestion.question,
-              userMessage,
-              state.language
-            );
-
-            if (!validation.isValid) {
-              // Invalid response - ask again with feedback
-              assistantMessage = {
-                role: 'assistant',
-                content: validation.feedback,
-                type: 'validation_error',
-                timestamp: new Date().toISOString(),
-              };
-
-              // Re-send the same question
-              setTimeout(() => {
-                setMessages((prev) => [
-                  ...prev,
-                  {
-                    role: 'assistant',
-                    content: currentQuestion.question,
-                    type: 'question',
-                    question: currentQuestion,
-                    timestamp: new Date().toISOString(),
-                  },
-                ]);
-              }, 1000);
-            } else {
-              // Valid response - save and continue
-              newState.answers.push({
-                question: currentQuestion.question,
-                answer: userMessage,
-              });
-
-              // Handle image if on question 17
-              if (state.currentQuestionIndex === 16 && imageData) {
-                // Question 17 is the image question (index 16)
-                // Image analysis would go here
-                newState.imageAnalysis = 'Análisis de imagen pendiente de implementar';
-              }
-
-              // Generate contextual comment
-              const comment = await openaiService.generateContextualComment(
-                currentQuestion.question,
-                userMessage,
-                state.language
-              );
-
-              assistantMessage = {
-                role: 'assistant',
-                content: comment,
-                type: 'comment',
-                timestamp: new Date().toISOString(),
-              };
-
-              // Check if there are more questions
-              const nextIndex = state.currentQuestionIndex + 1;
-              if (nextIndex < content.diagnosticQuestions.length) {
-                // More questions to ask
-                newState.currentQuestionIndex = nextIndex;
-                const nextQuestion = content.diagnosticQuestions[nextIndex];
-
-                if (nextQuestion) {
-                  setTimeout(() => {
-                    setMessages((prev) => [
-                      ...prev,
-                      {
-                        role: 'assistant',
-                        content: nextQuestion.question,
-                        type: 'question',
-                        question: nextQuestion,
-                        timestamp: new Date().toISOString(),
-                      },
-                    ]);
-                  }, 1500);
-                }
-              } else {
-                // All questions answered - generate diagnosis
-                newState.step = 'diagnosis';
-
-                // Generate diagnosis
-                const diagnosis = await openaiService.generateDiagnosis(
-                  newState.userName,
-                  newState.answers,
-                  newState.imageAnalysis,
-                  newState.language
-                );
-                newState.diagnosisContent = diagnosis;
-
-                setTimeout(() => {
-                  setMessages((prev) => [
-                    ...prev,
-                    {
-                      role: 'assistant',
-                      content: diagnosis,
-                      type: 'diagnosis',
-                      timestamp: new Date().toISOString(),
-                    },
-                    {
-                      role: 'assistant',
-                      content: content.pdfQuestion,
-                      type: 'question',
-                      timestamp: new Date().toISOString(),
-                    },
-                  ]);
-                }, 2000);
-
-                newState.step = 'pdf_question';
-              }
-            }
-            break;
-          }
-
-          case 'pdf_question': {
-            // User responded to PDF question
-            newState.step = 'cta';
-            assistantMessage = {
-              role: 'assistant',
-              content: content.finalCta.mainText,
-              type: 'cta',
-              timestamp: new Date().toISOString(),
-            };
-            break;
-          }
-
-          case 'cta':
-          case 'completed':
-          default: {
-            // After CTA, show default reply
-            assistantMessage = {
-              role: 'assistant',
-              content: content.defaultReply.text,
-              type: 'cta',
-              timestamp: new Date().toISOString(),
-            };
-            newState.step = 'completed';
-            break;
-          }
+        if (imageData) {
+          requestData.imageData = imageData;
         }
 
-        // Update state
-        setState(newState);
+        const response: any = await apiClient.sendMessage(requestData);
 
-        // Add assistant message if there is one
-        if (assistantMessage) {
-          setMessages((prev) => [...prev, assistantMessage!]);
+        // Extract metadata from response
+        const metadata = response.metadata || {};
+
+        // Update state based on backend response
+        setState((prev) => ({
+          ...prev,
+          step: metadata.step || prev.step,
+          currentQuestionIndex: metadata.currentQuestionIndex ?? prev.currentQuestionIndex,
+          userName: metadata.userName || prev.userName,
+        }));
+
+        // Handle welcome animation
+        if (metadata.requiresWelcomeAnimation && metadata.etymology) {
+          setEtymology(metadata.etymology);
+          setShowWelcome(true);
+          // Don't add message yet, will be added after welcome animation
+          return;
         }
+
+        // Add assistant message to UI
+        const assistantMsg: FlowMessage = {
+          role: 'assistant',
+          content: response.content,
+          type: metadata.type,
+          timestamp: new Date().toISOString(),
+        };
+        setMessages((prev) => [...prev, assistantMsg]);
+
+        // If there's a next question, add it after a delay
+        if (metadata.nextQuestion) {
+          setTimeout(() => {
+            setMessages((prev) => [
+              ...prev,
+              {
+                role: 'assistant',
+                content: metadata.nextQuestion,
+                type: 'question',
+                timestamp: new Date().toISOString(),
+              },
+            ]);
+          }, 1500);
+        }
+
       } catch (error) {
         console.error('Error processing message:', error);
         setMessages((prev) => [

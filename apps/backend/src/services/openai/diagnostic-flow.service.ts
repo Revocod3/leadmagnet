@@ -41,21 +41,35 @@ export class DiagnosticFlowService {
   }
 
   /**
-   * Inicializa una nueva sesión de diagnóstico
+   * Inicializa una nueva sesión de diagnóstico con el nombre del usuario
    */
-  initializeFlow(language: Language = 'es'): { message: string; state: DiagnosticFlowState } {
+  initializeFlow(language: Language = 'es', userName?: string): { message: string; state: DiagnosticFlowState } {
     const state: DiagnosticFlowState = {
       step: 'initial',
-      currentQuestionIndex: 0,
-      userName: null,
+      currentQuestionIndex: 1, // Empezamos desde la pregunta 2 (índice 1)
+      userName: userName || null,
       language,
       answers: [],
       imageAnalysis: null,
       diagnosisContent: null,
     };
 
+    // Personalizar mensaje de bienvenida con el nombre
+    const langKey = (language === 'en' ? 'en' : 'es') as 'es' | 'en';
+    const welcomeTemplate = WELCOME_MESSAGES[langKey];
+    let welcomeMessage: string;
+    if (userName) {
+      // Extraer solo el primer nombre (ignorar apellidos)
+      const nameParts = userName.trim().split(' ');
+      const firstName: string = nameParts[0] || userName || '';
+      welcomeMessage = welcomeTemplate.replace('{userName}', firstName);
+    } else {
+      // Si no hay nombre, remover el placeholder
+      welcomeMessage = welcomeTemplate.replace('{userName}', '');
+    }
+
     return {
-      message: WELCOME_MESSAGES[language as 'es' | 'en'],
+      message: welcomeMessage,
       state,
     };
   }
@@ -95,57 +109,35 @@ export class DiagnosticFlowService {
   }
 
   /**
-   * Maneja el primer mensaje del usuario (extracción de nombre y detección de idioma)
+   * Maneja el primer mensaje del usuario (cuando ya tiene nombre, solo responde "sí" al welcome)
    */
   private async handleInitialMessage(
     userMessage: string,
     currentState: DiagnosticFlowState
   ): Promise<FlowResponse> {
-    // Detectar idioma
-    const language = await this.detectLanguage(userMessage);
+    // El usuario ya tiene nombre desde la sesión
+    // Solo esperamos confirmación para empezar las preguntas
 
-    // Extraer nombre
-    const userName = await this.extractName(userMessage);
+    const questions = getDiagnosticQuestions(currentState.language);
+    const firstQuestion = questions[1]; // Empezamos desde la pregunta 2 (índice 1)
 
-    // Generar etimología del nombre
-    const etymology = await this.generateNameEtymology(userName, language);
-
-    // Guardar primera respuesta
-    const questions = getDiagnosticQuestions(language);
-    const firstQuestion = questions[0];
     if (!firstQuestion) {
       throw new Error('No questions available');
     }
-    const answers = [
-      {
-        question: firstQuestion.question,
-        answer: userMessage,
-      },
-    ];
 
-    // Preparar estado actualizado
+    // Preparar estado actualizado - vamos directo a hacer preguntas
     const newState: DiagnosticFlowState = {
       ...currentState,
-      step: 'greeting',
-      userName,
-      language,
-      answers,
-      currentQuestionIndex: 0,
+      step: 'asking_questions',
+      currentQuestionIndex: 1, // Empezamos desde la pregunta 2 (índice 1)
     };
 
-    // Construir mensaje de saludo
-    let greeting = GREETING_MESSAGES[language as 'es' | 'en'].replace('{userName}', userName);
-    if (etymology) {
-      const etymologyClean = etymology.replace(/[.!?]$/, '').trim();
-      greeting += ` ${DID_YOU_KNOW[language as 'es' | 'en']}${etymologyClean}?`;
-    }
-
     return {
-      message: greeting,
+      message: firstQuestion.question,
       newState,
-      requiresWelcomeAnimation: true,
-      etymology,
-      type: 'greeting',
+      nextQuestion: firstQuestion.question,
+      questionDetails: firstQuestion.questionDetails,
+      type: 'question',
     };
   }
 

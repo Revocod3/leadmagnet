@@ -11,9 +11,14 @@ export interface User {
 export interface SessionData {
   id: string;
   user?: User;
+  userName?: string;
+  userEmail?: string;
   language: Language;
   type?: DiagnosticType;
-  createdAt: string;
+  step?: string;
+  startTime?: string;
+  completionTime?: string;
+  createdAt?: string;
   expiresAt?: string;
 }
 
@@ -65,6 +70,8 @@ export interface ApiResponse<T = any> {
 export interface CreateSessionRequest {
   language?: Language;
   user?: User;
+  userName?: string;
+  userEmail?: string;
 }
 
 export interface SendMessageRequest {

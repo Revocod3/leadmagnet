@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { IntroScreen } from './components/screens/IntroScreen';
@@ -9,6 +9,8 @@ import { DiagnosisScreen } from './components/screens/DiagnosisScreen';
 import { WelcomeAnimation } from './components/animations/WelcomeAnimation';
 import { Layout } from './components/layout/Layout';
 import { openaiService } from './services/openai';
+import { useSessionStore } from './stores/sessionStore';
+import { apiClient } from './services/api';
 import './styles/globals.css';
 
 // Create a client
@@ -23,6 +25,7 @@ const queryClient = new QueryClient({
 
 function MainFlow() {
   const navigate = useNavigate();
+  const { setSession } = useSessionStore();
   const [hasCompletedIntro, setHasCompletedIntro] = useState(() => {
     return !!sessionStorage.getItem('userData');
   });
@@ -36,6 +39,20 @@ function MainFlow() {
     sessionStorage.setItem('userData', JSON.stringify({ name, email }));
     setUserName(name);
     setHasCompletedIntro(true);
+
+    // Create backend session with user data
+    try {
+      const newSession = await apiClient.createSession({
+        userName: name,
+        userEmail: email,
+        language: 'es',
+      });
+      setSession(newSession);
+      console.log('Session created:', newSession);
+    } catch (error) {
+      console.error('Error creating session:', error);
+      // Continue anyway, will show error later if needed
+    }
 
     // Show welcome animation immediately
     setShowWelcome(true);

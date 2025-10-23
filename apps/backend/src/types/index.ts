@@ -1,22 +1,111 @@
-// Re-export shared types
-export type {
-  Language,
-  DiagnosticType,
-  SessionStep,
-  User,
-  SessionData,
-  ChatMessage,
-  QuestionData,
-  QuizQuestion,
-  QuizOption,
-  QuizAnswer,
-  DiagnosisResponse,
-  ApiResponse,
-  CreateSessionRequest,
-  SendMessageRequest,
-  SubmitQuizAnswerRequest,
-  UploadImageRequest,
-} from '@ovp/shared';
+// Basic types
+export type Language = 'es' | 'en';
+export type DiagnosticType = 'chat' | 'quiz';
+export type SessionStep = 'intro' | 'choice' | 'questions' | 'diagnosis';
+
+// Shared types
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface SessionData {
+  id: string;
+  userId?: string;
+  userName?: string;
+  userEmail?: string;
+  language: Language;
+  diagnosticType?: DiagnosticType;
+  step: SessionStep;
+  imageAnalysisText?: string;
+  assistantId?: string;
+  threadId?: string;
+  startTime: Date;
+  completionTime?: Date;
+  expiresAt: Date;
+}
+
+export interface ChatMessage {
+  id?: string;
+  role: 'user' | 'assistant';
+  content: string;
+  metadata?: Record<string, unknown>;
+  createdAt?: Date;
+}
+
+export interface QuestionData {
+  id: number;
+  question: string;
+  emoji?: string;
+  questionDetails?: string;
+  options: string[];
+}
+
+export interface QuizQuestion {
+  id: number;
+  question: string;
+  emoji: string;
+  type: 'single' | 'multiple';
+  options: QuizOption[];
+}
+
+export interface QuizOption {
+  value: string;
+  label: string;
+  points: number;
+}
+
+export interface QuizAnswer {
+  id: string;
+  sessionId: string;
+  questionId: number;
+  answer: string;
+  points: number;
+  createdAt: Date;
+  empathicComment?: string;
+}
+
+export interface DiagnosisResponse {
+  id: string;
+  sessionId: string;
+  content: string;
+  totalScore?: number;
+  scorePercentage?: number;
+  pdfGenerated: boolean;
+  createdAt: Date;
+}
+
+export interface ApiResponse<T = unknown> {
+  success: boolean;
+  data?: T;
+  error?: string;
+}
+
+export interface CreateSessionRequest {
+  userName?: string;
+  userEmail?: string;
+  language?: Language;
+}
+
+export interface SendMessageRequest {
+  sessionId: string;
+  message: string;
+  language: Language;
+}
+
+export interface SubmitQuizAnswerRequest {
+  sessionId: string;
+  questionId: number;
+  answer: string;
+}
+
+export interface UploadImageRequest {
+  sessionId: string;
+  image: File | Uint8Array;
+}
 
 // Backend-specific types
 export interface EnvConfig {

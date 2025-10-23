@@ -56,7 +56,24 @@ export class ChatController {
         return;
       }
 
-      // Simply save messages - frontend handles the flow
+      // Get current flow state from session
+      const flowState: DiagnosticFlowState = (session.flowState as unknown as DiagnosticFlowState) || {
+        step: 'initial',
+        currentQuestionIndex: 0,
+        userName: null,
+        language: (language as Language) || 'es',
+        answers: [],
+        imageAnalysis: null,
+        diagnosisContent: null,
+      };
+
+      // Process message through diagnostic flow
+      const flowResponse = await diagnosticFlowService.processMessage(
+        message,
+        flowState,
+        imageData
+      );
+
       // Save user message
       await prisma.message.create({
         data: {
@@ -66,25 +83,92 @@ export class ChatController {
         },
       });
 
-      // Echo back a simple response
-      const assistantContent = '¡Hola! Gracias por tu mensaje.';
-
+      // Save assistant response
       await prisma.message.create({
         data: {
           sessionId,
           role: 'assistant',
-          content: assistantContent,
+          content: flowResponse.message,
+          metadata: {
+            type: flowResponse.type,
+            nextQuestion: flowResponse.nextQuestion,
+            questionDetails: flowResponse.questionDetails,
+            etymology: flowResponse.etymology,
+            requiresWelcomeAnimation: flowResponse.requiresWelcomeAnimation,
+          },
         },
       });
 
+      // Update session with new flow state
+      const updateData: any = {
+        flowState: flowResponse.newState as any,
+        step: flowResponse.newState.step,
+        currentQuestionIndex: flowResponse.newState.currentQuestionIndex,
+      };
+
+      if (flowResponse.newState.userName) {
+        updateData.userName = flowResponse.newState.userName;
+      }
+
+      if (flowResponse.newState.language) {
+        updateData.language = flowResponse.newState.language;
+      }
+
+      if (flowResponse.newState.imageAnalysis) {
+        updateData.imageAnalysisText = flowResponse.newState.imageAnalysis;
+      }
+
+      // Mark completion time if completed
+      if (flowResponse.newState.step === 'completed' || flowResponse.newState.step === 'cta') {
+        updateData.completionTime = new Date();
+      }
+
+      await prisma.session.update({
+        where: { id: sessionId },
+        data: updateData,
+      });
+
+      // Save diagnosis if generated
+      if (flowResponse.newState.diagnosisContent && !session.diagnosis) {
+        const diagnosisData: {
+          sessionId: string;
+          userId?: string;
+          content: string;
+        } = {
+          sessionId,
+          content: flowResponse.newState.diagnosisContent,
+        };
+
+        if (session.userId) {
+          diagnosisData.userId = session.userId;
+        }
+
+        await prisma.diagnosis.create({
+          data: diagnosisData,
+        });
+      }
+
+      // Build response
       const chatMessage: ChatMessage = {
         role: 'assistant',
-        content: assistantContent,
+        content: flowResponse.message,
       };
 
       res.json({
         success: true,
-        data: chatMessage,
+        data: {
+          ...chatMessage,
+          metadata: {
+            type: flowResponse.type,
+            step: flowResponse.newState.step,
+            currentQuestionIndex: flowResponse.newState.currentQuestionIndex,
+            nextQuestion: flowResponse.nextQuestion,
+            questionDetails: flowResponse.questionDetails,
+            etymology: flowResponse.etymology,
+            requiresWelcomeAnimation: flowResponse.requiresWelcomeAnimation,
+            userName: flowResponse.newState.userName,
+          },
+        },
       } as ApiResponse<ChatMessage>);
     } catch (error) {
       console.error('Error sending message:', error);
@@ -168,7 +252,11 @@ export class ChatController {
         return;
       }
 
-      const initialized = diagnosticFlowService.initializeFlow(language as Language || 'es');
+      // Usar el nombre de la sesión para personalizar el mensaje de bienvenida
+      const initialized = diagnosticFlowService.initializeFlow(
+        (language as Language) || session.language as Language || 'es',
+        session.userName || undefined
+      );
 
       // Save welcome message
       await prisma.message.create({
