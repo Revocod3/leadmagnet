@@ -256,7 +256,7 @@ export const ChatContainer = () => {
                         className={`${message.role === 'user'
                           ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100'
                           : 'bg-transparent text-foreground'
-                          } rounded-2xl px-5 py-3`}
+                          } rounded-full py-2 text-justify px-6 fit-content`}
                       >
                         <p className="text-[15px] leading-relaxed whitespace-pre-wrap break-words">
                           {message.content}
