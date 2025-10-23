@@ -1,22 +1,88 @@
-// Re-export shared types
-export type {
-  Language,
-  DiagnosticType,
-  SessionStep,
-  User,
-  SessionData,
-  ChatMessage,
-  QuestionData,
-  QuizQuestion,
-  QuizOption,
-  QuizAnswer,
-  DiagnosisResponse,
-  ApiResponse,
-  CreateSessionRequest,
-  SendMessageRequest,
-  SubmitQuizAnswerRequest,
-  UploadImageRequest,
-} from '@ovp/shared';
+// Basic types
+export type Language = 'es' | 'en';
+export type DiagnosticType = 'chat' | 'quiz';
+export type SessionStep = 'intro' | 'choice' | 'questions' | 'diagnosis';
+
+export interface User {
+  name: string;
+  email: string;
+}
+
+export interface SessionData {
+  id: string;
+  user?: User;
+  language: Language;
+  type?: DiagnosticType;
+  createdAt: string;
+  expiresAt?: string;
+}
+
+export interface ChatMessage {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  timestamp?: string;
+  createdAt?: string;
+}
+
+export interface QuestionData {
+  id: string;
+  question: string;
+  type: 'text' | 'multipleChoice' | 'image';
+  options?: string[];
+}
+
+export interface QuizQuestion {
+  id: string;
+  text: string;
+  options: QuizOption[];
+}
+
+export interface QuizOption {
+  value: string;
+  label: string;
+  score: number;
+}
+
+export interface QuizAnswer {
+  questionId: string;
+  answer: string;
+  score: number;
+  points?: number;
+}
+
+export interface DiagnosisResponse {
+  diagnosis: string;
+  recommendations: string[];
+  score?: number;
+}
+
+export interface ApiResponse<T = any> {
+  success: boolean;
+  data?: T;
+  error?: string;
+}
+
+export interface CreateSessionRequest {
+  language?: Language;
+  user?: User;
+}
+
+export interface SendMessageRequest {
+  sessionId: string;
+  message: string;
+  language?: Language;
+}
+
+export interface SubmitQuizAnswerRequest {
+  sessionId: string;
+  questionId: string;
+  answer: string;
+}
+
+export interface UploadImageRequest {
+  sessionId: string;
+  image: File | string;
+}
 
 // Frontend-specific types
 export interface UIState {

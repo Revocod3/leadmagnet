@@ -1,86 +1,135 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 
-export const IntroScreen = () => {
-  const navigate = useNavigate();
-  const [selectedOption, setSelectedOption] = useState<'chat' | 'quiz' | null>(null);
+interface IntroScreenProps {
+  onComplete: (name: string, email: string) => void;
+}
 
-  const handleStart = () => {
-    if (selectedOption === 'chat') {
-      navigate('/chat');
-    } else if (selectedOption === 'quiz') {
-      navigate('/quiz');
+export const IntroScreen = ({ onComplete }: IntroScreenProps) => {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [errors, setErrors] = useState({ name: '', email: '' });
+
+  const validateForm = () => {
+    const newErrors = { name: '', email: '' };
+    let isValid = true;
+
+    if (!name.trim()) {
+      newErrors.name = 'Por favor ingresa tu nombre';
+      isValid = false;
+    }
+
+    if (!email.trim()) {
+      newErrors.email = 'Por favor ingresa tu correo';
+      isValid = false;
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      newErrors.email = 'Por favor ingresa un correo válido';
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+    return isValid;
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (validateForm()) {
+      onComplete(name, email);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-      <div className="max-w-2xl w-full bg-white rounded-2xl shadow-xl p-8 md:p-12">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-            Objetivo Vientre Plano
-          </h1>
-          <p className="text-lg text-gray-600">
-            Descubre tu diagnóstico personalizado para lograr un vientre plano
-          </p>
+    <div className="fixed inset-0 flex items-center justify-center z-[9999] p-5 bg-gradient-to-br from-[#F4E8D8] to-[#E8D5C4]">
+      <div className="bg-white rounded-3xl p-10 max-w-[480px] w-[90%] shadow-2xl animate-slide-in-up">
+        {/* Logo */}
+        <div className="text-center mb-6">
+          <div className="max-w-[200px] h-auto mx-auto">
+            <span className="text-2xl font-bold text-primary">
+              Objetivo Vientre Plano
+            </span>
+          </div>
         </div>
 
-        <div className="space-y-4 mb-8">
+        {/* Title */}
+        <h1 className="text-3xl font-semibold text-ovp-text-dark text-center mb-3">
+          Bienvenido/a a tu Diagnóstico Gratuito
+        </h1>
+
+        {/* Subtitle */}
+        <p className="text-base text-gray-500 text-center mb-8 leading-relaxed">
+          Para comenzar tu diagnóstico personalizado, necesitamos algunos datos:
+        </p>
+
+        {/* Form */}
+        <form onSubmit={handleSubmit}>
+          {/* Name Input */}
+          <div className="mb-6">
+            <label
+              htmlFor="user-name-input"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
+              Tu nombre
+            </label>
+            <input
+              type="text"
+              id="user-name-input"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Ej: María"
+              autoComplete="given-name"
+              className={`w-full px-4 py-3.5 border-2 rounded-xl text-base transition-all duration-300 ${
+                errors.name
+                  ? 'border-red-500 animate-shake'
+                  : 'border-gray-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(151,170,121,0.1)]'
+              } focus:outline-none`}
+            />
+            {errors.name && (
+              <span className="block text-red-500 text-sm mt-1.5 animate-fade-in">
+                {errors.name}
+              </span>
+            )}
+          </div>
+
+          {/* Email Input */}
+          <div className="mb-6">
+            <label
+              htmlFor="user-email-input"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
+              Tu correo electrónico
+            </label>
+            <input
+              type="email"
+              id="user-email-input"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Ej: maria@email.com"
+              autoComplete="email"
+              className={`w-full px-4 py-3.5 border-2 rounded-xl text-base transition-all duration-300 ${
+                errors.email
+                  ? 'border-red-500 animate-shake'
+                  : 'border-gray-200 focus:border-primary focus:shadow-[0_0_0_3px_rgba(151,170,121,0.1)]'
+              } focus:outline-none`}
+            />
+            {errors.email && (
+              <span className="block text-red-500 text-sm mt-1.5 animate-fade-in">
+                {errors.email}
+              </span>
+            )}
+          </div>
+
+          {/* Submit Button */}
           <button
-            onClick={() => setSelectedOption('chat')}
-            className={`w-full p-6 rounded-xl border-2 transition-all duration-200 ${selectedOption === 'chat'
-                ? 'border-indigo-500 bg-indigo-50 shadow-lg'
-                : 'border-gray-200 hover:border-indigo-300 hover:bg-gray-50'
-              }`}
+            type="submit"
+            className="w-full px-4 py-4 bg-gradient-to-r from-primary to-primary-light text-white border-none rounded-xl text-lg font-semibold cursor-pointer transition-all duration-300 shadow-[0_4px_15px_rgba(151,170,121,0.3)] hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(151,170,121,0.4)] active:translate-y-0"
           >
-            <div className="flex items-start">
-              <div className="flex-shrink-0 text-3xl mr-4">💬</div>
-              <div className="text-left flex-1">
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                  Diagnóstico por Chat
-                </h3>
-                <p className="text-gray-600">
-                  Conversa con nuestro asistente virtual y obtén un diagnóstico personalizado
-                </p>
-              </div>
-            </div>
+            Comenzar Diagnóstico ✨
           </button>
+        </form>
 
-          <button
-            onClick={() => setSelectedOption('quiz')}
-            className={`w-full p-6 rounded-xl border-2 transition-all duration-200 ${selectedOption === 'quiz'
-                ? 'border-indigo-500 bg-indigo-50 shadow-lg'
-                : 'border-gray-200 hover:border-indigo-300 hover:bg-gray-50'
-              }`}
-          >
-            <div className="flex items-start">
-              <div className="flex-shrink-0 text-3xl mr-4">📋</div>
-              <div className="text-left flex-1">
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                  Diagnóstico por Cuestionario
-                </h3>
-                <p className="text-gray-600">
-                  Responde a preguntas específicas para obtener tu diagnóstico
-                </p>
-              </div>
-            </div>
-          </button>
-        </div>
-
-        <button
-          onClick={handleStart}
-          disabled={!selectedOption}
-          className={`w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-200 ${selectedOption
-              ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg hover:shadow-xl'
-              : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-            }`}
-        >
-          Comenzar Diagnóstico
-        </button>
-
-        <div className="mt-8 text-center text-sm text-gray-500">
-          <p>🔒 Tu información es confidencial y segura</p>
-        </div>
+        {/* Privacy Note */}
+        <p className="text-center text-sm text-gray-400 mt-5">
+          🔒 Tus datos están seguros y son confidenciales
+        </p>
       </div>
     </div>
   );

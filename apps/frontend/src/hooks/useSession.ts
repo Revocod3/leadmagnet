@@ -3,7 +3,7 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { apiClient } from '../services/api';
 import { useSessionStore } from '../stores/sessionStore';
-import type { CreateSessionRequest } from '../types';
+import type { CreateSessionRequest, SessionData } from '../types';
 
 export const useSession = () => {
   const { session, language, setSession, clearSession, setLanguage, } = useSessionStore();
@@ -37,7 +37,7 @@ export const useSession = () => {
 
   // Update session mutation
   const updateSessionMutation = useMutation({
-    mutationFn: async (updates: Partial<typeof session>) => {
+    mutationFn: async (updates: Partial<SessionData>) => {
       if (!session?.id) throw new Error('No active session');
       return apiClient.updateSession(session.id, updates);
     },
@@ -47,7 +47,7 @@ export const useSession = () => {
   });
 
   // Check if session is expired
-  const isExpired = session ? new Date() > new Date(session.expiresAt) : false;
+  const isExpired = session && session.expiresAt ? new Date() > new Date(session.expiresAt) : false;
 
   return {
     session,

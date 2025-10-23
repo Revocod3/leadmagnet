@@ -25,7 +25,10 @@ export const QuizContainer = () => {
   const [answers, setAnswers] = useState<Record<number, string>>({});
 
   const handleAnswer = (answer: string) => {
-    setAnswers({ ...answers, [mockQuestions[currentQuestion].id]: answer });
+    const question = mockQuestions[currentQuestion];
+    if (question) {
+      setAnswers({ ...answers, [question.id]: answer });
+    }
   };
 
   const handleNext = () => {
@@ -47,6 +50,10 @@ export const QuizContainer = () => {
 
   const question = mockQuestions[currentQuestion];
   const progress = ((currentQuestion + 1) / mockQuestions.length) * 100;
+
+  if (!question) {
+    return <div>Cargando...</div>;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
@@ -70,7 +77,7 @@ export const QuizContainer = () => {
           <h2 className="text-2xl font-bold text-gray-900 mb-8">{question.question}</h2>
 
           <div className="space-y-3 mb-8">
-            {question.options.map((option, index) => (
+            {question.options?.map((option, index) => (
               <button
                 key={index}
                 onClick={() => handleAnswer(option)}

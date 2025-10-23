@@ -5,13 +5,13 @@ import type { QuizAnswer } from '../types';
 
 interface QuizStore {
   currentQuestion: number;
-  answers: Record<number, QuizAnswer>;
+  answers: Record<string, QuizAnswer>;
   totalScore: number;
   isCompleted: boolean;
-  
+
   setCurrentQuestion: (questionNumber: number) => void;
-  addAnswer: (questionId: number, answer: QuizAnswer) => void;
-  setAnswers: (answers: Record<number, QuizAnswer>) => void;
+  addAnswer: (questionId: string, answer: QuizAnswer) => void;
+  setAnswers: (answers: Record<string, QuizAnswer>) => void;
   nextQuestion: () => void;
   previousQuestion: () => void;
   setTotalScore: (score: number) => void;

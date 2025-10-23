@@ -2,27 +2,141 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  /* Mejoras para dispositivos táctiles */
+  body {
+    @apply transition-colors duration-300;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Variables CSS personalizadas para dark mode */
+  :root {
+    --color-bg: #F5F5F5;
+    --color-text: #000000;
+    --color-user-bg: #f0f0f0;
+    --color-ai-bg: #F5F5F5;
+    --color-ai-border: #f0f0f0;
+    --color-header-bg: #F5F5F5;
+    --color-input-bg: #F5F5F5;
+    --color-input-border: #ddd;
+    --color-border: #DDDDDD;
+  }
+
+  .dark {
+    --color-bg: #2D3748;
+    --color-bg-alt: #1A202C;
+    --color-header-bg: #4A5568;
+    --color-input-bg: #2D3748;
+    --color-text: #F7FAFC;
+    --color-text-light: #A0AEC0;
+    --color-border: #4A5568;
+    --color-ai-border: #4A5568;
+    --color-input-border: #4A5568;
+    --color-ai-bg: #4A5568;
+    --color-user-bg: #95C11F;
+  }
+}
+
 @layer components {
+  /* Utilidades de animación */
   .animate-fade-in {
-    animation: fadeIn 0.5s ease-in-out;
+    animation: fadeIn 0.4s ease-out;
   }
 
   .animate-slide-up {
     animation: slideUp 0.3s ease-out;
   }
 
+  .animate-slide-in-up {
+    animation: slideInUp 0.4s ease-out;
+  }
+
   .animate-bounce-subtle {
     animation: bounceSubtle 2s infinite;
   }
+
+  .animate-zoom-in {
+    animation: zoomIn 0.3s ease-out;
+  }
+
+  /* Scroll suave para móviles */
+  .smooth-scroll {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    scroll-behavior: smooth;
+  }
+
+  /* Mensaje burbujas */
+  .message-bubble {
+    @apply rounded-message p-md-fluid leading-relaxed;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    word-break: break-word;
+    max-width: 100%;
+  }
+
+  .message-bubble-ai {
+    @apply message-bubble bg-ovp-bg-alt border border-gray-200;
+    background-color: var(--color-ai-bg);
+    border-color: var(--color-ai-border);
+    color: var(--color-text);
+  }
+
+  .message-bubble-user {
+    @apply message-bubble bg-brand-green text-black;
+  }
+
+  /* Dark mode para burbujas de usuario */
+  .dark .message-bubble-user {
+    @apply bg-brand-green text-black;
+  }
 }
 
+@layer utilities {
+  /* Tipografía fluida */
+  .text-fluid-base {
+    font-size: clamp(14px, 2vw, 16px);
+  }
+
+  .text-fluid-small {
+    font-size: clamp(13px, 1.8vw, 15px);
+  }
+
+  .text-fluid-question {
+    font-size: clamp(15px, 2.2vw, 17px);
+  }
+
+  /* Espaciado fluido */
+  .p-fluid-xs {
+    padding: clamp(4px, 1vw, 6px);
+  }
+
+  .p-fluid-sm {
+    padding: clamp(8px, 2vw, 12px);
+  }
+
+  .p-fluid-md {
+    padding: clamp(12px, 3vw, 20px);
+  }
+
+  .p-fluid-lg {
+    padding: clamp(20px, 4vw, 32px);
+  }
+}
+
+/* Keyframes adicionales */
 @keyframes fadeIn {
   from {
     opacity: 0;
+    transform: translateY(10px);
   }
-
   to {
     opacity: 1;
+    transform: translateY(0);
   }
 }
 
@@ -31,7 +145,17 @@
     transform: translateY(10px);
     opacity: 0;
   }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
 
+@keyframes slideInUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
   to {
     transform: translateY(0);
     opacity: 1;
@@ -39,13 +163,42 @@
 }
 
 @keyframes bounceSubtle {
-
-  0%,
-  100% {
+  0%, 100% {
     transform: translateY(0);
   }
-
   50% {
     transform: translateY(-5px);
+  }
+}
+
+@keyframes zoomIn {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes blink {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  10%, 30%, 50%, 70%, 90% {
+    transform: translateX(-5px);
+  }
+  20%, 40%, 60%, 80% {
+    transform: translateX(5px);
   }
 }

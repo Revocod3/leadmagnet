@@ -36,11 +36,11 @@ export const useQuiz = () => {
       const answersMap = quizAnswers.reduce((acc, answer) => {
         acc[answer.questionId] = answer;
         return acc;
-      }, {} as Record<number, typeof quizAnswers[0]>);
+      }, {} as Record<string, typeof quizAnswers[0]>);
 
       setAnswers(answersMap);
 
-      const score = quizAnswers.reduce((sum, answer) => sum + answer.points, 0);
+      const score = quizAnswers.reduce((sum, answer) => sum + (answer.points || answer.score || 0), 0);
       setTotalScore(score);
 
       return quizAnswers;
@@ -50,7 +50,7 @@ export const useQuiz = () => {
 
   // Submit answer mutation
   const submitAnswerMutation = useMutation({
-    mutationFn: async ({ questionId, answer }: { questionId: number; answer: string }) => {
+    mutationFn: async ({ questionId, answer }: { questionId: string; answer: string }) => {
       if (!session?.id) throw new Error('No active session');
 
       const request: SubmitQuizAnswerRequest = {
@@ -63,7 +63,7 @@ export const useQuiz = () => {
     },
     onSuccess: (response, variables) => {
       addAnswer(variables.questionId, response);
-      setTotalScore(totalScore + response.points);
+      setTotalScore(totalScore + (response.points || response.score || 0));
 
       // Auto-advance to next question
       if (currentQuestion < TOTAL_QUESTIONS) {
