@@ -8,7 +8,6 @@ import { Moon, Sun, Mic, Download, ArrowLeft, MoreVertical, Plus, ArrowUp, Camer
 import { motion, AnimatePresence } from 'framer-motion';
 import { CameraModal } from '../modals/CameraModal';
 import { ImageViewerModal } from '../modals/ImageViewerModal';
-import { ShareModal } from '../modals/ShareModal';
 import { MessageActions } from './MessageActions';
 
 export const ChatContainer = () => {
@@ -18,7 +17,6 @@ export const ChatContainer = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [imageViewerUrl, setImageViewerUrl] = useState('');
-  const [shareModalText, setShareModalText] = useState('');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [isPlusMenuOpen, setIsPlusMenuOpen] = useState(false);
@@ -152,8 +150,9 @@ export const ChatContainer = () => {
     setImageViewerUrl(imageUrl);
   };
 
-  const handleShareMessage = (text: string) => {
-    setShareModalText(text);
+  const handleRegenerateResponse = async () => {
+    // TODO: Implementar lógica de regeneración
+    console.log('Regenerando respuesta...');
   };
 
   const handleBackToStart = () => {
@@ -215,9 +214,9 @@ export const ChatContainer = () => {
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ type: "spring", duration: 0.5 }}
-                  className="w-16 h-16 rounded-2xl bg-gradient-to-br from-brand-green-400 to-brand-green-600 flex items-center justify-center mb-6"
+                  className="w-16 h-16 mb-6"
                 >
-                  <span className="text-3xl">✨</span>
+                  <img src="/assets/images/favicon.webp" alt="OVP" className="w-full h-full object-contain drop-shadow-lg" />
                 </motion.div>
                 <h2 className="text-2xl font-bold text-foreground mb-2">
                   Comencemos tu diagnóstico
@@ -243,8 +242,8 @@ export const ChatContainer = () => {
                   >
                     {/* Avatar for assistant */}
                     {message.role === 'assistant' && (
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-brand-green-500 dark:bg-brand-green-600 flex items-center justify-center text-white text-xs font-bold shadow-sm">
-                        ✨
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full overflow-hidden shadow-sm ring-2 ring-brand-green-500/20 dark:ring-brand-green-400/30">
+                        <img src="/assets/images/favicon.webp" alt="OVP" className="w-full h-full object-cover" />
                       </div>
                     )}
 
@@ -293,7 +292,7 @@ export const ChatContainer = () => {
                       {/* Message Actions */}
                       <MessageActions
                         messageText={message.content}
-                        onShare={() => handleShareMessage(message.content)}
+                        {...(message.role === 'assistant' && { onRegenerate: handleRegenerateResponse })}
                         isUserMessage={message.role === 'user'}
                       />
                     </div>
@@ -315,8 +314,8 @@ export const ChatContainer = () => {
                   animate={{ opacity: 1, y: 0 }}
                   className="flex gap-4"
                 >
-                  <div className="w-8 h-8 rounded-full bg-brand-green-500 dark:bg-brand-green-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0 shadow-sm">
-                    ✨
+                  <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 shadow-sm ring-2 ring-brand-green-500/20 dark:ring-brand-green-400/30">
+                    <img src="/assets/images/favicon.webp" alt="OVP" className="w-full h-full object-cover" />
                   </div>
                   <div className="bg-transparent rounded-2xl px-5 py-4">
                     <div className="flex gap-1.5">
@@ -479,12 +478,6 @@ export const ChatContainer = () => {
         isOpen={!!imageViewerUrl}
         imageUrl={imageViewerUrl}
         onClose={() => setImageViewerUrl('')}
-      />
-
-      <ShareModal
-        isOpen={!!shareModalText}
-        text={shareModalText}
-        onClose={() => setShareModalText('')}
       />
     </>
   );

@@ -1,15 +1,15 @@
-import { Copy, Share2, Heart } from 'lucide-react';
+import { Copy, ThumbsUp, ThumbsDown, RefreshCw } from 'lucide-react';
 import { useState } from 'react';
 
 interface MessageActionsProps {
   messageText: string;
-  onShare: () => void;
   isUserMessage?: boolean;
+  onRegenerate?: () => void | Promise<void>;
 }
 
-export const MessageActions = ({ messageText, onShare, isUserMessage = false }: MessageActionsProps) => {
+export const MessageActions = ({ messageText, isUserMessage = false, onRegenerate }: MessageActionsProps) => {
   const [copied, setCopied] = useState(false);
-  const [liked, setLiked] = useState(false);
+  const [liked, setLiked] = useState<'up' | 'down' | null>(null);
 
   const handleCopy = async () => {
     try {
@@ -21,44 +21,62 @@ export const MessageActions = ({ messageText, onShare, isUserMessage = false }: 
     }
   };
 
-  const handleLike = () => {
-    setLiked(!liked);
+  const handleThumbsUp = () => {
+    setLiked(liked === 'up' ? null : 'up');
+  };
+
+  const handleThumbsDown = () => {
+    setLiked(liked === 'down' ? null : 'down');
   };
 
   return (
     <div
-      className={`flex gap-3 mt-2.5 pt-2.5 px-2.5 opacity-60 hover:opacity-100 transition-opacity duration-300 ${isUserMessage ? 'justify-end pr-0 pl-2.5' : 'justify-start pl-2.5 pr-0'
+      className={`flex gap-2 mt-2.5 pt-2.5 px-2.5 ${isUserMessage ? 'justify-end pr-0 pl-2.5' : 'justify-start pl-2.5 pr-0'
         }`}
     >
       {/* Copy */}
       <button
         onClick={handleCopy}
-        className="p-1 text-foreground/70 hover:text-foreground transition-colors duration-200 rounded hover:bg-surface/50"
+        className="p-1.5 text-foreground/60 hover:text-foreground hover:bg-surface/50 transition-all duration-200 rounded-lg"
         title={copied ? 'Copiado!' : 'Copiar'}
       >
         <Copy className="w-4 h-4" />
       </button>
 
-      {/* Share */}
+      {/* Thumbs Up */}
       <button
-        onClick={onShare}
-        className="p-1 text-foreground/70 hover:text-foreground transition-colors duration-200 rounded hover:bg-surface/50"
-        title="Compartir"
+        onClick={handleThumbsUp}
+        className={`p-1.5 transition-all duration-200 rounded-lg hover:bg-surface/50 ${liked === 'up'
+          ? 'text-brand-green-500'
+          : 'text-foreground/60 hover:text-foreground'
+          }`}
+        title="Me gusta"
       >
-        <Share2 className="w-4 h-4" />
+        <ThumbsUp className={`w-4 h-4 ${liked === 'up' ? 'fill-current' : ''}`} />
       </button>
 
-      {/* Like */}
+      {/* Thumbs Down */}
       <button
-        onClick={handleLike}
-        className={`p-1 transition-colors duration-200 rounded ${liked
-            ? 'text-brand-green-500'
-            : 'text-foreground/70 hover:text-foreground'
+        onClick={handleThumbsDown}
+        className={`p-1.5 transition-all duration-200 rounded-lg hover:bg-surface/50 ${liked === 'down'
+          ? 'text-red-500'
+          : 'text-foreground/60 hover:text-foreground'
           }`}
-        title={liked ? 'Me gusta' : 'Dar me gusta'}
+        title="No me gusta"
       >
-        <Heart className={`w-4 h-4 ${liked ? 'fill-current' : ''}`} />
+        <ThumbsDown className={`w-4 h-4 ${liked === 'down' ? 'fill-current' : ''}`} />
       </button>
+
+      {/* Regenerate */}
+      {!isUserMessage && onRegenerate && (
+        <button
+          onClick={onRegenerate}
+          className="p-1.5 text-foreground/60 hover:text-foreground hover:bg-surface/50 transition-all duration-200 rounded-lg"
+          title="Regenerar respuesta"
+        >
+          <RefreshCw className="w-4 h-4" />
+        </button>
+      )}
     </div>
   );
 };

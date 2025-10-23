@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Mail, User, Sparkles, Shield, ArrowRight } from 'lucide-react';
+import { Mail, User, Shield, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface IntroScreenProps {
@@ -69,9 +69,9 @@ export const IntroScreen = ({ onComplete }: IntroScreenProps) => {
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-                className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-brand-green-400 to-brand-green-600 mb-6 shadow-lg"
+                className="inline-block w-20 h-20 mb-6"
               >
-                <Sparkles className="w-8 h-8 text-white" />
+                <img src="/assets/images/favicon.webp" alt="Objetivo Vientre Plano" className="w-full h-full object-contain drop-shadow-2xl" />
               </motion.div>
 
               {/* Title */}

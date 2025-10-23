@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles } from 'lucide-react';
 
 interface WelcomeAnimationProps {
   userName: string;
@@ -80,9 +79,9 @@ export const WelcomeAnimation = ({
                 damping: 20,
                 delay: 0.2,
               }}
-              className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-br from-brand-green-400 to-brand-green-600 mb-8 shadow-xl"
+              className="inline-block w-24 h-24 mb-8"
             >
-              <Sparkles className="w-10 h-10 text-white" />
+              <img src="/assets/images/favicon.webp" alt="OVP" className="w-full h-full object-contain drop-shadow-2xl" />
             </motion.div>
 
             {/* Greeting */}
