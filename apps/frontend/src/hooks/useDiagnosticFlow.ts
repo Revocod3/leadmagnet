@@ -51,6 +51,8 @@ export const useDiagnosticFlow = () => {
 
   const [messages, setMessages] = useState<FlowMessage[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(false);
+  const [etymology, setEtymology] = useState<string>('');
 
   // Initialize chat with welcome message
   const initialize = useCallback(() => {
@@ -109,10 +111,20 @@ export const useDiagnosticFlow = () => {
             const localContent = diagnosticContent[newState.language];
             let greeting = localContent.greeting.replace('{userName}', newState.userName);
 
+            let etymologyText = '';
             if (etymologyRaw) {
-              const etymology = etymologyRaw.replace(/[.!?]$/, '').trim();
-              greeting += ` ${localContent.didYouKnow}${etymology}?`;
+              const etymologyClean = etymologyRaw.replace(/[.!?]$/, '').trim();
+              etymologyText = `${localContent.didYouKnow}${etymologyClean}?`;
+              greeting += ` ${etymologyText}`;
             }
+
+            // Show welcome animation
+            setEtymology(etymologyText);
+            setShowWelcome(true);
+
+            // Update state but don't show greeting message yet
+            // The greeting will be shown after welcome animation completes
+            newState.step = 'greeting';
 
             // Save first answer (name/age/occupation)
             const firstQuestion = content.diagnosticQuestions[0];
@@ -123,33 +135,8 @@ export const useDiagnosticFlow = () => {
               });
             }
 
-            assistantMessage = {
-              role: 'assistant',
-              content: greeting,
-              type: 'greeting',
-              timestamp: new Date().toISOString(),
-            };
-
-            // Send next question
-            newState.step = 'asking_questions';
-            newState.currentQuestionIndex = 1;
-
-            // Add the next question after greeting
-            const nextQuestion = diagnosticContent[newState.language].diagnosticQuestions[1];
-            if (nextQuestion) {
-              setTimeout(() => {
-                setMessages((prev) => [
-                  ...prev,
-                  {
-                    role: 'assistant',
-                    content: nextQuestion.question,
-                    type: 'question',
-                    question: nextQuestion,
-                    timestamp: new Date().toISOString(),
-                  },
-                ]);
-              }, 1000);
-            }
+            // Don't add assistant message here - it will be added after welcome animation
+            // The welcome animation will show and then handleWelcomeComplete will show greeting + question
 
             break;
           }
@@ -332,6 +319,49 @@ export const useDiagnosticFlow = () => {
     [state, isProcessing]
   );
 
+  const handleWelcomeComplete = useCallback(() => {
+    setShowWelcome(false);
+
+    // Show greeting message and first question
+    const content = diagnosticContent[state.language];
+    const greeting = content.greeting.replace('{userName}', state.userName);
+    const greetingWithEtymology = etymology ? `${greeting} ${etymology}` : greeting;
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: 'assistant',
+        content: greetingWithEtymology,
+        type: 'greeting',
+        timestamp: new Date().toISOString(),
+      },
+    ]);
+
+    // Send next question after a short delay
+    const nextQuestion = content.diagnosticQuestions[1];
+    if (nextQuestion) {
+      setTimeout(() => {
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: 'assistant',
+            content: nextQuestion.question,
+            type: 'question',
+            question: nextQuestion,
+            timestamp: new Date().toISOString(),
+          },
+        ]);
+      }, 1000);
+    }
+
+    // Update state to asking_questions
+    setState((prev) => ({
+      ...prev,
+      step: 'asking_questions',
+      currentQuestionIndex: 1,
+    }));
+  }, [state.language, state.userName, etymology]);
+
   const reset = useCallback(() => {
     setState({
       step: 'initial',
@@ -344,6 +374,8 @@ export const useDiagnosticFlow = () => {
       diagnosisContent: null,
     });
     setMessages([]);
+    setShowWelcome(false);
+    setEtymology('');
     initialize();
   }, [initialize]);
 
@@ -351,8 +383,11 @@ export const useDiagnosticFlow = () => {
     messages,
     state,
     isProcessing,
+    showWelcome,
+    etymology,
     initialize,
     processMessage,
+    handleWelcomeComplete,
     reset,
   };
 };

@@ -9,6 +9,7 @@ import { CameraModal } from '../modals/CameraModal';
 import { ImageViewerModal } from '../modals/ImageViewerModal';
 import { ShareModal } from '../modals/ShareModal';
 import { MessageActions } from './MessageActions';
+import { WelcomeAnimation } from '../animations/WelcomeAnimation';
 
 export const ChatContainer = () => {
   const navigate = useNavigate();
@@ -21,7 +22,16 @@ export const ChatContainer = () => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
-  const { messages, state, isProcessing, initialize, processMessage } = useDiagnosticFlow();
+  const {
+    messages,
+    state,
+    isProcessing,
+    showWelcome,
+    etymology,
+    initialize,
+    processMessage,
+    handleWelcomeComplete,
+  } = useDiagnosticFlow();
   const { generatePDF } = usePDFGenerator();
   const { isListening, transcript, startListening, stopListening, isSupported: isSpeechSupported } = useSpeechToText();
 
@@ -160,9 +170,20 @@ export const ChatContainer = () => {
   };
 
   return (
-    <div className={`flex flex-col h-screen ${isDarkMode ? 'dark' : ''}`}>
-      {/* Header */}
-      <header
+    <>
+      {/* Welcome Animation Overlay */}
+      {showWelcome && state.userName && (
+        <WelcomeAnimation
+          userName={state.userName}
+          etymology={etymology}
+          onComplete={handleWelcomeComplete}
+          language={state.language}
+        />
+      )}
+
+      <div className={`flex flex-col h-screen ${isDarkMode ? 'dark' : ''}`}>
+        {/* Header */}
+        <header
         className="px-5 py-2.5 border-b transition-colors duration-300"
         style={{
           backgroundColor: 'var(--color-header-bg)',
@@ -418,6 +439,7 @@ export const ChatContainer = () => {
         text={shareModalText}
         onClose={() => setShareModalText('')}
       />
-    </div>
+      </div>
+    </>
   );
 };

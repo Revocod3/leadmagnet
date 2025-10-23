@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { IntroScreen } from './components/screens/IntroScreen';
@@ -6,7 +6,9 @@ import { ChoiceScreen } from './components/screens/ChoiceScreen';
 import { ChatContainer } from './components/chat/ChatContainer';
 import { QuizContainer } from './components/quiz/QuizContainer';
 import { DiagnosisScreen } from './components/screens/DiagnosisScreen';
+import { WelcomeAnimation } from './components/animations/WelcomeAnimation';
 import { Layout } from './components/layout/Layout';
+import { openaiService } from './services/openai';
 import './styles/globals.css';
 
 // Create a client
@@ -25,11 +27,33 @@ function MainFlow() {
     return !!sessionStorage.getItem('userData');
   });
   const [showChoice, setShowChoice] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(false);
+  const [userName, setUserName] = useState('');
+  const [etymology, setEtymology] = useState('');
 
-  const handleIntroComplete = (name: string, email: string) => {
-    // Store user data in session storage or state management
+  const handleIntroComplete = async (name: string, email: string) => {
+    // Store user data in session storage
     sessionStorage.setItem('userData', JSON.stringify({ name, email }));
+    setUserName(name);
     setHasCompletedIntro(true);
+
+    // Show welcome animation immediately
+    setShowWelcome(true);
+
+    // Generate etymology for the welcome animation in background
+    try {
+      const etymologyText = await openaiService.generateNameEtymology(name, 'es');
+      if (etymologyText) {
+        setEtymology(etymologyText);
+      }
+    } catch (error) {
+      console.error('Error generating etymology:', error);
+      // Continue without etymology
+    }
+  };
+
+  const handleWelcomeComplete = () => {
+    setShowWelcome(false);
     setShowChoice(true);
   };
 
@@ -46,12 +70,23 @@ function MainFlow() {
     sessionStorage.removeItem('userData');
     setHasCompletedIntro(false);
     setShowChoice(false);
+    setShowWelcome(false);
+    setUserName('');
+    setEtymology('');
     navigate('/');
   };
 
   return (
     <>
       {!hasCompletedIntro && <IntroScreen onComplete={handleIntroComplete} />}
+      {showWelcome && (
+        <WelcomeAnimation
+          userName={userName}
+          etymology={etymology}
+          onComplete={handleWelcomeComplete}
+          language="es"
+        />
+      )}
       {hasCompletedIntro && showChoice && <ChoiceScreen onSelect={handleChoiceSelect} />}
       <Routes>
         <Route path="/" element={<div />} />
