@@ -2,10 +2,12 @@ import { Request, Response } from 'express';
 import { prisma } from '../config/database';
 import { DiagnosticFlowService, DiagnosticFlowState } from '../services/openai/diagnostic-flow.service';
 import { ValidationService } from '../services/openai/validation.service';
+import { DiscountService } from '../services/discount.service';
 import type { SendMessageRequest, ApiResponse, ChatMessage, Language } from '../types';
 
 const validationService = new ValidationService();
 const diagnosticFlowService = new DiagnosticFlowService();
+const discountService = new DiscountService();
 
 export class ChatController {
   async sendMessage(req: Request, res: Response): Promise<void> {
@@ -118,9 +120,33 @@ export class ChatController {
         updateData.imageAnalysisText = flowResponse.newState.imageAnalysis;
       }
 
+      // Update engagement tracking fields
+      if ((flowResponse.newState as any).engagementScore) {
+        const engScore = (flowResponse.newState as any).engagementScore;
+        updateData.engagementScore = engScore.total;
+        updateData.engagementSignals = engScore.signals;
+      }
+
+      if ((flowResponse.newState as any).diagnosticMode) {
+        updateData.diagnosticMode = (flowResponse.newState as any).diagnosticMode;
+      }
+
+      if ((flowResponse.newState as any).askedQuestionIds) {
+        updateData.questionsAsked = (flowResponse.newState as any).askedQuestionIds.length;
+      }
+
+      if ((flowResponse.newState as any).engagementScore?.signals?.longAnswers) {
+        updateData.avgResponseLength = (flowResponse.newState as any).engagementScore.signals.longAnswers;
+      }
+
+      if ((flowResponse.newState as any).engagementScore?.signals?.timeSpent) {
+        updateData.timeSpent = (flowResponse.newState as any).engagementScore.signals.timeSpent;
+      }
+
       // Mark completion time if completed or diagnosis ready
       if (flowResponse.newState.step === 'completed' || flowResponse.newState.step === 'diagnosis_ready') {
         updateData.completionTime = new Date();
+        updateData.completedDiagnosis = true;
       }
 
       await prisma.session.update({
@@ -130,11 +156,7 @@ export class ChatController {
 
       // Save diagnosis if generated
       if (flowResponse.newState.diagnosisContent && !session.diagnosis) {
-        const diagnosisData: {
-          sessionId: string;
-          userId?: string;
-          content: string;
-        } = {
+        const diagnosisData: any = {
           sessionId,
           content: flowResponse.newState.diagnosisContent,
         };
@@ -143,9 +165,44 @@ export class ChatController {
           diagnosisData.userId = session.userId;
         }
 
+        // Add engagement tracking to diagnosis
+        if ((flowResponse.newState as any).diagnosticMode) {
+          diagnosisData.diagnosticMode = (flowResponse.newState as any).diagnosticMode;
+        }
+
+        if ((flowResponse.newState as any).askedQuestionIds) {
+          diagnosisData.questionsAsked = (flowResponse.newState as any).askedQuestionIds.length;
+        }
+
+        if ((flowResponse.newState as any).engagementScore) {
+          diagnosisData.engagementScore = (flowResponse.newState as any).engagementScore.total;
+        }
+
         await prisma.diagnosis.create({
           data: diagnosisData,
         });
+      }
+
+      // Generate discount code when diagnosis is ready
+      let discountCode: { code: string; percentage: number } | null = null;
+      if (flowResponse.newState.step === 'diagnosis_ready') {
+        try {
+          const discount = await discountService.createDiscountForSession(
+            sessionId,
+            (flowResponse.newState as any).diagnosticMode || 'standard',
+            (flowResponse.newState as any).engagementScore?.total || 0
+          );
+
+          discountCode = {
+            code: discount.code,
+            percentage: discount.percentage,
+          };
+
+          console.log('✅ Discount code generated:', discountCode.code);
+        } catch (error) {
+          console.error('Error generating discount code:', error);
+          // Don't block the flow if discount generation fails
+        }
       }
 
       // Build response
@@ -168,6 +225,8 @@ export class ChatController {
             requiresWelcomeAnimation: flowResponse.requiresWelcomeAnimation,
             userName: flowResponse.newState.userName,
             diagnosisContent: flowResponse.newState.diagnosisContent, // CRÍTICO: Enviar diagnosis content
+            discountCode: discountCode?.code, // Discount code if generated
+            discountPercentage: discountCode?.percentage, // Discount percentage (30%)
           },
         },
       } as ApiResponse<ChatMessage>);

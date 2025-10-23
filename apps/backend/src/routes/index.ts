@@ -2,6 +2,7 @@ import { Router } from 'express';
 import sessionRoutes from './session.routes';
 import chatRoutes from './chat.routes';
 import quizRoutes from './quiz.routes';
+import discountRoutes from './discount.routes';
 import { ImageController, uploadMiddleware } from '../controllers/image.controller';
 
 const router = Router();
@@ -16,6 +17,7 @@ router.get('/health', (req, res) => {
 router.use('/sessions', sessionRoutes);
 router.use('/chat', chatRoutes);
 router.use('/quiz', quizRoutes);
+router.use('/discount', discountRoutes);
 
 // Image upload route (needs to be before other routes to avoid conflicts)
 router.post('/images', uploadMiddleware, imageController.uploadImage.bind(imageController));

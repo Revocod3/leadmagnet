@@ -37,10 +37,22 @@ model Session {
   completionTime       DateTime?
   expiresAt            DateTime
 
-  user              User?     @relation(fields: [userId], references: [id])
+  // Engagement tracking fields
+  diagnosticMode       String?   // "express" | "standard" | "deep"
+  engagementScore      Float?    // 0-100
+  questionsAsked       Int       @default(0)
+  avgResponseLength    Float?    // Average words per response
+  timeSpent            Int?      // Total time in milliseconds
+  completedDiagnosis   Boolean   @default(false)
+  convertedToChat      Boolean   @default(false)
+  engagementSignals    Json?     // EngagementSignals object
+  wordpressLeadId      String?   // WordPress lead ID
+
+  user              User?          @relation(fields: [userId], references: [id])
   messages          Message[]
   quizAnswers       QuizAnswer[]
   diagnosis         Diagnosis?
+  discountCodes     DiscountCode[]
 
   @@index([userId])
   @@index([expiresAt])
@@ -85,9 +97,31 @@ model Diagnosis {
   pdfGenerated     Boolean  @default(false)
   createdAt        DateTime @default(now())
 
+  // Engagement tracking
+  diagnosticMode   String?  // Mode used for diagnosis
+  questionsAsked   Int?     // Number of questions asked
+  engagementScore  Float?   // Final engagement score
+
   session          Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   user             User?    @relation(fields: [userId], references: [id])
 
   @@index([userId])
   @@map("diagnoses")
+}
+
+model DiscountCode {
+  id         String    @id @default(cuid())
+  code       String    @unique
+  sessionId  String
+  percentage Int       // Discount percentage (e.g., 30 for 30%)
+  expiresAt  DateTime
+  used       Boolean   @default(false)
+  usedAt     DateTime?
+  createdAt  DateTime  @default(now())
+
+  session    Session   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([code])
+  @@map("discount_codes")
 }

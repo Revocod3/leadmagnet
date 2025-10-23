@@ -2,6 +2,9 @@ import { openai, MODELS, ASSISTANT_INSTRUCTIONS } from '../../config/openai';
 import { getDiagnosticQuestions, WELCOME_MESSAGES, GREETING_MESSAGES, DID_YOU_KNOW, DIAGNOSIS_READY_MESSAGE, OCCUPATION_PATTERNS, OCCUPATION_INSIGHTS, DIAGNOSIS_INTRO, type CollectedInfo } from '../../constants/questions';
 import type { Language } from '../../types';
 import { VisionService } from './vision.service';
+import { EngagementTrackerService, type EngagementScore } from '../engagement-tracker.service';
+import { AdaptiveQuestionManagerService, type DiagnosticMode } from '../adaptive-question-manager.service';
+import { formatInitialInstructions } from '../../constants/diagnostic-messages';
 
 export type FlowStep =
   | 'initial'
@@ -21,6 +24,13 @@ export interface DiagnosticFlowState {
   collectedInfo: CollectedInfo; // NEW: Collected information from answers
   imageAnalysis: string | null;
   diagnosisContent: string | null;
+
+  // Engagement tracking
+  engagementScore: EngagementScore;
+  diagnosticMode: DiagnosticMode;
+  questionStartTime: number; // Timestamp when question was asked
+  askedQuestionIds: number[]; // IDs of questions already asked
+  previousEngagementScore: number; // To track if engagement is increasing/decreasing
 }
 
 export interface FlowResponse {
@@ -35,9 +45,13 @@ export interface FlowResponse {
 
 export class DiagnosticFlowService {
   private visionService: VisionService;
+  private engagementTracker: EngagementTrackerService;
+  private questionManager: AdaptiveQuestionManagerService;
 
   constructor() {
     this.visionService = new VisionService();
+    this.engagementTracker = new EngagementTrackerService();
+    this.questionManager = new AdaptiveQuestionManagerService();
   }
 
   /**
@@ -258,6 +272,9 @@ export class DiagnosticFlowService {
    * Inicializa una nueva sesión de diagnóstico con el nombre del usuario
    */
   initializeFlow(language: Language = 'es', userName?: string): { message: string; state: DiagnosticFlowState } {
+    // Initialize engagement tracking
+    const engagementScore = this.engagementTracker.initialize();
+
     const state: DiagnosticFlowState = {
       step: 'initial',
       currentQuestionIndex: 0, // Start from first question (index 0)
@@ -268,21 +285,18 @@ export class DiagnosticFlowService {
       collectedInfo: {}, // Initialize empty collected info
       imageAnalysis: null,
       diagnosisContent: null,
+
+      // Engagement tracking
+      engagementScore,
+      diagnosticMode: 'standard', // Start with standard mode
+      questionStartTime: Date.now(),
+      askedQuestionIds: [],
+      previousEngagementScore: 50, // Start at medium
     };
 
-    // Personalizar mensaje de bienvenida con el nombre
-    const langKey = (language === 'en' ? 'en' : 'es') as 'es' | 'en';
-    const welcomeTemplate = WELCOME_MESSAGES[langKey];
-    let welcomeMessage: string;
-    if (userName) {
-      // Extraer solo el primer nombre (ignorar apellidos)
-      const nameParts = userName.trim().split(' ');
-      const firstName: string = nameParts[0] || userName || '';
-      welcomeMessage = welcomeTemplate.replace('{userName}', firstName);
-    } else {
-      // Si no hay nombre, remover el placeholder
-      welcomeMessage = welcomeTemplate.replace('{userName}', '');
-    }
+    // Use new initial instructions that explain value and discount
+    const firstName = userName ? userName.trim().split(' ')[0] || 'amigo/a' : 'amigo/a';
+    const welcomeMessage = formatInitialInstructions(language, firstName);
 
     return {
       message: welcomeMessage,
@@ -328,11 +342,13 @@ export class DiagnosticFlowService {
     userMessage: string,
     currentState: DiagnosticFlowState
   ): Promise<FlowResponse> {
-    // El usuario ya tiene nombre desde la sesión
-    // Solo esperamos confirmación para empezar las preguntas
-
-    const questions = getDiagnosticQuestions(currentState.language);
-    const firstQuestion = questions[0]; // Start from first question (index 0)
+    // Get first question using Adaptive Question Manager
+    const firstQuestion = this.questionManager.getNextQuestion(
+      currentState.diagnosticMode,
+      currentState.collectedInfo,
+      currentState.askedQuestionIds,
+      currentState.language
+    );
 
     if (!firstQuestion) {
       throw new Error('No questions available');
@@ -342,8 +358,10 @@ export class DiagnosticFlowService {
     const newState: DiagnosticFlowState = {
       ...currentState,
       step: 'asking_questions',
-      currentQuestionIndex: 0, // Start from first question (index 0)
+      currentQuestionIndex: 0,
       currentBlockId: firstQuestion.blockId,
+      questionStartTime: Date.now(), // Start timer for first question
+      askedQuestionIds: [firstQuestion.id], // Mark first question as asked
     };
 
     // NO enviar nextQuestion aquí porque el message YA ES la pregunta
@@ -392,8 +410,10 @@ export class DiagnosticFlowService {
     currentState: DiagnosticFlowState,
     imageData?: { base64: string; mimeType: string }
   ): Promise<FlowResponse> {
+    // Find current question by ID from askedQuestionIds
+    const currentQuestionId = currentState.askedQuestionIds[currentState.askedQuestionIds.length - 1];
     const questions = getDiagnosticQuestions(currentState.language);
-    const currentQuestion = questions[currentState.currentQuestionIndex];
+    const currentQuestion = questions.find(q => q.id === currentQuestionId);
 
     if (!currentQuestion) {
       return {
@@ -402,6 +422,31 @@ export class DiagnosticFlowService {
         type: 'validation_error',
       };
     }
+
+    // 1. ENGAGEMENT TRACKING: Calculate time taken to respond
+    const timeTaken = Date.now() - currentState.questionStartTime;
+
+    // 2. ENGAGEMENT TRACKING: Analyze response and update engagement score
+    const newEngagementScore = this.engagementTracker.analyzeResponse(
+      userAnswer,
+      timeTaken,
+      currentState.engagementScore,
+      currentState.language
+    );
+
+    // 3. ENGAGEMENT TRACKING: Check if mode should change
+    const modeChange = this.questionManager.suggestModeChange(
+      currentState.diagnosticMode,
+      newEngagementScore.total
+    );
+
+    const newMode = modeChange || currentState.diagnosticMode;
+
+    // Log engagement changes
+    if (modeChange) {
+      console.log(`📊 Mode upgraded: ${currentState.diagnosticMode} → ${newMode}`);
+    }
+    console.log(`📊 Engagement score: ${newEngagementScore.total} (${newMode} mode)`);
 
     // Validar respuesta
     const validation = await this.validateAnswer(
@@ -440,7 +485,7 @@ export class DiagnosticFlowService {
       },
     ];
 
-    // CASO ESPECIAL: Pregunta 1 (edad y ocupación)
+    // CASO ESPECIAL: Pregunta 1 (edad y ocupación) - usa el mismo flujo adaptativo
     if (currentQuestion.id === 1 && extractedInfo.age && extractedInfo.occupation) {
       const occupationComment = this.generateOccupationComment(
         extractedInfo.age!,
@@ -448,7 +493,14 @@ export class DiagnosticFlowService {
         currentState.language
       );
 
-      const nextQuestion = questions[currentState.currentQuestionIndex + 1];
+      // Get next question using Adaptive Question Manager
+      const nextQuestion = this.questionManager.getNextQuestion(
+        newMode,
+        updatedInfo,
+        currentState.askedQuestionIds,
+        currentState.language
+      );
+
       if (!nextQuestion) {
         throw new Error('Next question not found');
       }
@@ -459,6 +511,13 @@ export class DiagnosticFlowService {
         currentBlockId: nextQuestion.blockId,
         answers: newAnswers,
         collectedInfo: updatedInfo,
+
+        // Update engagement tracking
+        engagementScore: newEngagementScore,
+        diagnosticMode: newMode,
+        questionStartTime: Date.now(),
+        askedQuestionIds: [...currentState.askedQuestionIds, nextQuestion.id],
+        previousEngagementScore: currentState.engagementScore.total,
       };
 
       // Combinar comentario de ocupación + transición de bloque + siguiente pregunta
@@ -496,32 +555,60 @@ export class DiagnosticFlowService {
       currentState.language
     );
 
-    // Buscar la SIGUIENTE pregunta NO condicional o que cumpla su condición
-    let nextIndex = currentState.currentQuestionIndex + 1;
-    let nextQuestion = questions[nextIndex];
+    // 4. ADAPTIVE QUESTION MANAGER: Get next question based on mode and engagement
+    const nextQuestion = this.questionManager.getNextQuestion(
+      newMode,
+      updatedInfo,
+      currentState.askedQuestionIds,
+      currentState.language
+    );
 
-    while (nextQuestion && !this.shouldAskQuestion(nextQuestion, updatedInfo)) {
-      nextIndex++;
-      nextQuestion = questions[nextIndex];
-    }
+    // 5. Check if we should continue based on engagement and question count
+    const shouldContinue = this.questionManager.shouldContinue(
+      newMode,
+      currentState.askedQuestionIds.length,
+      newEngagementScore.total
+    );
 
-    if (nextQuestion) {
-      // Hay más preguntas
+    // Get progress message if any
+    const progressMessage = this.questionManager.getProgressMessage(
+      newMode,
+      currentState.askedQuestionIds.length,
+      currentState.language
+    );
+
+    if (nextQuestion && shouldContinue) {
+      // Continue with more questions
       const newState: DiagnosticFlowState = {
         ...currentState,
-        currentQuestionIndex: nextIndex,
+        currentQuestionIndex: currentState.currentQuestionIndex + 1,
         currentBlockId: nextQuestion.blockId,
         answers: newAnswers,
         collectedInfo: updatedInfo,
         imageAnalysis,
+
+        // Update engagement tracking
+        engagementScore: newEngagementScore,
+        diagnosticMode: newMode,
+        questionStartTime: Date.now(), // Start timer for next question
+        askedQuestionIds: [...currentState.askedQuestionIds, nextQuestion.id],
+        previousEngagementScore: currentState.engagementScore.total,
       };
 
-      // Verificar si cambió de bloque
+      // Build message: comment + progress + transition + next question
       let fullMessage = comment;
+
+      // Add progress message if any
+      if (progressMessage) {
+        fullMessage += `\n\n${progressMessage}`;
+      }
+
+      // Add block transition if changed
       if (nextQuestion.blockId !== currentQuestion.blockId) {
         const blockTransition = this.generateBlockTransition(nextQuestion.blockId, newState);
         fullMessage += `\n\n${blockTransition}`;
       }
+
       fullMessage += `\n\n${nextQuestion.question}`;
 
       return {
@@ -531,10 +618,13 @@ export class DiagnosticFlowService {
         type: 'comment',
       };
     } else {
-      // Todas las preguntas respondidas - generar diagnóstico y mostrar mensaje con botones
+      // Diagnosis complete - generate final diagnosis
       const userName = currentState.userName || 'amigo/a';
 
-      // Generar el diagnóstico (solo para el PDF, no se muestra en el chat)
+      console.log(`✅ Diagnosis complete! Asked ${currentState.askedQuestionIds.length} questions in ${newMode} mode`);
+      console.log(`📊 Final engagement score: ${newEngagementScore.total}`);
+
+      // Generar el diagnóstico
       const diagnosis = await this.generateDiagnosis(
         currentState.userName!,
         newAnswers,
@@ -550,6 +640,13 @@ export class DiagnosticFlowService {
         collectedInfo: updatedInfo,
         imageAnalysis,
         diagnosisContent: diagnosis,
+
+        // Final engagement tracking
+        engagementScore: newEngagementScore,
+        diagnosticMode: newMode,
+        questionStartTime: Date.now(),
+        askedQuestionIds: currentState.askedQuestionIds,
+        previousEngagementScore: currentState.engagementScore.total,
       };
 
       // Mostrar mensaje de venta con los beneficios (NO el diagnóstico completo)
@@ -559,7 +656,7 @@ export class DiagnosticFlowService {
       return {
         message: fullMessage,
         newState,
-        type: 'diagnosis_ready', // Nuevo tipo para que el frontend muestre los 2 botones
+        type: 'diagnosis_ready',
       };
     }
   }
