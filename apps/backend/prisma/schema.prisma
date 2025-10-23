@@ -21,19 +21,21 @@ model User {
 }
 
 model Session {
-  id                String    @id @default(cuid())
-  userId            String?
-  userName          String?
-  userEmail         String?
-  language          String    @default("es")
-  diagnosticType    String?   // "chat" | "quiz"
-  step              String    @default("initial")
-  imageAnalysisText String?
-  assistantId       String?
-  threadId          String?
-  startTime         DateTime  @default(now())
-  completionTime    DateTime?
-  expiresAt         DateTime
+  id                   String    @id @default(cuid())
+  userId               String?
+  userName             String?
+  userEmail            String?
+  language             String    @default("es")
+  diagnosticType       String?   // "chat" | "quiz"
+  step                 String    @default("initial")
+  currentQuestionIndex Int       @default(0)
+  imageAnalysisText    String?
+  assistantId          String?
+  threadId             String?
+  flowState            Json?     // Store diagnostic flow state as JSON
+  startTime            DateTime  @default(now())
+  completionTime       DateTime?
+  expiresAt            DateTime
 
   user              User?     @relation(fields: [userId], references: [id])
   messages          Message[]

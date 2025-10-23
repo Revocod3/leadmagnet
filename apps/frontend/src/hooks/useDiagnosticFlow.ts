@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { diagnosticContent, type DiagnosticQuestion } from '../constants/diagnosticQuestions';
-import { openaiService } from '../services/openai';
+import { apiClient } from '../services/api';
+import { useSessionStore } from '../stores/sessionStore';
 
 export type FlowStep =
   | 'initial'

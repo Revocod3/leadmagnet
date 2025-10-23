@@ -1,24 +1,16 @@
 import { Request, Response } from 'express';
 import { prisma } from '../config/database';
-import { AssistantService, getOrCreateAssistant } from '../services/openai/assistant.service';
+import { DiagnosticFlowService, DiagnosticFlowState } from '../services/openai/diagnostic-flow.service';
 import { ValidationService } from '../services/openai/validation.service';
-import type { SendMessageRequest, ApiResponse, ChatMessage } from '../types';
+import type { SendMessageRequest, ApiResponse, ChatMessage, Language } from '../types';
 
 const validationService = new ValidationService();
-let assistantService: AssistantService | null = null;
-
-async function getAssistantService(): Promise<AssistantService> {
-  if (!assistantService) {
-    const assistantId = await getOrCreateAssistant();
-    assistantService = new AssistantService(assistantId);
-  }
-  return assistantService;
-}
+const diagnosticFlowService = new DiagnosticFlowService();
 
 export class ChatController {
   async sendMessage(req: Request, res: Response): Promise<void> {
     try {
-      const { sessionId, message, language }: SendMessageRequest = req.body;
+      const { sessionId, message, language, imageData }: SendMessageRequest & { imageData?: { base64: string; mimeType: string } } = req.body;
 
       // Validate input
       const sessionValidation = validationService.validateSessionId(sessionId);
@@ -42,6 +34,9 @@ export class ChatController {
       // Get or create session
       let session = await prisma.session.findUnique({
         where: { id: sessionId },
+        include: {
+          diagnosis: true,
+        },
       });
 
       if (!session) {
@@ -61,24 +56,8 @@ export class ChatController {
         return;
       }
 
-      // Get assistant service
-      const assistant = await getAssistantService();
-
-      // Create thread if not exists
-      let threadId = session.threadId;
-      if (!threadId) {
-        threadId = await assistant.createThread();
-        await prisma.session.update({
-          where: { id: sessionId },
-          data: { threadId },
-        });
-        session.threadId = threadId;
-      }
-
-      // Send message and get response
-      const assistantResponse = await assistant.sendMessage(threadId, message);
-
-      // Save messages to database
+      // Simply save messages - frontend handles the flow
+      // Save user message
       await prisma.message.create({
         data: {
           sessionId,
@@ -87,26 +66,20 @@ export class ChatController {
         },
       });
 
+      // Echo back a simple response
+      const assistantContent = '¡Hola! Gracias por tu mensaje.';
+      
       await prisma.message.create({
         data: {
           sessionId,
           role: 'assistant',
-          content: assistantResponse,
+          content: assistantContent,
         },
       });
 
-      // Update session step
-      const newStep = this.determineNextStep(session.step, message);
-      if (newStep !== session.step) {
-        await prisma.session.update({
-          where: { id: sessionId },
-          data: { step: newStep },
-        });
-      }
-
       const chatMessage: ChatMessage = {
         role: 'assistant',
-        content: assistantResponse,
+        content: assistantContent,
       };
 
       res.json({
@@ -125,6 +98,14 @@ export class ChatController {
   async getChatHistory(req: Request, res: Response): Promise<void> {
     try {
       const { sessionId } = req.params;
+
+      if (!sessionId) {
+        res.status(400).json({
+          success: false,
+          error: 'Session ID is required',
+        } as ApiResponse);
+        return;
+      }
 
       const sessionValidation = validationService.validateSessionId(sessionId);
       if (!sessionValidation.isValid) {
@@ -160,16 +141,67 @@ export class ChatController {
     }
   }
 
-  private determineNextStep(currentStep: string, message: string): string {
-    // Simple logic to determine next step based on conversation flow
-    // This could be enhanced with more sophisticated logic
-    if (currentStep === 'initial') {
-      return 'name_question_sent';
+  /**
+   * Initialize diagnostic flow for a session
+   */
+  async initializeDiagnostic(req: Request, res: Response): Promise<void> {
+    try {
+      const { sessionId, language } = req.body;
+
+      if (!sessionId) {
+        res.status(400).json({
+          success: false,
+          error: 'Session ID is required',
+        } as ApiResponse);
+        return;
+      }
+
+      const session = await prisma.session.findUnique({
+        where: { id: sessionId },
+      });
+
+      if (!session) {
+        res.status(404).json({
+          success: false,
+          error: 'Sesión no encontrada',
+        } as ApiResponse);
+        return;
+      }
+
+      const initialized = diagnosticFlowService.initializeFlow(language as Language || 'es');
+
+      // Save welcome message
+      await prisma.message.create({
+        data: {
+          sessionId,
+          role: 'assistant',
+          content: initialized.message,
+          metadata: { type: 'welcome' },
+        },
+      });
+
+      // Update session with initial flow state
+      await prisma.session.update({
+        where: { id: sessionId },
+        data: {
+          flowState: initialized.state as any,
+          language: initialized.state.language,
+        },
+      });
+
+      res.json({
+        success: true,
+        data: {
+          message: initialized.message,
+          state: initialized.state,
+        },
+      } as ApiResponse);
+    } catch (error) {
+      console.error('Error initializing diagnostic:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Error interno del servidor',
+      } as ApiResponse);
     }
-    if (currentStep === 'name_question_sent') {
-      return 'asking_questions';
-    }
-    // Add more step logic as needed
-    return currentStep;
   }
 }
