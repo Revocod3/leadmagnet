@@ -166,12 +166,22 @@ export const useDiagnosticFlow = () => {
         const metadata = response.metadata || {};
 
         // Update state based on backend response
-        setState((prev) => ({
-          ...prev,
-          step: metadata.step || prev.step,
-          currentQuestionIndex: metadata.currentQuestionIndex ?? prev.currentQuestionIndex,
-          userName: metadata.userName || prev.userName,
-        }));
+        setState((prev) => {
+          const newState: DiagnosticState = {
+            ...prev,
+            step: metadata.step || prev.step,
+            currentQuestionIndex: metadata.currentQuestionIndex ?? prev.currentQuestionIndex,
+            userName: metadata.userName || prev.userName,
+          };
+
+          // CRÍTICO: Guardar diagnosisContent cuando el backend lo envía en metadata
+          if (metadata.diagnosisContent) {
+            newState.diagnosisContent = metadata.diagnosisContent;
+            console.log('✅ Diagnosis content saved to state');
+          }
+
+          return newState;
+        });
 
         // Handle welcome animation
         if (metadata.requiresWelcomeAnimation && metadata.etymology) {
@@ -292,7 +302,7 @@ export const useDiagnosticFlow = () => {
   const regenerateLastResponse = useCallback(
     async (userMessage: string) => {
       if (isProcessing) return;
-      
+
       // Remove the last assistant message (the one we want to regenerate)
       setMessages((prev) => {
         const newMessages = [...prev];

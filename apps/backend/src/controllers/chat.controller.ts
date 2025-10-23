@@ -167,6 +167,7 @@ export class ChatController {
             etymology: flowResponse.etymology,
             requiresWelcomeAnimation: flowResponse.requiresWelcomeAnimation,
             userName: flowResponse.newState.userName,
+            diagnosisContent: flowResponse.newState.diagnosisContent, // CRÍTICO: Enviar diagnosis content
           },
         },
       } as ApiResponse<ChatMessage>);

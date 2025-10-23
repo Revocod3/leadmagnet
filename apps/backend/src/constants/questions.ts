@@ -437,28 +437,109 @@ export const DID_YOU_KNOW = {
   en: ' By the way, did you know that ',
 };
 
+export const DIAGNOSIS_INTRO = {
+  es: '✨ Perfecto, {userName}. Déjame un momento para analizar toda la información que me has compartido y preparar tu diagnóstico digestivo personalizado...',
+  en: '✨ Perfect, {userName}. Give me a moment to analyze all the information you\'ve shared and prepare your personalized digestive diagnosis...',
+};
+
 export const PDF_QUESTION = {
-  es: '📄 ¿Te gustaría descargar un resumen de este diagnóstico?',
-  en: '📄 Would you like to download a summary of this diagnosis?',
+  es: '\n\n---\n\n📄 **¿Quieres descargar este análisis en PDF?**\n\nTe lo puedo generar ahora mismo con un diseño profesional para que lo guardes y consultes cuando quieras.',
+  en: '\n\n---\n\n📄 **Want to download this analysis as a PDF?**\n\nI can generate it for you right now with a professional design so you can save it and consult it whenever you want.',
 };
 
 export const FINAL_CTA = {
   es: {
-    mainText: `AHORA VIENE LO MÁS IMPORTANTE...
-Has llegado al final del diagnóstico gratuito. Y lo primero que quiero decirte es: gracias.
-Gracias por abrirte, por confiar y por dar este primer paso hacia el cambio real.
-Ahora empieza lo bueno.`,
-    subscribePrompt: `Si estás listo/a para empezar esta aventura, solo puedo decirte una cosa:
-Si te comprometes, esto va a cambiar tu vida.`,
-    buttonText: `¡Quiero suscribirme ahora!`,
+    withPdf: `✅ ¡Perfecto! Tu PDF está listo para descargar.
+
+---
+
+**Ahora, hablemos de lo realmente importante...**
+
+Este diagnóstico que acabas de recibir es solo el *mapa*. Pero el verdadero viaje comienza cuando tienes la *brújula* y el *camino trazado*.
+
+**El Método Objetivo Vientre Plano** es exactamente eso: un sistema completo, paso a paso, diseñado específicamente para transformar tu salud digestiva.
+
+No es teoría. No son consejos genéricos. Es un protocolo probado que ha ayudado a cientos de personas a:
+
+✨ Eliminar la hinchazón persistente que te hace sentir incómodo/a
+🎯 Descubrir exactamente qué alimentos te inflaman (y cuáles te sanan)
+💪 Recuperar tu energía y bienestar digestivo
+🌟 Volver a sentirte bien en tu propio cuerpo
+
+{userName}, tu motivación es alta. Tu diagnóstico está claro. **Solo te falta el sistema correcto para lograrlo.**
+
+Y está a un clic de distancia.
+
+👉 **[Ver el Método Completo](link_de_suscripcion)**`,
+    withoutPdf: `Entendido, sin problema.
+
+---
+
+**Pero antes de que te vayas, déjame decirte algo...**
+
+Este diagnóstico que acabas de recibir es solo el *mapa*. Pero el verdadero viaje comienza cuando tienes la *brújula* y el *camino trazado*.
+
+**El Método Objetivo Vientre Plano** es exactamente eso: un sistema completo, paso a paso, diseñado específicamente para transformar tu salud digestiva.
+
+No es teoría. No son consejos genéricos. Es un protocolo probado que ha ayudado a cientos de personas a:
+
+✨ Eliminar la hinchazón persistente que te hace sentir incómodo/a
+🎯 Descubrir exactamente qué alimentos te inflaman (y cuáles te sanan)
+💪 Recuperar tu energía y bienestar digestivo
+🌟 Volver a sentirte bien en tu propio cuerpo
+
+{userName}, tu motivación es alta. Tu diagnóstico está claro. **Solo te falta el sistema correcto para lograrlo.**
+
+Y está a un clic de distancia.
+
+👉 **[Ver el Método Completo](link_de_suscripcion)**`,
+    buttonText: `Ver el Método Completo`,
   },
   en: {
-    mainText: `NOW COMES THE MOST IMPORTANT PART...
-You have reached the end of the free diagnosis. And the first thing I want to say is: thank you.
-Thank you for opening up, for trusting, and for taking this first step towards real change.
-Now the good part begins.`,
-    subscribePrompt: `If you are ready to start this adventure, I can only tell you one thing:
-If you commit, this will change your life.`,
-    buttonText: `I want to subscribe now!`,
+    withPdf: `✅ Perfect! Your PDF is ready to download.
+
+---
+
+**Now, let's talk about what really matters...**
+
+This diagnosis you just received is only the *map*. But the real journey begins when you have the *compass* and the *path laid out*.
+
+**The Flat Belly Method** is exactly that: a complete, step-by-step system specifically designed to transform your digestive health.
+
+It's not theory. It's not generic advice. It's a proven protocol that has helped hundreds of people to:
+
+✨ Eliminate persistent bloating that makes you feel uncomfortable
+� Discover exactly which foods inflame you (and which ones heal you)
+💪 Recover your energy and digestive wellness
+🌟 Feel good in your own body again
+
+{userName}, your motivation is high. Your diagnosis is clear. **You just need the right system to achieve it.**
+
+And it's one click away.
+
+👉 **[See the Complete Method](subscription_link)**`,
+    withoutPdf: `Understood, no problem.
+
+---
+
+**But before you go, let me tell you something...**
+
+This diagnosis you just received is only the *map*. But the real journey begins when you have the *compass* and the *path laid out*.
+
+**The Flat Belly Method** is exactly that: a complete, step-by-step system specifically designed to transform your digestive health.
+
+It's not theory. It's not generic advice. It's a proven protocol that has helped hundreds of people to:
+
+✨ Eliminate persistent bloating that makes you feel uncomfortable
+� Discover exactly which foods inflame you (and which ones heal you)
+💪 Recover your energy and digestive wellness
+🌟 Feel good in your own body again
+
+{userName}, your motivation is high. Your diagnosis is clear. **You just need the right system to achieve it.**
+
+And it's one click away.
+
+👉 **[See the Complete Method](subscription_link)**`,
+    buttonText: `See the Complete Method`,
   },
 };

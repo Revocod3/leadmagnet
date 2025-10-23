@@ -1,5 +1,5 @@
 import { openai, MODELS, ASSISTANT_INSTRUCTIONS } from '../../config/openai';
-import { getDiagnosticQuestions, WELCOME_MESSAGES, GREETING_MESSAGES, DID_YOU_KNOW, PDF_QUESTION, FINAL_CTA, OCCUPATION_PATTERNS, OCCUPATION_INSIGHTS, type CollectedInfo } from '../../constants/questions';
+import { getDiagnosticQuestions, WELCOME_MESSAGES, GREETING_MESSAGES, DID_YOU_KNOW, PDF_QUESTION, FINAL_CTA, OCCUPATION_PATTERNS, OCCUPATION_INSIGHTS, DIAGNOSIS_INTRO, type CollectedInfo } from '../../constants/questions';
 import type { Language } from '../../types';
 import { VisionService } from './vision.service';
 
@@ -537,6 +537,9 @@ export class DiagnosticFlowService {
       };
     } else {
       // Todas las preguntas respondidas - generar diagnóstico
+      const userName = currentState.userName || 'amigo/a';
+      const introMessage = DIAGNOSIS_INTRO[currentState.language as 'es' | 'en'].replace('{userName}', userName);
+
       const diagnosis = await this.generateDiagnosis(
         currentState.userName!,
         newAnswers,
@@ -554,7 +557,7 @@ export class DiagnosticFlowService {
         diagnosisContent: diagnosis,
       };
 
-      const fullMessage = `${comment}\n\n${diagnosis}\n\n${PDF_QUESTION[currentState.language as 'es' | 'en']}`;
+      const fullMessage = `${comment}\n\n${introMessage}\n\n---\n\n${diagnosis}${PDF_QUESTION[currentState.language as 'es' | 'en']}`;
 
       return {
         message: fullMessage,
@@ -577,7 +580,17 @@ export class DiagnosticFlowService {
     };
 
     const cta = FINAL_CTA[currentState.language as 'es' | 'en'];
-    const fullMessage = `${cta.mainText}\n\n${cta.subscribePrompt}`;
+    const userName = currentState.userName || 'amigo/a';
+
+    // Detectar si el usuario quiere el PDF o no
+    const wantsPdf = userAnswer.toLowerCase().includes('si') ||
+      userAnswer.toLowerCase().includes('sí') ||
+      userAnswer.toLowerCase().includes('yes') ||
+      userAnswer.toLowerCase().includes('descargar') ||
+      userAnswer.toLowerCase().includes('download');
+
+    const ctaMessage = wantsPdf ? cta.withPdf : cta.withoutPdf;
+    const fullMessage = ctaMessage.replace('{userName}', userName);
 
     return {
       message: fullMessage,
@@ -818,44 +831,88 @@ REQUIREMENTS:
 
       const prompt =
         language === 'es'
-          ? `Genera un diagnóstico personalizado para ${userName} basado en sus respuestas al cuestionario de salud digestiva.
+          ? `Genera un diagnóstico de SALUD DIGESTIVA personalizado para ${userName} basado en sus respuestas al cuestionario.
+
+**IMPORTANTE:** Este es un diagnóstico de PROBLEMAS DIGESTIVOS/INTESTINALES. Enfócate SOLO en:
+- Hinchazón abdominal y distensión
+- SIBO (sobrecrecimiento bacteriano intestinal)
+- Disbiosis y microbiota intestinal
+- Intolerancias alimentarias (gluten, lácteos, FODMAPs)
+- Problemas de gases, digestiones lentas
+- Estreñimiento o diarrea
+- Conexión intestino-cerebro
 
 RESPUESTAS DEL CUESTIONARIO:
 ${answersText}${imageSection}${contextSection}
 
 INSTRUCCIONES:
 1. Saludo personalizado con el nombre
-2. 3-4 puntos clave con emoji + título en negrita
-3. Conclusión conectando todos los puntos
-4. Párrafo de solución integral
-5. Cierre motivador
+2. 3-4 puntos clave TODOS relacionados con SALUD DIGESTIVA/INTESTINAL
+   - Cada punto debe tener emoji + título en negrita
+   - Conecta los síntomas con problemas digestivos específicos (SIBO, intolerancias, disbiosis)
+   - Si mencionó alimentos específicos, relaciónalo con posibles intolerancias o SIBO
+3. Conclusión conectando todos los puntos digestivos
+4. Párrafo sobre por qué necesita un enfoque integral de salud digestiva
+5. Cierre motivador enfocado en recuperar su salud intestinal
 
 REQUISITOS:
-- Análisis holístico de síntomas
+- Análisis holístico de SÍNTOMAS DIGESTIVOS
 - Lenguaje empático y alentador
 - Evitar jerga médica compleja
 - 300-450 palabras
 - NO dar planes de acción detallados
-- NO mencionar medicamentos específicos`
-          : `Generate a personalized diagnosis for ${userName} based on their digestive health questionnaire responses.
+- NO mencionar medicamentos específicos
+- CRÍTICO: TODO debe estar relacionado con el sistema digestivo
+
+EJEMPLOS DE TÍTULOS DE PUNTOS CLAVE:
+- 🦠 Posible Sobrecrecimiento Bacteriano (SIBO)
+- 🌾 Sensibilidad al Gluten Sin Diagnosticar
+- 💨 Fermentación Intestinal Excesiva
+- 🔥 Inflamación Intestinal Crónica
+- 🧠 Eje Intestino-Cerebro Desbalanceado
+- 🥛 Intolerancia a Lácteos
+- ⏰ Tránsito Intestinal Lento`
+          : `Generate a personalized DIGESTIVE HEALTH diagnosis for ${userName} based on their questionnaire responses.
+
+**IMPORTANT:** This is a DIGESTIVE/INTESTINAL PROBLEMS diagnosis. Focus ONLY on:
+- Abdominal bloating and distension
+- SIBO (Small Intestinal Bacterial Overgrowth)
+- Dysbiosis and gut microbiota
+- Food intolerances (gluten, dairy, FODMAPs)
+- Gas problems, slow digestion
+- Constipation or diarrhea
+- Gut-brain connection
 
 QUESTIONNAIRE RESPONSES:
 ${answersText}${imageSection}${contextSection}
 
 INSTRUCTIONS:
 1. Personalized greeting with name
-2. 3-4 key points with emoji + bold title
-3. Conclusion connecting all points
-4. Integral solution paragraph
-5. Motivational closing
+2. 3-4 key points ALL related to DIGESTIVE/INTESTINAL HEALTH
+   - Each point must have emoji + bold title
+   - Connect symptoms with specific digestive issues (SIBO, intolerances, dysbiosis)
+   - If specific foods mentioned, relate to possible intolerances or SIBO
+3. Conclusion connecting all digestive points
+4. Paragraph about why they need a comprehensive digestive health approach
+5. Motivational closing focused on recovering intestinal health
 
 REQUIREMENTS:
-- Holistic symptom analysis
+- Holistic analysis of DIGESTIVE SYMPTOMS
 - Empathetic and encouraging language
 - Avoid complex medical jargon
 - 300-450 words
 - DO NOT give detailed action plans
-- DO NOT mention specific medications`;
+- DO NOT mention specific medications
+- CRITICAL: EVERYTHING must be related to the digestive system
+
+EXAMPLES OF KEY POINT TITLES:
+- 🦠 Possible Bacterial Overgrowth (SIBO)
+- 🌾 Undiagnosed Gluten Sensitivity
+- 💨 Excessive Intestinal Fermentation
+- 🔥 Chronic Intestinal Inflammation
+- 🧠 Gut-Brain Axis Imbalance
+- 🥛 Dairy Intolerance
+- ⏰ Slow Intestinal Transit`;
 
       const response = await openai.chat.completions.create({
         model: MODELS.TEXT,
