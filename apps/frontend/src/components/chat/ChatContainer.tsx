@@ -250,13 +250,13 @@ export const ChatContainer = () => {
                     )}
 
                     {/* Message Content Wrapper */}
-                    <div className="flex flex-col max-w-[85%] sm:max-w-[75%]">
+                    <div className={`flex flex-col ${message.role === 'user' ? 'items-end max-w-[85%] sm:max-w-[75%]' : 'max-w-[85%] sm:max-w-[75%]'}`}>
                       {/* Message Bubble */}
                       <div
                         className={`${message.role === 'user'
                           ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100'
                           : 'bg-transparent text-foreground'
-                          } rounded-full py-2 text-justify px-6 fit-content`}
+                          } rounded-full px-4 py-2`}
                       >
                         <p className="text-[15px] leading-relaxed whitespace-pre-wrap break-words">
                           {message.content}
@@ -381,7 +381,7 @@ export const ChatContainer = () => {
                   <button
                     type="button"
                     onClick={() => setIsPlusMenuOpen((v) => !v)}
-                    className="p-2 text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
+                    className="p-2 text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
                     title="Más opciones"
                   >
                     <Plus className="w-5 h-5" />
@@ -436,7 +436,7 @@ export const ChatContainer = () => {
                     <button
                       type="button"
                       onClick={handleVoiceInput}
-                      className={`p-2 rounded-lg transition-colors ${isListening
+                      className={`p-2 rounded-full transition-colors ${isListening
                         ? 'text-brand-green-600 bg-brand-green-50 dark:bg-brand-green-500/10'
                         : 'text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-700'
                         }`}

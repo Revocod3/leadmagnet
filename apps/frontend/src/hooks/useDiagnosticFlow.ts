@@ -181,14 +181,17 @@ export const useDiagnosticFlow = () => {
           return;
         }
 
-        // Add assistant message to UI
-        const assistantMsg: FlowMessage = {
-          role: 'assistant',
-          content: response.content,
-          type: metadata.type,
-          timestamp: new Date().toISOString(),
-        };
-        setMessages((prev) => [...prev, assistantMsg]);
+        // Add assistant message to UI with a small delay to simulate typing
+        setTimeout(() => {
+          const assistantMsg: FlowMessage = {
+            role: 'assistant',
+            content: response.content,
+            type: metadata.type,
+            timestamp: new Date().toISOString(),
+          };
+          setMessages((prev) => [...prev, assistantMsg]);
+          setIsProcessing(false);
+        }, 800);
 
         // If there's a next question, add it after a delay
         if (metadata.nextQuestion) {
@@ -218,9 +221,9 @@ export const useDiagnosticFlow = () => {
             timestamp: new Date().toISOString(),
           },
         ]);
-      } finally {
         setIsProcessing(false);
       }
+      // No finally block - setIsProcessing(false) is now called in the setTimeout
     },
     [state, isProcessing]
   );
