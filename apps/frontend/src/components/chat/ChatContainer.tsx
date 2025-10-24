@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { CameraModal } from '../modals/CameraModal';
 import { ImageViewerModal } from '../modals/ImageViewerModal';
 import { MessageActions } from './MessageActions';
+import ReactMarkdown from 'react-markdown';
 
 export const ChatContainer = () => {
   const navigate = useNavigate();
@@ -272,16 +273,24 @@ export const ChatContainer = () => {
                           : 'bg-transparent text-foreground'
                           } rounded-full px-4 py-2`}
                       >
-                        {/* Render HTML for diagnosis_ready message, plain text for others */}
+                        {/* Render with ReactMarkdown for better formatting */}
                         {message.type === 'diagnosis_ready' ? (
                           <div
                             className="text-[15px] leading-relaxed whitespace-pre-wrap break-words"
                             dangerouslySetInnerHTML={{ __html: message.content }}
                           />
                         ) : (
-                          <p className="text-[15px] leading-relaxed whitespace-pre-wrap break-words">
-                            {message.content}
-                          </p>
+                          <div className="text-[15px] leading-relaxed">
+                            <ReactMarkdown
+                              components={{
+                                p: ({ children }) => <p className="mb-2 whitespace-pre-wrap break-words">{children}</p>,
+                                strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                                em: ({ children }) => <em className="italic">{children}</em>,
+                              }}
+                            >
+                              {message.content}
+                            </ReactMarkdown>
+                          </div>
                         )}
 
                         {/* Show 2 buttons when diagnosis is ready */}

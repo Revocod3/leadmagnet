@@ -7,37 +7,25 @@ import type { Language } from '../types';
  * 2. Free diagnostic worth 30€+ and exclusive discount for completion
  */
 export const INITIAL_INSTRUCTIONS = {
-  es: `¡Hola {userName}! 👋
+  es: `👋 **¡Hola, {userName}!**
 
-Antes de empezar, déjame contarte dos cosas importantes:
+Tu diagnóstico **depende** de tus respuestas — sé sincero/a para obtener recomendaciones útiles.
 
-**1. Tu diagnóstico será tan bueno como tus respuestas**
+Valorado en más de **30 €**, 100% **gratis**. 🎁 Complétalo y recibe **30% de descuento** en el acompañamiento.
 
-No hay respuestas correctas o incorrectas, solo necesito que seas sincero/a conmigo. Cuanto más detallado seas, mejor podré ayudarte. Piensa en esto como una conversación con un amigo que quiere entenderte de verdad.
+⏱️ Solo **5–7 minutos**.
 
-**2. Lo que estás a punto de recibir tiene valor**
+**¿Empezamos?** Escribe "sí" cuando estés listo/a.`,
 
-Este diagnóstico personalizado que te voy a hacer normalmente cuesta más de 30€ en otros sitios online. Tú lo recibes completamente GRATIS.
+  en: `👋 **Hi, {userName}!**
 
-**🎁 BONUS:** Si completas el diagnóstico, te daré un **descuento exclusivo del 30%** para nuestro programa de acompañamiento personalizado. Este descuento SOLO está disponible para quienes terminan el diagnóstico.
+Your diagnosis **depends** on your answers — be honest to get useful recommendations.
 
-¿Listo/a para empezar? Solo te tomará 5-7 minutos y te prometo que vale la pena. 😊`,
+Valued at over **€30**, 100% **free**. 🎁 Complete it and receive **30% off** the personalized program.
 
-  en: `Hi {userName}! 👋
+⏱️ Just **5–7 minutes**.
 
-Before we start, let me tell you two important things:
-
-**1. Your diagnosis will be as good as your answers**
-
-There are no right or wrong answers, I just need you to be honest with me. The more detailed you are, the better I can help you. Think of this as a conversation with a friend who truly wants to understand you.
-
-**2. What you're about to receive has value**
-
-This personalized diagnosis I'm about to do normally costs over €30 on other online sites. You get it completely FREE.
-
-**🎁 BONUS:** If you complete the diagnosis, I'll give you an **exclusive 30% discount** for our personalized support program. This discount is ONLY available to those who finish the diagnosis.
-
-Ready to start? It will only take 5-7 minutes and I promise it's worth it. 😊`,
+**Ready to start?** Type "yes" when you're ready.`,
 };
 
 /**
