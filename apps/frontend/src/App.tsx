@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AnimatePresence } from 'framer-motion';
@@ -28,6 +28,7 @@ function MainFlow() {
   const [showWelcome, setShowWelcome] = useState(false);
   const [userName, setUserName] = useState('');
   const [etymology, setEtymology] = useState('');
+  const hasInitializedRef = useRef(false);
 
   // Auto-detect URL params and start flow
   useEffect(() => {
@@ -36,33 +37,35 @@ function MainFlow() {
     // Solo corre en '/'
     if (location.pathname !== '/') return;
 
+    // Evitar ejecución múltiple en React Strict Mode
+    if (hasInitializedRef.current) {
+      console.log('⏭️ Ya inicializado, saltando...');
+      return;
+    }
+
     const urlParams = new URLSearchParams(window.location.search);
     const nombre = urlParams.get('nombre');
     const email = urlParams.get('email');
     const leadId = urlParams.get('leadId') || urlParams.get('lead_id');
 
-    const userDataStr = sessionStorage.getItem('userData');
-
     // Si vienen params, SIEMPRE corremos intro (queremos animación cada vez que llegas con URL)
     if (nombre && email) {
+      hasInitializedRef.current = true;
+      // Limpiar cualquier sesión anterior antes de crear una nueva
+      sessionStorage.removeItem('userData');
+      localStorage.removeItem('ovp-session-storage');
       handleIntroComplete(nombre, email, leadId || undefined);
       return;
     }
+
+    const userDataStr = sessionStorage.getItem('userData');
 
     // Si no hay params pero tenemos userData guardado: asegurar sesión
     if (userDataStr) {
       const parsed = JSON.parse(userDataStr);
       setUserName(parsed.name);
       setHasCompletedIntro(true);
-      // Garantizar que exista una sesión si por algún motivo no está en store
-      (async () => {
-        try {
-          // No tenemos getter directo aquí; Chat intentará rehidratar. Opcionalmente podríamos crear una nueva si no hay.
-          // Dejamos que el Chat se inicie con la sesión existente; si no, puede mostrar bienvenida.
-        } catch (e) {
-          console.error('Error ensuring session:', e);
-        }
-      })();
+      hasInitializedRef.current = true;
       return;
     }
 

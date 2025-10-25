@@ -35,18 +35,12 @@ export const ChatContainer = () => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Initialize
-  useEffect(() => {
-    if (messages.length === 0) {
-      initialize();
-    }
-  }, []);
-
-  // If session is created after mount (created by App from URL params), ensure we initialize
+  // Initialize only once when session is available
   useEffect(() => {
     if (messages.length === 0 && session?.id) {
       initialize();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.id]);
 
   // Auto-scroll

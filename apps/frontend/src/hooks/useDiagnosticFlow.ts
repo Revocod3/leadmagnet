@@ -53,6 +53,7 @@ export const useDiagnosticFlow = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
   const [etymology, setEtymology] = useState<string>('');
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // Initialize chat: try to restore history; if empty, request welcome/init
   const initialize = useCallback(async () => {
@@ -64,6 +65,14 @@ export const useDiagnosticFlow = () => {
       console.error('No session ID available');
       return;
     }
+
+    // Evitar múltiples inicializaciones
+    if (isInitialized) {
+      console.log('Already initialized, skipping');
+      return;
+    }
+
+    setIsInitialized(true);
 
     // Update state with session info
     setState((prev) => ({
@@ -91,37 +100,26 @@ export const useDiagnosticFlow = () => {
       }
 
       // 2) No history: call backend to initialize diagnostic flow with user name
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/chat/init`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          sessionId,
-          language: sessionStore.language,
-        }),
-      });
+      const data = await apiClient.initializeChat(sessionId, sessionStore.language);
 
-      const data = await response.json();
-
-      if (data.success && data.data) {
+      if (data) {
         // Add welcome message from backend (already personalized with name)
         setMessages([
           {
             role: 'assistant',
-            content: data.data.message,
+            content: data.message,
             type: 'welcome',
             timestamp: new Date().toISOString(),
           },
         ]);
 
         // Update state with backend state
-        if (data.data.state) {
+        if (data.state) {
           setState((prev) => ({
             ...prev,
-            step: data.data.state.step,
-            currentQuestionIndex: data.data.state.currentQuestionIndex,
-            language: data.data.state.language,
+            step: data.state.step,
+            currentQuestionIndex: data.state.currentQuestionIndex,
+            language: data.state.language,
           }));
         }
       }
@@ -138,7 +136,7 @@ export const useDiagnosticFlow = () => {
         },
       ]);
     }
-  }, []);
+  }, [isInitialized]);
 
   // Process user message based on current step
   const processMessage = useCallback(

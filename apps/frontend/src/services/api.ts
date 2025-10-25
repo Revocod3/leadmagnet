@@ -65,6 +65,17 @@ class ApiClient {
   }
 
   // Chat endpoints
+  async initializeChat(sessionId: string, language: 'es' | 'en'): Promise<{ message: string; state: any }> {
+    const response = await this.client.post<ApiResponse<{ message: string; state: any }>>('/chat/init', {
+      sessionId,
+      language,
+    });
+    if (!response.data.success || !response.data.data) {
+      throw new Error(response.data.error || 'Error al inicializar chat');
+    }
+    return response.data.data;
+  }
+
   async sendMessage(data: SendMessageRequest): Promise<ChatMessage> {
     const response = await this.client.post<ApiResponse<ChatMessage>>('/chat', data);
     if (!response.data.success || !response.data.data) {
