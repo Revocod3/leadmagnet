@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useSessionStore } from '../../stores/sessionStore';
 
 const mockQuestions = [
   {
@@ -22,7 +21,6 @@ const mockQuestions = [
 
 export const QuizContainer = () => {
   const navigate = useNavigate();
-  const { clearSession } = useSessionStore();
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
 
@@ -46,8 +44,7 @@ export const QuizContainer = () => {
     if (currentQuestion > 0) {
       setCurrentQuestion(currentQuestion - 1);
     } else {
-      // Volver al ChoiceScreen sin eliminar userData
-      clearSession();
+      // Volver al ChoiceScreen conservando la sesión del backend
       navigate('/', { replace: true });
     }
   };

@@ -1,12 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePDFGenerator } from '../../hooks/usePDFGenerator';
-import { useSessionStore } from '../../stores/sessionStore';
 import { Download } from 'lucide-react';
 
 export const DiagnosisScreen = () => {
   const navigate = useNavigate();
-  const { clearSession } = useSessionStore();
   const { generatePDF } = usePDFGenerator();
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -67,10 +65,7 @@ Recuerda: Los cambios reales requieren tiempo, constancia y el apoyo adecuado. ¬
   };
 
   const handleBackToStart = () => {
-    // Volver al ChoiceScreen sin eliminar userData
-    // sessionStorage.removeItem('userData');
-    clearSession();
-    // Navegar al inicio
+    // Volver al ChoiceScreen manteniendo la sesi√≥n creada en el backend
     navigate('/', { replace: true });
   };
 

@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+// Single-flow mode: no navigation needed here
 import { useDiagnosticFlow } from '../../hooks/useDiagnosticFlow';
 import { useSpeechToText } from '../../hooks/useSpeechToText';
 import { usePDFGenerator } from '../../hooks/usePDFGenerator';
 import { useSessionStore } from '../../stores/sessionStore';
-import { Moon, Sun, Mic, Download, ArrowLeft, MoreVertical, Plus, ArrowUp, Camera, Image } from 'lucide-react';
+import { Moon, Sun, Mic, Download, MoreVertical, Plus, ArrowUp, Camera, Image } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CameraModal } from '../modals/CameraModal';
 import { ImageViewerModal } from '../modals/ImageViewerModal';
@@ -12,8 +12,7 @@ import { MessageActions } from './MessageActions';
 import ReactMarkdown from 'react-markdown';
 
 export const ChatContainer = () => {
-  const navigate = useNavigate();
-  const { clearSession } = useSessionStore();
+  const { session } = useSessionStore();
   const [inputMessage, setInputMessage] = useState('');
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
@@ -42,6 +41,13 @@ export const ChatContainer = () => {
       initialize();
     }
   }, []);
+
+  // If session is created after mount (created by App from URL params), ensure we initialize
+  useEffect(() => {
+    if (messages.length === 0 && session?.id) {
+      initialize();
+    }
+  }, [session?.id]);
 
   // Auto-scroll
   useEffect(() => {
@@ -170,12 +176,7 @@ export const ChatContainer = () => {
     await regenerateLastResponse(lastUserMessage.content);
   };
 
-  const handleBackToStart = () => {
-    // NO eliminar userData - el usuario solo está volviendo al ChoiceScreen
-    // sessionStorage.removeItem('userData'); 
-    clearSession();
-    navigate('/', { replace: true });
-  };
+  // No-op: back button removed in single-flow UX
 
   return (
     <>
@@ -183,14 +184,8 @@ export const ChatContainer = () => {
         {/* Header */}
         <header className="sticky top-0 z-10 backdrop-blur-xl bg-white/80 dark:bg-neutral-900/80 border-b border-neutral-200 dark:border-neutral-800">
           <div className="container-narrow py-3 flex items-center justify-between">
-            {/* Left: Back Button */}
-            <button
-              onClick={handleBackToStart}
-              className="p-2 rounded-lg hover:bg-surface transition-colors"
-              title="Volver al inicio"
-            >
-              <ArrowLeft className="w-5 h-5 text-foreground" />
-            </button>
+            {/* Left spacer (back removed) */}
+            <div className="w-9" />
 
             {/* Center: Title */}
             <div className="flex items-center gap-3">

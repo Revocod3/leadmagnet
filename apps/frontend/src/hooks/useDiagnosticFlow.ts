@@ -54,7 +54,7 @@ export const useDiagnosticFlow = () => {
   const [showWelcome, setShowWelcome] = useState(false);
   const [etymology, setEtymology] = useState<string>('');
 
-  // Initialize chat with welcome message from backend
+  // Initialize chat: try to restore history; if empty, request welcome/init
   const initialize = useCallback(async () => {
     const sessionStore = useSessionStore.getState();
     const sessionId = sessionStore.session?.id;
@@ -73,7 +73,24 @@ export const useDiagnosticFlow = () => {
     }));
 
     try {
-      // Call backend to initialize diagnostic flow with user name
+      // 1) Try to restore chat history first
+      try {
+        const history = await apiClient.getChatHistory(sessionId);
+        if (history && history.length > 0) {
+          setMessages(
+            history.map((m) => ({
+              role: m.role === 'system' ? 'assistant' : (m.role as 'user' | 'assistant'),
+              content: m.content,
+              timestamp: m.timestamp || m.createdAt || new Date().toISOString(),
+            }))
+          );
+          return; // History restored; no need to call init
+        }
+      } catch (historyErr) {
+        console.warn('Could not restore chat history, will call init:', historyErr);
+      }
+
+      // 2) No history: call backend to initialize diagnostic flow with user name
       const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/chat/init`, {
         method: 'POST',
         headers: {

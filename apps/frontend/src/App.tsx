@@ -2,10 +2,7 @@ import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AnimatePresence } from 'framer-motion';
-import { ChoiceScreen } from './components/screens/ChoiceScreen';
 import { ChatContainer } from './components/chat/ChatContainer';
-import { QuizContainer } from './components/quiz/QuizContainer';
-import { DiagnosisScreen } from './components/screens/DiagnosisScreen';
 import { WelcomeAnimation } from './components/animations/WelcomeAnimation';
 import { Layout } from './components/layout/Layout';
 import { openaiService } from './services/openai';
@@ -24,11 +21,10 @@ const queryClient = new QueryClient({
 });
 
 function MainFlow() {
-  const navigate = useNavigate();
+  useNavigate();
   const location = useLocation();
   const { setSession } = useSessionStore();
-  const [hasCompletedIntro, setHasCompletedIntro] = useState(false);
-  const [showChoice, setShowChoice] = useState(false);
+  const [, setHasCompletedIntro] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
   const [userName, setUserName] = useState('');
   const [etymology, setEtymology] = useState('');
@@ -37,46 +33,41 @@ function MainFlow() {
   useEffect(() => {
     console.log('🔍 useEffect ejecutado - pathname:', location.pathname);
 
-    // Only run on root path
-    if (location.pathname !== '/') {
-      console.log('❌ No es root path, saliendo...');
-      return;
-    }
+    // Solo corre en '/'
+    if (location.pathname !== '/') return;
 
     const urlParams = new URLSearchParams(window.location.search);
     const nombre = urlParams.get('nombre');
     const email = urlParams.get('email');
     const leadId = urlParams.get('leadId') || urlParams.get('lead_id');
 
-    // Check if user already has session data (returning from chat/quiz)
-    const userData = sessionStorage.getItem('userData');
+    const userDataStr = sessionStorage.getItem('userData');
 
-    console.log('📊 Estado actual:', {
-      nombre,
-      email,
-      leadId,
-      userData: userData ? 'existe' : 'no existe'
-    });
-
-    // Si ya hay userData, mostrar ChoiceScreen (usuario volviendo de chat/quiz)
-    if (userData) {
-      console.log('🔄 Hay userData, mostrando ChoiceScreen...');
-      const parsedData = JSON.parse(userData);
-      setUserName(parsedData.name);
-      setHasCompletedIntro(true);
-      setShowChoice(true);
+    // Si vienen params, SIEMPRE corremos intro (queremos animación cada vez que llegas con URL)
+    if (nombre && email) {
+      handleIntroComplete(nombre, email, leadId || undefined);
       return;
     }
 
-    // Si hay params en URL, iniciar flujo
-    if (nombre && email) {
-      console.log('✅ Hay params, iniciando flujo...');
-      handleIntroComplete(nombre, email, leadId || undefined);
-    } else {
-      console.log('⚠️ No hay params ni userData, redirigiendo a WordPress...');
-      // Solo redirigir si no hay sesión (primera vez sin params)
-      window.location.href = 'https://objetivovientreplano.com/diagnostico-gratuito/';
+    // Si no hay params pero tenemos userData guardado: asegurar sesión
+    if (userDataStr) {
+      const parsed = JSON.parse(userDataStr);
+      setUserName(parsed.name);
+      setHasCompletedIntro(true);
+      // Garantizar que exista una sesión si por algún motivo no está en store
+      (async () => {
+        try {
+          // No tenemos getter directo aquí; Chat intentará rehidratar. Opcionalmente podríamos crear una nueva si no hay.
+          // Dejamos que el Chat se inicie con la sesión existente; si no, puede mostrar bienvenida.
+        } catch (e) {
+          console.error('Error ensuring session:', e);
+        }
+      })();
+      return;
     }
+
+    // No params y sin userData: redirigir a WP (primer ingreso inválido)
+    window.location.href = 'https://objetivovientreplano.com/diagnostico-gratuito/';
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname]);
 
@@ -128,16 +119,6 @@ function MainFlow() {
 
   const handleWelcomeComplete = () => {
     setShowWelcome(false);
-    setShowChoice(true);
-  };
-
-  const handleChoiceSelect = (choice: 'chat' | 'quiz') => {
-    setShowChoice(false);
-    if (choice === 'chat') {
-      navigate('/chat');
-    } else {
-      navigate('/quiz');
-    }
   };
 
   return (
@@ -151,15 +132,9 @@ function MainFlow() {
             language="es"
           />
         )}
-        {hasCompletedIntro && !showWelcome && showChoice && (
-          <ChoiceScreen onSelect={handleChoiceSelect} />
-        )}
       </AnimatePresence>
       <Routes>
-        <Route path="/" element={<div />} />
-        <Route path="/chat" element={<ChatContainer />} />
-        <Route path="/quiz" element={<QuizContainer />} />
-        <Route path="/diagnosis" element={<DiagnosisScreen />} />
+        <Route path="/" element={<ChatContainer />} />
       </Routes>
     </>
   );
