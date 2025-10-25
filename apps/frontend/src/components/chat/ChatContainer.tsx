@@ -168,11 +168,13 @@ export const ChatContainer = () => {
 
     // Usar la función especial de regenerar que no avanza el índice
     await regenerateLastResponse(lastUserMessage.content);
-  }; const handleBackToStart = () => {
-    sessionStorage.removeItem('userData');
+  };
+
+  const handleBackToStart = () => {
+    // NO eliminar userData - el usuario solo está volviendo al ChoiceScreen
+    // sessionStorage.removeItem('userData'); 
     clearSession();
     navigate('/', { replace: true });
-    window.location.href = '/';
   };
 
   return (

@@ -18,11 +18,11 @@ export const WelcomeAnimation = ({
 
   const messages = {
     es: {
-      greeting: `Hola, ${userName}`,
+      greeting: `¡Hola, ${userName}!`,
       subtitle: 'Preparando tu experiencia personalizada',
     },
     en: {
-      greeting: `Hello, ${userName}`,
+      greeting: `Hello, ${userName}!`,
       subtitle: 'Preparing your personalized experience',
     },
   };

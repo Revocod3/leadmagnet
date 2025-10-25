@@ -67,13 +67,11 @@ Recuerda: Los cambios reales requieren tiempo, constancia y el apoyo adecuado. �
   };
 
   const handleBackToStart = () => {
-    // Limpiar toda la información de la sesión
-    sessionStorage.removeItem('userData');
+    // Volver al ChoiceScreen sin eliminar userData
+    // sessionStorage.removeItem('userData');
     clearSession();
     // Navegar al inicio
     navigate('/', { replace: true });
-    // Recargar la página para resetear el estado completo
-    window.location.href = '/';
   };
 
   return (

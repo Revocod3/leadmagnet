@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AnimatePresence } from 'framer-motion';
 import { ChoiceScreen } from './components/screens/ChoiceScreen';
@@ -25,6 +25,7 @@ const queryClient = new QueryClient({
 
 function MainFlow() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { setSession } = useSessionStore();
   const [hasCompletedIntro, setHasCompletedIntro] = useState(false);
   const [showChoice, setShowChoice] = useState(false);
@@ -34,20 +35,50 @@ function MainFlow() {
 
   // Auto-detect URL params and start flow
   useEffect(() => {
+    console.log('🔍 useEffect ejecutado - pathname:', location.pathname);
+
+    // Only run on root path
+    if (location.pathname !== '/') {
+      console.log('❌ No es root path, saliendo...');
+      return;
+    }
+
     const urlParams = new URLSearchParams(window.location.search);
     const nombre = urlParams.get('nombre');
     const email = urlParams.get('email');
     const leadId = urlParams.get('leadId') || urlParams.get('lead_id');
 
+    // Check if user already has session data (returning from chat/quiz)
+    const userData = sessionStorage.getItem('userData');
+
+    console.log('📊 Estado actual:', {
+      nombre,
+      email,
+      leadId,
+      userData: userData ? 'existe' : 'no existe'
+    });
+
+    // Si ya hay userData, mostrar ChoiceScreen (usuario volviendo de chat/quiz)
+    if (userData) {
+      console.log('🔄 Hay userData, mostrando ChoiceScreen...');
+      const parsedData = JSON.parse(userData);
+      setUserName(parsedData.name);
+      setHasCompletedIntro(true);
+      setShowChoice(true);
+      return;
+    }
+
+    // Si hay params en URL, iniciar flujo
     if (nombre && email) {
-      // If URL params exist, start the flow automatically
+      console.log('✅ Hay params, iniciando flujo...');
       handleIntroComplete(nombre, email, leadId || undefined);
     } else {
-      // If no params, redirect to WordPress landing page
+      console.log('⚠️ No hay params ni userData, redirigiendo a WordPress...');
+      // Solo redirigir si no hay sesión (primera vez sin params)
       window.location.href = 'https://objetivovientreplano.com/diagnostico-gratuito/';
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [location.pathname]);
 
   const handleIntroComplete = async (name: string, email: string, leadId?: string) => {
     console.log('📝 handleIntroComplete llamado:', { name, email, leadId });
@@ -109,16 +140,6 @@ function MainFlow() {
     }
   };
 
-  const handleRestart = () => {
-    sessionStorage.removeItem('userData');
-    setHasCompletedIntro(false);
-    setShowChoice(false);
-    setShowWelcome(false);
-    setUserName('');
-    setEtymology('');
-    navigate('/');
-  };
-
   return (
     <>
       <AnimatePresence mode="wait">
@@ -137,7 +158,7 @@ function MainFlow() {
       <Routes>
         <Route path="/" element={<div />} />
         <Route path="/chat" element={<ChatContainer />} />
-        <Route path="/quiz" element={<QuizContainer onRestart={handleRestart} />} />
+        <Route path="/quiz" element={<QuizContainer />} />
         <Route path="/diagnosis" element={<DiagnosisScreen />} />
       </Routes>
     </>
