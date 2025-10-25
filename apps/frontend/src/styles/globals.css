@@ -79,6 +79,7 @@
 
   /* Smooth theme switch: apply temporary transitions only while toggling theme */
   @media (prefers-reduced-motion: no-preference) {
+
     html.theme-switching *,
     html.theme-switching *::before,
     html.theme-switching *::after {
