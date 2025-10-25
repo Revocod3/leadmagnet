@@ -11,7 +11,7 @@ export const INITIAL_INSTRUCTIONS = {
 
 Tu diagnóstico **depende** de tus respuestas — sé sincero/a para obtener recomendaciones útiles.
 
-Valorado en más de **30 €**, 100% **gratis**. 🎁 Complétalo y recibe **30% de descuento** en el acompañamiento.
+**Valorado en más de 30 €**, 100% **gratis**. 🎁 Complétalo y recibe **30% de descuento** en el acompañamiento.
 
 ⏱️ Solo **5–7 minutos**.
 
@@ -21,7 +21,7 @@ Valorado en más de **30 €**, 100% **gratis**. 🎁 Complétalo y recibe **30%
 
 Your diagnosis **depends** on your answers — be honest to get useful recommendations.
 
-Valued at over **€30**, 100% **free**. 🎁 Complete it and receive **30% off** the personalized program.
+**Valued at over €30**, 100% **free**. 🎁 Complete it and receive **30% off** the personalized program.
 
 ⏱️ Just **5–7 minutes**.
 
