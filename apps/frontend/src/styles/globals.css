@@ -77,6 +77,17 @@
     text-rendering: optimizeLegibility;
   }
 
+  /* Smooth theme switch: apply temporary transitions only while toggling theme */
+  @media (prefers-reduced-motion: no-preference) {
+    html.theme-switching *,
+    html.theme-switching *::before,
+    html.theme-switching *::after {
+      transition-property: background-color, color, border-color, fill, stroke;
+      transition-duration: var(--transition-base);
+      transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    }
+  }
+
   /* Selection */
   ::selection {
     @apply bg-brand-green-200 text-brand-green-900;

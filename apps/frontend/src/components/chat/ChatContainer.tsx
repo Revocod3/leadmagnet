@@ -4,7 +4,7 @@ import { useDiagnosticFlow } from '../../hooks/useDiagnosticFlow';
 import { useSpeechToText } from '../../hooks/useSpeechToText';
 import { usePDFGenerator } from '../../hooks/usePDFGenerator';
 import { useSessionStore } from '../../stores/sessionStore';
-import { Moon, Sun, Mic, Download, MoreVertical, Plus, ArrowUp, Camera, Image } from 'lucide-react';
+import { Moon, Sun, Mic, Download, Plus, ArrowUp, Camera, Image } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CameraModal } from '../modals/CameraModal';
 import { ImageViewerModal } from '../modals/ImageViewerModal';
@@ -117,8 +117,15 @@ export const ChatContainer = () => {
   };
 
   const toggleDarkMode = () => {
+    const root = document.documentElement;
+    // Enable temporary smooth theme transitions
+    root.classList.add('theme-switching');
     setIsDarkMode(!isDarkMode);
-    document.documentElement.classList.toggle('dark');
+    root.classList.toggle('dark');
+    // Remove the helper class after the transition finishes
+    window.setTimeout(() => {
+      root.classList.remove('theme-switching');
+    }, 250);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -203,16 +210,13 @@ export const ChatContainer = () => {
             <div className="flex items-center gap-1">
               <button
                 onClick={toggleDarkMode}
-                className="p-2 rounded-lg hover:bg-surface transition-colors"
+                className="w-9 h-9 rounded-full hover:bg-surface transition-colors flex items-center justify-center border border-neutral-300 dark:border-neutral-700"
               >
                 {isDarkMode ? (
                   <Sun className="w-5 h-5 text-foreground" />
                 ) : (
                   <Moon className="w-5 h-5 text-foreground" />
                 )}
-              </button>
-              <button className="p-2 rounded-lg hover:bg-surface transition-colors">
-                <MoreVertical className="w-5 h-5 text-foreground" />
               </button>
             </div>
           </div>
