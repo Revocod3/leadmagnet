@@ -338,6 +338,21 @@
     @apply border border-white/20 dark:border-neutral-800/50;
   }
 
+  /* Chat subtle lighting background */
+  .bg-chat-lighting {
+    /* softer, barely-there radial glows using the brand color */
+    background-image:
+      radial-gradient(1500px 800px at -10% -20%, rgb(var(--color-brand-primary) / 0.02), transparent 65%),
+      radial-gradient(1400px 700px at 110% -15%, rgb(var(--color-brand-primary) / 0.015), transparent 65%);
+    background-repeat: no-repeat;
+  }
+
+  .dark .bg-chat-lighting {
+    background-image:
+      radial-gradient(1300px 650px at -12% -18%, rgb(var(--color-brand-primary) / 0.035), transparent 60%),
+      radial-gradient(1200px 600px at 112% -12%, rgb(255 255 255 / 0.02), transparent 60%);
+  }
+
   /* Divider */
   .divider {
     @apply h-px w-full bg-border;

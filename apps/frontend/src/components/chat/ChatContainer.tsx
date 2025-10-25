@@ -187,9 +187,9 @@ export const ChatContainer = () => {
 
   return (
     <>
-      <div className={`flex flex-col h-screen ${isDarkMode ? 'dark' : ''} bg-neutral-50 dark:bg-neutral-900 transition-colors duration-200`}>
+      <div className={`flex flex-col h-screen ${isDarkMode ? 'dark' : ''} bg-neutral-50 dark:bg-neutral-900 bg-chat-lighting transition-colors duration-200`}>
         {/* Header */}
-        <header className="sticky top-0 z-10 backdrop-blur-xl bg-white/80 dark:bg-neutral-900/80 border-b border-neutral-200 dark:border-neutral-800">
+        <header className="sticky top-0 z-10 backdrop-blur-xl bg-gradient-to-b from-white/80 to-white/60 dark:from-neutral-900/80 dark:to-neutral-900/60 border-b border-neutral-200/80 dark:border-neutral-800/70">
           <div className="container-narrow py-3 flex items-center justify-between">
             {/* Left spacer (back removed) */}
             <div className="w-9" />
@@ -383,7 +383,7 @@ export const ChatContainer = () => {
         </main>
 
         {/* Input Area - ChatGPT Style */}
-        <footer className="sticky bottom-0 bg-neutral-50 dark:bg-neutral-900 pb-safe">
+        <footer className="sticky bottom-0 bg-gradient-to-t from-neutral-50 to-neutral-50/80 dark:from-neutral-900 dark:to-neutral-900/70 pb-safe">
           <div className="max-w-3xl mx-auto px-4 py-4">
             {/* Selected Image Preview */}
             {selectedImage && (
@@ -412,7 +412,7 @@ export const ChatContainer = () => {
             )}
 
             {/* Input Container */}
-            <form onSubmit={handleSendMessage} className="relative bg-white dark:bg-neutral-800 rounded-[26px] border border-neutral-300 dark:border-neutral-700 shadow-md p-2 transition-all focus-within:border-neutral-400 dark:focus-within:border-neutral-600 focus-within:shadow-lg">
+            <form onSubmit={handleSendMessage} className="relative rounded-[26px] border border-neutral-300 dark:border-neutral-700 shadow-md p-2 transition-all focus-within:border-neutral-400 dark:focus-within:border-neutral-600 focus-within:shadow-lg bg-gradient-to-b from-white to-white/95 dark:from-neutral-800 dark:to-neutral-800/90">
               {/* File input (hidden) */}
               <input
                 ref={fileInputRef}
