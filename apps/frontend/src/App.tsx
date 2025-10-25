@@ -42,6 +42,9 @@ function MainFlow() {
     if (nombre && email) {
       // If URL params exist, start the flow automatically
       handleIntroComplete(nombre, email, leadId || undefined);
+    } else {
+      // If no params, redirect to WordPress landing page
+      window.location.href = 'https://objetivovientreplano.com/diagnostico-gratuito/';
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

@@ -38,42 +38,6 @@ export const IntroScreen = ({ onComplete }: IntroScreenProps) => {
         background: 'linear-gradient(135deg, #99AB75 0%, #A0AD5E 50%, #A5B26C 100%)'
       }}
     >
-      {/* Círculo superior izquierdo - breathing effect */}
-      <motion.div
-        animate={{
-          scale: [1, 1.05, 1],
-          opacity: [0.15, 0.2, 0.15],
-        }}
-        transition={{
-          duration: 8,
-          ease: "easeInOut",
-          repeat: Infinity,
-        }}
-        className="absolute -top-48 -left-48 w-96 h-96 rounded-full"
-        style={{
-          background: 'radial-gradient(circle, rgba(153, 171, 117, 0.3) 0%, transparent 70%)',
-          filter: 'blur(60px)'
-        }}
-      />
-
-      {/* Círculo inferior derecho - breathing effect */}
-      <motion.div
-        animate={{
-          scale: [1, 1.05, 1],
-          opacity: [0.15, 0.2, 0.15],
-        }}
-        transition={{
-          duration: 8,
-          ease: "easeInOut",
-          repeat: Infinity,
-          delay: 4,
-        }}
-        className="absolute -bottom-48 -right-48 w-96 h-96 rounded-full"
-        style={{
-          background: 'radial-gradient(circle, rgba(165, 178, 108, 0.3) 0%, transparent 70%)',
-          filter: 'blur(60px)'
-        }}
-      />
 
       {/* Content - Loading State */}
       <div className="relative min-h-screen flex items-center justify-center p-4 sm:p-6 lg:p-8">
