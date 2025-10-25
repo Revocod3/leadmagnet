@@ -3,6 +3,7 @@ import { prisma } from '../config/database';
 import { DiagnosticFlowService, DiagnosticFlowState } from '../services/openai/diagnostic-flow.service';
 import { ValidationService } from '../services/openai/validation.service';
 import { DiscountService } from '../services/discount.service';
+import { wordPressSyncService } from '../services/wordpress-sync.service';
 import type { SendMessageRequest, ApiResponse, ChatMessage, Language } from '../types';
 
 const validationService = new ValidationService();
@@ -153,6 +154,17 @@ export class ChatController {
         where: { id: sessionId },
         data: updateData,
       });
+
+      // Sincronizar con WordPress cuando se complete el diagnóstico
+      if (flowResponse.newState.step === 'completed' || flowResponse.newState.step === 'diagnosis_ready') {
+        try {
+          console.log('🔄 Sincronizando diagnóstico completado con WordPress...', { sessionId });
+          await wordPressSyncService.syncDiagnosisCompletion(sessionId);
+        } catch (syncError) {
+          console.error('❌ Error sincronizando con WordPress:', syncError);
+          // No fallar la respuesta si falla la sincronización
+        }
+      }
 
       // Save diagnosis if generated
       if (flowResponse.newState.diagnosisContent && !session.diagnosis) {

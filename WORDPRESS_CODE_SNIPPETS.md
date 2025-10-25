@@ -238,8 +238,13 @@ function ovp_receive_diagnosis($request) {
     // Obtener datos del request
     $data = $request->get_json_params();
     
+    // LOG: Datos recibidos
+    error_log('OVP DEBUG: Iniciando recepción de diagnóstico');
+    error_log('OVP DEBUG: Lead ID recibido: ' . ($data['leadId'] ?? 'NO ENVIADO'));
+    
     // Validar que llegó el leadId
     if (empty($data['leadId'])) {
+        error_log('OVP ERROR: leadId no proporcionado');
         return new WP_Error(
             'missing_lead_id',
             'leadId es requerido',
@@ -249,6 +254,7 @@ function ovp_receive_diagnosis($request) {
     
     // Extraer el ID numérico (quitar prefijo 'wp_')
     $lead_id = str_replace('wp_', '', $data['leadId']);
+    error_log('OVP DEBUG: Lead ID procesado: ' . $lead_id);
     
     // Verificar que el lead existe
     $existing = $wpdb->get_row($wpdb->prepare(
@@ -257,6 +263,7 @@ function ovp_receive_diagnosis($request) {
     ));
     
     if (!$existing) {
+        error_log('OVP ERROR: Lead no encontrado con ID: ' . $lead_id);
         return new WP_Error(
             'lead_not_found',
             'Lead no encontrado',
@@ -264,11 +271,13 @@ function ovp_receive_diagnosis($request) {
         );
     }
     
-    // Preparar datos para actualizar
+    error_log('OVP DEBUG: Lead encontrado - Email: ' . $existing->email);
+    
+    // Preparar datos para actualizar - CON VALORES POR DEFECTO
     $update_data = array(
         'diagnostic_completed' => !empty($data['diagnosticCompleted']) ? 1 : 0,
-        'diagnostic_mode' => sanitize_text_field($data['diagnosticMode'] ?? ''),
-        'diagnostic_type' => sanitize_text_field($data['diagnosticType'] ?? ''),
+        'diagnostic_mode' => sanitize_text_field($data['diagnosticMode'] ?? 'standard'),
+        'diagnostic_type' => sanitize_text_field($data['diagnosticType'] ?? 'chat'),
         'diagnosis_content' => wp_kses_post($data['diagnosisContent'] ?? ''),
         'total_score' => intval($data['totalScore'] ?? 0),
         'score_percentage' => floatval($data['scorePercentage'] ?? 0),
@@ -294,6 +303,8 @@ function ovp_receive_diagnosis($request) {
         $update_data['converted_to_chat'] = 1;
     }
     
+    error_log('OVP DEBUG: Intentando actualizar lead con ' . count($update_data) . ' campos');
+    
     // Actualizar el lead
     $result = $wpdb->update(
         $table_name,
@@ -302,15 +313,18 @@ function ovp_receive_diagnosis($request) {
     );
     
     if ($result === false) {
+        error_log('OVP ERROR: Fallo en wpdb->update');
+        error_log('OVP ERROR: SQL Error: ' . $wpdb->last_error);
+        error_log('OVP ERROR: Last Query: ' . $wpdb->last_query);
+        
         return new WP_Error(
             'db_error',
-            'Error al actualizar el lead',
+            'Error al actualizar el lead: ' . $wpdb->last_error,
             array('status' => 500)
         );
     }
     
-    // Log para debugging
-    error_log("OVP Lead actualizado: ID={$lead_id}, Email={$existing->email}, Completed=" . ($data['diagnosticCompleted'] ? 'SI' : 'NO'));
+    error_log("OVP SUCCESS: Lead actualizado - ID={$lead_id}, Email={$existing->email}, Rows affected={$result}");
     
     return array(
         'success' => true,
@@ -625,6 +639,260 @@ function ovp_leads_page() {
     </div>
     <?php
 }
+```
+
+---
+
+## Snippet 7b: Página de Detalle del Lead
+
+**Nombre:** `OVP - Página de detalle del lead`  
+**Tipo:** PHP  
+**Ubicación:** Solo en admin
+
+```php
+<?php
+// Página de detalle del lead
+function ovp_lead_detail_page() {
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'ovp_leads';
+    
+    // Obtener ID del lead
+    $lead_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
+    
+    if (!$lead_id) {
+        wp_die('ID de lead no válido');
+    }
+    
+    // Obtener datos del lead
+    $lead = $wpdb->get_row($wpdb->prepare(
+        "SELECT * FROM $table_name WHERE id = %d",
+        $lead_id
+    ));
+    
+    if (!$lead) {
+        wp_die('Lead no encontrado');
+    }
+    
+    // Decodificar JSON
+    $quiz_answers = !empty($lead->quiz_answers) ? json_decode($lead->quiz_answers, true) : [];
+    $chat_messages = !empty($lead->chat_messages) ? json_decode($lead->chat_messages, true) : [];
+    $metadata = !empty($lead->metadata) ? json_decode($lead->metadata, true) : [];
+    
+    ?>
+    <div class="wrap">
+        <h1>📋 Detalle del Lead: <?php echo esc_html($lead->name); ?></h1>
+        
+        <a href="<?php echo admin_url('admin.php?page=ovp-leads'); ?>" class="button" style="margin-bottom: 20px;">← Volver a la lista</a>
+        
+        <!-- Información General -->
+        <div style="background: #fff; padding: 20px; margin: 20px 0; border-left: 4px solid #2271b1;">
+            <h2>👤 Información General</h2>
+            <table class="form-table">
+                <tr>
+                    <th>Nombre:</th>
+                    <td><strong><?php echo esc_html($lead->name); ?></strong></td>
+                </tr>
+                <tr>
+                    <th>Email:</th>
+                    <td><a href="mailto:<?php echo esc_attr($lead->email); ?>"><?php echo esc_html($lead->email); ?></a></td>
+                </tr>
+                <tr>
+                    <th>Teléfono:</th>
+                    <td><?php echo esc_html($lead->phone ?: 'No proporcionado'); ?></td>
+                </tr>
+                <tr>
+                    <th>Estado:</th>
+                    <td>
+                        <span class="ovp-status ovp-status-<?php echo esc_attr($lead->status); ?>">
+                            <?php 
+                            echo $lead->status === 'completed' ? '✅ Completado' : 
+                                 ($lead->status === 'pending' ? '⏳ Pendiente' : '❌ Abandonado'); 
+                            ?>
+                        </span>
+                    </td>
+                </tr>
+                <tr>
+                    <th>Fecha de captura:</th>
+                    <td><?php echo date('d/m/Y H:i', strtotime($lead->created_at)); ?></td>
+                </tr>
+                <?php if ($lead->completed_at): ?>
+                <tr>
+                    <th>Fecha de finalización:</th>
+                    <td><?php echo date('d/m/Y H:i', strtotime($lead->completed_at)); ?></td>
+                </tr>
+                <?php endif; ?>
+            </table>
+        </div>
+        
+        <!-- Métricas de Engagement -->
+        <?php if ($lead->engagement_score || $lead->score_percentage): ?>
+        <div style="background: #fff; padding: 20px; margin: 20px 0; border-left: 4px solid #00a32a;">
+            <h2>📊 Métricas de Engagement</h2>
+            <table class="form-table">
+                <?php if ($lead->score_percentage): ?>
+                <tr>
+                    <th>Puntuación del diagnóstico:</th>
+                    <td>
+                        <strong style="font-size: 1.2em; color: #2271b1;">
+                            <?php echo esc_html($lead->score_percentage); ?>%
+                        </strong>
+                    </td>
+                </tr>
+                <?php endif; ?>
+                <?php if ($lead->engagement_score): ?>
+                <tr>
+                    <th>Score de engagement:</th>
+                    <td>
+                        <strong style="font-size: 1.2em; color: #00a32a;">
+                            <?php echo esc_html($lead->engagement_score); ?>
+                        </strong>
+                    </td>
+                </tr>
+                <?php endif; ?>
+                <?php if ($lead->interaction_count): ?>
+                <tr>
+                    <th>Número de interacciones:</th>
+                    <td><?php echo esc_html($lead->interaction_count); ?></td>
+                </tr>
+                <?php endif; ?>
+                <?php if ($lead->time_to_complete): ?>
+                <tr>
+                    <th>Tiempo de completado:</th>
+                    <td><?php echo esc_html($lead->time_to_complete); ?> segundos</td>
+                </tr>
+                <?php endif; ?>
+            </table>
+        </div>
+        <?php endif; ?>
+        
+        <!-- Diagnóstico Personalizado -->
+        <?php if (!empty($lead->diagnosis_content)): ?>
+        <div style="background: #fff; padding: 20px; margin: 20px 0; border-left: 4px solid #d63638;">
+            <h2>🎯 Diagnóstico Personalizado</h2>
+            <div style="background: #f6f7f7; padding: 15px; border-radius: 4px;">
+                <?php echo nl2br(esc_html($lead->diagnosis_content)); ?>
+            </div>
+        </div>
+        <?php endif; ?>
+        
+        <!-- Respuestas del Quiz -->
+        <?php if (!empty($quiz_answers)): ?>
+        <div style="background: #fff; padding: 20px; margin: 20px 0; border-left: 4px solid #8c6d00;">
+            <h2>✅ Respuestas del Quiz</h2>
+            <table class="widefat striped">
+                <thead>
+                    <tr>
+                        <th>Pregunta</th>
+                        <th>Respuesta</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($quiz_answers as $qa): ?>
+                    <tr>
+                        <td><strong><?php echo esc_html($qa['question'] ?? 'Pregunta'); ?></strong></td>
+                        <td><?php echo esc_html($qa['answer'] ?? 'N/A'); ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+        <?php endif; ?>
+        
+        <!-- Conversación del Chat -->
+        <?php if (!empty($chat_messages)): ?>
+        <div style="background: #fff; padding: 20px; margin: 20px 0; border-left: 4px solid #8c6d00;">
+            <h2>💬 Historial de Conversación</h2>
+            <div style="max-height: 600px; overflow-y: auto; background: #f6f7f7; padding: 15px; border-radius: 4px;">
+                <?php foreach ($chat_messages as $index => $msg): ?>
+                    <?php 
+                    $role = $msg['role'] ?? 'user';
+                    $content = $msg['content'] ?? '';
+                    $is_user = $role === 'user';
+                    $bg_color = $is_user ? '#2271b1' : '#f0f0f0';
+                    $text_color = $is_user ? '#fff' : '#000';
+                    $align = $is_user ? 'right' : 'left';
+                    ?>
+                    <div style="margin-bottom: 15px; text-align: <?php echo $align; ?>;">
+                        <div style="display: inline-block; max-width: 70%; text-align: left;">
+                            <div style="background: <?php echo $bg_color; ?>; color: <?php echo $text_color; ?>; padding: 10px 15px; border-radius: 8px;">
+                                <strong><?php echo $is_user ? '👤 Usuario' : '🤖 Asistente'; ?>:</strong><br>
+                                <?php echo nl2br(esc_html($content)); ?>
+                            </div>
+                            <?php if (isset($msg['timestamp'])): ?>
+                            <small style="color: #666; margin-<?php echo $is_user ? 'right' : 'left'; ?>: 10px;">
+                                <?php echo date('H:i', strtotime($msg['timestamp'])); ?>
+                            </small>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+        <?php endif; ?>
+        
+        <!-- Metadata Adicional -->
+        <?php if (!empty($metadata)): ?>
+        <div style="background: #fff; padding: 20px; margin: 20px 0; border-left: 4px solid #646970;">
+            <h2>🔍 Información Adicional</h2>
+            <table class="widefat striped">
+                <thead>
+                    <tr>
+                        <th>Campo</th>
+                        <th>Valor</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($metadata as $key => $value): ?>
+                    <tr>
+                        <td><strong><?php echo esc_html(ucfirst(str_replace('_', ' ', $key))); ?></strong></td>
+                        <td><?php echo esc_html(is_array($value) ? json_encode($value) : $value); ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+        <?php endif; ?>
+        
+        <!-- Código de Descuento -->
+        <?php if (!empty($lead->discount_code)): ?>
+        <div style="background: #fff; padding: 20px; margin: 20px 0; border-left: 4px solid #7e3bd0;">
+            <h2>🎁 Código de Descuento</h2>
+            <table class="form-table">
+                <tr>
+                    <th>Código:</th>
+                    <td><code style="font-size: 1.2em; background: #f0f0f0; padding: 5px 10px; border-radius: 3px;"><?php echo esc_html($lead->discount_code); ?></code></td>
+                </tr>
+                <?php if ($lead->discount_used_at): ?>
+                <tr>
+                    <th>Usado el:</th>
+                    <td><?php echo date('d/m/Y H:i', strtotime($lead->discount_used_at)); ?></td>
+                </tr>
+                <?php else: ?>
+                <tr>
+                    <th>Estado:</th>
+                    <td><span style="color: #00a32a;">✅ Disponible</span></td>
+                </tr>
+                <?php endif; ?>
+            </table>
+        </div>
+        <?php endif; ?>
+        
+    </div>
+    <?php
+}
+
+// Registrar la página de detalle como submenú oculto
+add_action('admin_menu', function() {
+    add_submenu_page(
+        null, // parent_slug = null hace que no aparezca en el menú
+        'Detalle del Lead',
+        'Detalle del Lead',
+        'manage_options',
+        'ovp-lead-detail',
+        'ovp_lead_detail_page'
+    );
+}, 11); // Prioridad 11 para ejecutar después del menú principal
+?>
 ```
 
 ---
@@ -1351,14 +1619,25 @@ function ovp_add_lead_modal() {
                         // Mostrar éxito
                         showState('success');
                         
-                        // ⭐ CONSTRUIR URL CON leadId
+                        // ⭐ CONSTRUIR URL CON leadId (DINÁMICO - FUNCIONA EN LOCAL Y PRODUCCIÓN)
                         const leadId = 'wp_' + data.id;
-                        const diagnosticUrl = 'https://chat.objetivovientreplano.com/?' + 
-                            'nombre=' + encodeURIComponent(nombre) +
+                        
+                        // Detectar si estamos en desarrollo local
+                        const isLocal = window.location.hostname === 'localhost' || 
+                                       window.location.hostname.includes('.local') ||
+                                       window.location.hostname.includes('127.0.0.1');
+                        
+                        const baseUrl = isLocal 
+                            ? 'http://localhost:5173/' 
+                            : 'https://chat.objetivovientreplano.com/';
+                        
+                        const diagnosticUrl = baseUrl + 
+                            '?nombre=' + encodeURIComponent(nombre) +
                             '&email=' + encodeURIComponent(email) +
                             '&leadId=' + encodeURIComponent(leadId);
                         
                         console.log('🔗 URL de redirección:', diagnosticUrl);
+                        console.log('📍 Modo:', isLocal ? 'LOCAL' : 'PRODUCCIÓN');
                         
                         // Redirigir después de 1.5s
                         setTimeout(() => {
@@ -1370,10 +1649,19 @@ function ovp_add_lead_modal() {
                         console.log('⚠️ Email ya existe, redirigiendo con ID existente');
                         showState('success');
                         
-                        // ⭐ USAR ID EXISTENTE
+                        // ⭐ USAR ID EXISTENTE (DINÁMICO)
                         const leadId = 'wp_' + data.id;
-                        const diagnosticUrl = 'https://chat.objetivovientreplano.com/?' + 
-                            'nombre=' + encodeURIComponent(nombre) +
+                        
+                        const isLocal = window.location.hostname === 'localhost' || 
+                                       window.location.hostname.includes('.local') ||
+                                       window.location.hostname.includes('127.0.0.1');
+                        
+                        const baseUrl = isLocal 
+                            ? 'http://localhost:5173/' 
+                            : 'https://chat.objetivovientreplano.com/';
+                        
+                        const diagnosticUrl = baseUrl + 
+                            '?nombre=' + encodeURIComponent(nombre) +
                             '&email=' + encodeURIComponent(email) +
                             '&leadId=' + encodeURIComponent(leadId);
                         

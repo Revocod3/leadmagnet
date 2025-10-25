@@ -10,6 +10,13 @@ export class SessionController {
     try {
       const { userName, userEmail, language, wordpressLeadId }: CreateSessionRequest = req.body;
 
+      console.log('📝 CREATE SESSION - Request body:', {
+        userName,
+        userEmail,
+        language,
+        wordpressLeadId: wordpressLeadId || '❌ NO ENVIADO',
+      });
+
       // Validate input
       if (userName) {
         const nameValidation = validationService.validateName(userName);
@@ -45,6 +52,12 @@ export class SessionController {
           wordpressLeadId: wordpressLeadId || null,
           expiresAt,
         },
+      });
+
+      console.log('✅ SESSION CREATED:', {
+        id: session.id,
+        userName: session.userName,
+        wordpressLeadId: session.wordpressLeadId || '❌ NO GUARDADO',
       });
 
       const sessionData: SessionData = {

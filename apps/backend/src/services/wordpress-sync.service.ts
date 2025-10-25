@@ -166,6 +166,14 @@ export class WordPressSyncService {
    */
   private async sendToWordPress(data: WordPressSyncData): Promise<void> {
     try {
+      console.log('[WordPress Sync] 📤 Enviando datos a WordPress:');
+      console.log('[WordPress Sync] URL:', this.wordpressWebhookUrl);
+      console.log('[WordPress Sync] Lead ID:', data.leadId);
+      console.log('[WordPress Sync] Completado:', data.diagnosticCompleted);
+      console.log('[WordPress Sync] Tipo:', data.diagnosticType);
+      console.log('[WordPress Sync] Tamaño del diagnóstico:', data.diagnosisContent?.length || 0, 'caracteres');
+      console.log('[WordPress Sync] Mensajes de chat:', data.chatMessages?.length || 0);
+
       const response = await fetch(this.wordpressWebhookUrl, {
         method: 'POST',
         headers: {
@@ -178,11 +186,12 @@ export class WordPressSyncService {
 
       if (!response.ok) {
         const errorText = await response.text();
+        console.error('[WordPress Sync] ❌ Error Response:', errorText);
         throw new Error(`WordPress respondió con error: ${response.status} - ${errorText}`);
       }
 
       const result = await response.json();
-      console.log('[WordPress Sync] Respuesta de WordPress:', result);
+      console.log('[WordPress Sync] ✅ Respuesta de WordPress:', result);
     } catch (error) {
       console.error('[WordPress Sync] Error enviando a WordPress:', error);
       throw error;

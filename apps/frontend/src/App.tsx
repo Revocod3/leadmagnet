@@ -27,6 +27,16 @@ function MainFlow() {
   const navigate = useNavigate();
   const { setSession } = useSessionStore();
   const [hasCompletedIntro, setHasCompletedIntro] = useState(() => {
+    // Check URL params first
+    const urlParams = new URLSearchParams(window.location.search);
+    const hasUrlParams = urlParams.get('nombre') && urlParams.get('email');
+
+    // If URL params exist, clear sessionStorage and start fresh
+    if (hasUrlParams) {
+      sessionStorage.removeItem('userData');
+      return false;
+    }
+
     return !!sessionStorage.getItem('userData');
   });
   const [showChoice, setShowChoice] = useState(false);
@@ -35,6 +45,8 @@ function MainFlow() {
   const [etymology, setEtymology] = useState('');
 
   const handleIntroComplete = async (name: string, email: string, leadId?: string) => {
+    console.log('📝 handleIntroComplete llamado:', { name, email, leadId });
+
     // Store user data in session storage
     sessionStorage.setItem('userData', JSON.stringify({ name, email, leadId }));
     setUserName(name);
@@ -50,17 +62,20 @@ function MainFlow() {
 
       if (leadId) {
         sessionData.wordpressLeadId = leadId;
+        console.log('🏷️ WordPress Lead ID incluido:', leadId);
       }
 
+      console.log('🔄 Creando sesión en backend...', sessionData);
       const newSession = await apiClient.createSession(sessionData);
       setSession(newSession);
-      console.log('Session created:', newSession);
+      console.log('✅ Sesión creada:', newSession);
     } catch (error) {
-      console.error('Error creating session:', error);
+      console.error('❌ Error creating session:', error);
       // Continue anyway, will show error later if needed
     }
 
     // Show welcome animation immediately
+    console.log('🎬 Mostrando animación de bienvenida...');
     setShowWelcome(true);
 
     // Generate etymology for the welcome animation in background
@@ -110,7 +125,7 @@ function MainFlow() {
           language="es"
         />
       )}
-      {hasCompletedIntro && showChoice && <ChoiceScreen onSelect={handleChoiceSelect} />}
+      {hasCompletedIntro && !showWelcome && showChoice && <ChoiceScreen onSelect={handleChoiceSelect} />}
       <Routes>
         <Route path="/" element={<div />} />
         <Route path="/chat" element={<ChatContainer />} />

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 
 interface IntroScreenProps {
@@ -6,6 +6,8 @@ interface IntroScreenProps {
 }
 
 export const IntroScreen = ({ onComplete }: IntroScreenProps) => {
+  const [isLoading, setIsLoading] = useState(false);
+
   useEffect(() => {
     // Read URL parameters
     const urlParams = new URLSearchParams(window.location.search);
@@ -15,7 +17,13 @@ export const IntroScreen = ({ onComplete }: IntroScreenProps) => {
 
     // If both name and email are present, auto-complete
     if (nombre && email) {
-      onComplete(nombre, email, leadId || undefined);
+      console.log('🔍 Parámetros URL detectados:', { nombre, email, leadId });
+      setIsLoading(true);
+
+      // Small delay to show loading state
+      setTimeout(() => {
+        onComplete(nombre, email, leadId || undefined);
+      }, 500);
     }
   }, [onComplete]);
 
@@ -67,7 +75,7 @@ export const IntroScreen = ({ onComplete }: IntroScreenProps) => {
                 transition={{ delay: 0.4 }}
                 className="text-neutral-600 text-base sm:text-lg leading-relaxed"
               >
-                Preparando tu experiencia personalizada...
+                {isLoading ? 'Cargando tu diagnóstico personalizado...' : 'Preparando tu experiencia personalizada...'}
               </motion.p>
 
               {/* Loading Spinner */}
