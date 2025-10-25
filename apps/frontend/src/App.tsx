@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { ChatContainer } from './components/chat/ChatContainer';
 import { WelcomeAnimation } from './components/animations/WelcomeAnimation';
 import { Layout } from './components/layout/Layout';
@@ -136,9 +136,23 @@ function MainFlow() {
           />
         )}
       </AnimatePresence>
-      <Routes>
-        <Route path="/" element={<ChatContainer />} />
-      </Routes>
+
+      {/* Solo mostrar el chat cuando NO se está mostrando la animación de bienvenida */}
+      <AnimatePresence mode="wait">
+        {!showWelcome && (
+          <motion.div
+            key="chat-container"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
+          >
+            <Routes>
+              <Route path="/" element={<ChatContainer />} />
+            </Routes>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }

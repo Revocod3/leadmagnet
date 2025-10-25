@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface WelcomeAnimationProps {
   userName: string;
@@ -15,156 +15,228 @@ export const WelcomeAnimation = ({
   language = 'es',
 }: WelcomeAnimationProps) => {
   const [showEtymology, setShowEtymology] = useState(false);
-  const [showStartButton, setShowStartButton] = useState(false);
-  // Mantener una duración estable para la animación de la barra
-  const progressDuration = etymology ? 6 : 3;
+  const [showButton, setShowButton] = useState(false);
 
   const messages = {
     es: {
       greeting: `¡Hola, ${userName}!`,
       subtitle: 'Preparando tu experiencia personalizada',
+      buttonText: 'Comenzar mi diagnóstico',
     },
     en: {
       greeting: `Hello, ${userName}!`,
       subtitle: 'Preparing your personalized experience',
+      buttonText: 'Start my diagnosis',
     },
   };
 
   const content = messages[language];
 
   useEffect(() => {
-    // Mostrar la etimología poco después si existe, pero no continuar automáticamente
-    if (etymology) {
-      const timer = setTimeout(() => setShowEtymology(true), 1500);
-      return () => clearTimeout(timer);
-    }
-    return undefined;
-  }, [etymology]);
+    // Secuencia de animaciones
+    const timers = [
+      // Mostrar etimología después del saludo
+      setTimeout(() => {
+        if (etymology) {
+          setShowEtymology(true);
+        }
+      }, 1200),
 
-  // Cambiar automáticamente de barra -> botón al completar la animación
-  useEffect(() => {
-    const totalMs = (0.7 + progressDuration) * 1000; // incluye el pequeño delay visual
-    const timer = setTimeout(() => setShowStartButton(true), totalMs);
-    return () => clearTimeout(timer);
-  }, [progressDuration]);
+      // Mostrar botón después de la etimología (o antes si no hay etimología)
+      setTimeout(() => {
+        setShowButton(true);
+      }, etymology ? 2800 : 1800),
+    ];
+
+    return () => timers.forEach(timer => clearTimeout(timer));
+  }, [etymology]);
 
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.5 }}
-      className="fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden"
+      exit={{ opacity: 0, scale: 0.95 }}
+      transition={{
+        opacity: { duration: 0.4 },
+        scale: { duration: 0.4 }
+      }}
+      className="fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden backdrop-blur-sm"
       style={{
         background: 'linear-gradient(135deg, #99AB75 0%, #A0AD5E 50%, #A5B26C 100%)'
       }}
     >
+      {/* Efectos de fondo animados */}
+      <div className="absolute inset-0 overflow-hidden">
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 0.1 }}
+          transition={{ duration: 1.5, ease: 'easeOut' }}
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full bg-white"
+        />
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1.2, opacity: 0.05 }}
+          transition={{ duration: 2, ease: 'easeOut', delay: 0.2 }}
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[1000px] rounded-full bg-white"
+        />
+      </div>
 
       {/* Content */}
-      <div
-        className={`relative text-center px-6 max-w-2xl z-10 transition-all duration-500`}
-      >
-        {/* Logo Circular */}
+      <div className="relative text-center px-6 max-w-3xl z-10">
+        {/* Logo Circular con efecto de respiración */}
         <motion.div
-          initial={{ scale: 0, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
+          initial={{ scale: 0, opacity: 0, rotate: -180 }}
+          animate={{ scale: 1, opacity: 1, rotate: 0 }}
           transition={{
             type: 'spring',
-            stiffness: 260,
-            damping: 20,
+            stiffness: 200,
+            damping: 15,
             delay: 0.1,
           }}
-          className="inline-block mb-8"
+          className="inline-block mb-10"
         >
-          <div className="relative border border-white w-28 h-28 bg-white rounded-full shadow-lg flex items-center justify-center overflow-hidden">
+          <motion.div
+            animate={{
+              boxShadow: [
+                '0 0 0 0 rgba(255, 255, 255, 0.4)',
+                '0 0 0 20px rgba(255, 255, 255, 0)',
+                '0 0 0 0 rgba(255, 255, 255, 0)',
+              ],
+            }}
+            transition={{
+              duration: 2,
+              repeat: Infinity,
+              repeatDelay: 0.5,
+            }}
+            className="relative border-4 border-white w-32 h-32 bg-white rounded-full flex items-center justify-center overflow-hidden"
+          >
             <img
               src="/assets/images/favicon.webp"
               alt="OVP"
               className="w-full h-full object-cover"
             />
+          </motion.div>
+        </motion.div>
+
+        {/* Greeting con efecto de texto */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4, duration: 0.8, ease: 'easeOut' }}
+        >
+          <h1 className="text-6xl sm:text-7xl font-bold text-white mb-6 tracking-tight">
+            {content.greeting}
+          </h1>
+        </motion.div>
+
+        {/* Subtitle con línea decorativa */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6, duration: 0.7 }}
+          className="mb-12"
+        >
+          <div className="flex items-center justify-center gap-4 mb-4">
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: 40 }}
+              transition={{ delay: 0.8, duration: 0.5 }}
+              className="h-[2px] bg-white/60"
+            />
+            <p className="text-xl sm:text-2xl text-white/95 font-light">
+              {content.subtitle}
+            </p>
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: 40 }}
+              transition={{ delay: 0.8, duration: 0.5 }}
+              className="h-[2px] bg-white/60"
+            />
           </div>
         </motion.div>
 
-        {/* Greeting */}
-        <motion.h1
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3, duration: 0.6 }}
-          className="text-5xl sm:text-6xl font-bold text-white mb-4 tracking-tight"
-        >
-          {content.greeting}
-        </motion.h1>
-
-        {/* Subtitle */}
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5, duration: 0.6 }}
-          className="text-xl text-white/90 mb-8"
-        >
-          {content.subtitle}
-        </motion.p>
-
-        {/* Etymology Box */}
-        <div className="relative h-40">
-          {' '}
-          {/* Placeholder for spacing */}
-          <AnimatePresence>
-            {showEtymology && etymology && (
-              <motion.div
-                initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -20, scale: 0.95 }}
-                transition={{ duration: 0.5 }}
-                className="absolute inset-x-0 top-0 w-full max-w-lg mx-auto px-6 py-4 bg-white/95 backdrop-blur-sm rounded-t-3xl rounded-r-3xl shadow-xl"
-              >
-                <p className="text-base text-neutral-700 leading-relaxed">
+        {/* Etymology Box con diseño mejorado */}
+        <AnimatePresence>
+          {showEtymology && etymology && (
+            <motion.div
+              initial={{ opacity: 0, y: 30, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -20, scale: 0.95 }}
+              transition={{
+                type: 'spring',
+                stiffness: 200,
+                damping: 20
+              }}
+              className="mb-8 mx-auto max-w-2xl"
+            >
+              <div className="relative px-8 py-6 bg-white/98 backdrop-blur-md rounded-3xl shadow-2xl border border-white/20">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-gradient-to-r from-[#99AB75] to-[#A0AD5E] rounded-full">
+                  <span className="text-xs font-semibold text-white tracking-wider uppercase">
+                    {language === 'es' ? 'Sabías que...' : 'Did you know...'}
+                  </span>
+                </div>
+                <p className="text-lg text-neutral-700 leading-relaxed pt-2">
                   {etymology}
                 </p>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-        {/* CTA morph: progress bar -> "Comenzar" button */}
-        <LayoutGroup>
-          <div className="mt-4 flex items-center justify-center">
-            <AnimatePresence initial={false} mode="wait">
-              {!showStartButton ? (
+        {/* Botón mejorado */}
+        <AnimatePresence>
+          {showButton && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{
+                type: 'spring',
+                stiffness: 200,
+                damping: 15
+              }}
+            >
+              <motion.button
+                onClick={onComplete}
+                whileHover={{ scale: 1.05, boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}
+                whileTap={{ scale: 0.98 }}
+                className="group relative px-12 py-4 bg-white text-[#99AB75] rounded-full font-bold text-lg shadow-xl overflow-hidden transition-all duration-300 hover:shadow-2xl"
+              >
+                <span className="relative z-10 flex items-center gap-3">
+                  {content.buttonText}
+                  <motion.span
+                    animate={{ x: [0, 5, 0] }}
+                    transition={{ duration: 1.5, repeat: Infinity }}
+                  >
+                    →
+                  </motion.span>
+                </span>
                 <motion.div
-                  key="progress"
-                  layoutId="cta-morph"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.3, delay: 0.7 }}
-                  className="w-64 h-1 bg-white/30 rounded-full overflow-hidden relative"
+                  initial={{ x: '-100%' }}
+                  whileHover={{ x: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="absolute inset-0 bg-gradient-to-r from-[#99AB75] to-[#A0AD5E] -z-0"
+                />
+                <motion.div
+                  initial={{ x: '-100%' }}
+                  whileHover={{ x: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="absolute inset-0 flex items-center justify-center text-white font-bold z-10 opacity-0 group-hover:opacity-100"
                 >
-                  {/* Barra de progreso determinada */}
-                  <motion.div
-                    className="h-full bg-white rounded-full"
-                    initial={{ width: 0 }}
-                    animate={{ width: '100%' }}
-                    transition={{ duration: progressDuration, ease: 'linear' }}
-                  />
+                  <span className="flex items-center gap-3">
+                    {content.buttonText}
+                    <motion.span
+                      animate={{ x: [0, 5, 0] }}
+                      transition={{ duration: 1.5, repeat: Infinity }}
+                    >
+                      →
+                    </motion.span>
+                  </span>
                 </motion.div>
-              ) : (
-                <motion.button
-                  key="button"
-                  layoutId="cta-morph"
-                  initial={{ opacity: 0, scale: 0.98 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ type: 'spring', stiffness: 260, damping: 20 }}
-                  onClick={onComplete}
-                  className="w-64 h-11 rounded-full border-2 border-white/80 bg-transparent text-white font-medium shadow-[0_0_0_0_rgba(0,0,0,0)] hover:border-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
-                >
-                  {language === 'es' ? 'Comenzar' : 'Start'}
-                </motion.button>
-              )}
-            </AnimatePresence>
-          </div>
-        </LayoutGroup>
+              </motion.button>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </motion.div>
   );
