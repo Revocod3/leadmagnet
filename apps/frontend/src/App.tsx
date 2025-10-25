@@ -34,19 +34,25 @@ function MainFlow() {
   const [userName, setUserName] = useState('');
   const [etymology, setEtymology] = useState('');
 
-  const handleIntroComplete = async (name: string, email: string) => {
+  const handleIntroComplete = async (name: string, email: string, leadId?: string) => {
     // Store user data in session storage
-    sessionStorage.setItem('userData', JSON.stringify({ name, email }));
+    sessionStorage.setItem('userData', JSON.stringify({ name, email, leadId }));
     setUserName(name);
     setHasCompletedIntro(true);
 
     // Create backend session with user data
     try {
-      const newSession = await apiClient.createSession({
+      const sessionData: any = {
         userName: name,
         userEmail: email,
-        language: 'es',
-      });
+        language: 'es' as const,
+      };
+
+      if (leadId) {
+        sessionData.wordpressLeadId = leadId;
+      }
+
+      const newSession = await apiClient.createSession(sessionData);
       setSession(newSession);
       console.log('Session created:', newSession);
     } catch (error) {

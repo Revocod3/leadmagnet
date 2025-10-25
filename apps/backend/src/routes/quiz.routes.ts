@@ -1,10 +1,11 @@
-import { Router } from 'express';
+import { Router, type Router as ExpressRouter } from 'express';
 import { QuizController } from '../controllers/quiz.controller';
 import { DiagnosisService } from '../services/openai/diagnosis.service';
 import { AssistantService, getOrCreateAssistant } from '../services/openai/assistant.service';
+import { wordPressSyncService } from '../services/wordpress-sync.service';
 import type { ApiResponse, DiagnosisResponse } from '../types';
 
-const router = Router();
+const router: ExpressRouter = Router();
 const quizController = new QuizController();
 
 // POST /api/quiz - Submit quiz answer
@@ -23,6 +24,14 @@ router.post('/:sessionId/diagnosis', async (req, res) => {
     const diagnosisService = new DiagnosisService(assistantService);
 
     const diagnosis = await diagnosisService.generateDiagnosis(sessionId);
+
+    // Sincronizar con WordPress cuando se complete el diagnóstico
+    try {
+      await wordPressSyncService.syncDiagnosisCompletion(sessionId);
+    } catch (syncError) {
+      console.error('Error sincronizando con WordPress:', syncError);
+      // No fallar la respuesta si falla la sincronización
+    }
 
     res.json({
       success: true,

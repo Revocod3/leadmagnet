@@ -1,47 +1,23 @@
-import { useState } from 'react';
-import { Mail, User, Shield, ArrowRight } from 'lucide-react';
+import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 
 interface IntroScreenProps {
-  onComplete: (name: string, email: string) => void;
+  onComplete: (name: string, email: string, leadId?: string) => void;
 }
 
 export const IntroScreen = ({ onComplete }: IntroScreenProps) => {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [errors, setErrors] = useState({ name: '', email: '' });
-  const [focusedField, setFocusedField] = useState<string | null>(null);
+  useEffect(() => {
+    // Read URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const nombre = urlParams.get('nombre');
+    const email = urlParams.get('email');
+    const leadId = urlParams.get('leadId') || urlParams.get('lead_id');
 
-  const validateForm = () => {
-    const newErrors = { name: '', email: '' };
-    let isValid = true;
-
-    if (!name.trim()) {
-      newErrors.name = 'Por favor ingresa tu nombre';
-      isValid = false;
-    } else if (name.trim().length < 2) {
-      newErrors.name = 'El nombre debe tener al menos 2 caracteres';
-      isValid = false;
+    // If both name and email are present, auto-complete
+    if (nombre && email) {
+      onComplete(nombre, email, leadId || undefined);
     }
-
-    if (!email.trim()) {
-      newErrors.email = 'Por favor ingresa tu correo';
-      isValid = false;
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      newErrors.email = 'Por favor ingresa un correo válido';
-      isValid = false;
-    }
-
-    setErrors(newErrors);
-    return isValid;
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (validateForm()) {
-      onComplete(name, email);
-    }
-  };
+  }, [onComplete]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-brand-cream-100 via-brand-cream-50 to-white relative overflow-hidden">
@@ -52,7 +28,7 @@ export const IntroScreen = ({ onComplete }: IntroScreenProps) => {
       <div className="absolute top-20 left-10 w-72 h-72 bg-brand-green-200/20 rounded-full blur-3xl" />
       <div className="absolute bottom-20 right-10 w-96 h-96 bg-brand-green-100/20 rounded-full blur-3xl" />
 
-      {/* Content */}
+      {/* Content - Loading State */}
       <div className="relative min-h-screen flex items-center justify-center p-4 sm:p-6 lg:p-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -91,155 +67,26 @@ export const IntroScreen = ({ onComplete }: IntroScreenProps) => {
                 transition={{ delay: 0.4 }}
                 className="text-neutral-600 text-base sm:text-lg leading-relaxed"
               >
-                Descubre tu camino hacia un bienestar digestivo óptimo
+                Preparando tu experiencia personalizada...
               </motion.p>
-            </div>
 
-            {/* Form */}
-            <form onSubmit={handleSubmit} className="px-8 pb-10 space-y-5">
-              {/* Name Input */}
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.5 }}
-              >
-                <label
-                  htmlFor="name"
-                  className="block text-sm font-medium text-neutral-700 mb-2"
-                >
-                  Tu nombre
-                </label>
-                <div className="relative">
-                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400">
-                    <User className="w-5 h-5" />
-                  </div>
-                  <input
-                    type="text"
-                    id="name"
-                    value={name}
-                    onChange={(e) => {
-                      setName(e.target.value);
-                      if (errors.name) setErrors({ ...errors, name: '' });
-                    }}
-                    onFocus={() => setFocusedField('name')}
-                    onBlur={() => setFocusedField(null)}
-                    placeholder="María García"
-                    className={`
-                      w-full pl-12 pr-4 py-3.5 rounded-xl
-                      bg-neutral-50 border-2
-                      text-neutral-900 placeholder:text-neutral-400
-                      transition-all duration-200
-                      ${errors.name
-                        ? 'border-error focus:border-error focus:ring-4 focus:ring-error/10'
-                        : focusedField === 'name'
-                          ? 'border-brand-green-500 ring-4 ring-brand-green-500/10'
-                          : 'border-transparent hover:border-neutral-200'
-                      }
-                      focus:outline-none
-                    `}
-                  />
-                </div>
-                {errors.name && (
-                  <motion.p
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="mt-2 text-sm text-error flex items-center gap-1"
-                  >
-                    <span className="w-1 h-1 rounded-full bg-error" />
-                    {errors.name}
-                  </motion.p>
-                )}
-              </motion.div>
-
-              {/* Email Input */}
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.6 }}
-              >
-                <label
-                  htmlFor="email"
-                  className="block text-sm font-medium text-neutral-700 mb-2"
-                >
-                  Tu correo electrónico
-                </label>
-                <div className="relative">
-                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400">
-                    <Mail className="w-5 h-5" />
-                  </div>
-                  <input
-                    type="email"
-                    id="email"
-                    value={email}
-                    onChange={(e) => {
-                      setEmail(e.target.value);
-                      if (errors.email) setErrors({ ...errors, email: '' });
-                    }}
-                    onFocus={() => setFocusedField('email')}
-                    onBlur={() => setFocusedField(null)}
-                    placeholder="maria@ejemplo.com"
-                    className={`
-                      w-full pl-12 pr-4 py-3.5 rounded-xl
-                      bg-neutral-50 border-2
-                      text-neutral-900 placeholder:text-neutral-400
-                      transition-all duration-200
-                      ${errors.email
-                        ? 'border-error focus:border-error focus:ring-4 focus:ring-error/10'
-                        : focusedField === 'email'
-                          ? 'border-brand-green-500 ring-4 ring-brand-green-500/10'
-                          : 'border-transparent hover:border-neutral-200'
-                      }
-                      focus:outline-none
-                    `}
-                  />
-                </div>
-                {errors.email && (
-                  <motion.p
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="mt-2 text-sm text-error flex items-center gap-1"
-                  >
-                    <span className="w-1 h-1 rounded-full bg-error" />
-                    {errors.email}
-                  </motion.p>
-                )}
-              </motion.div>
-
-              {/* Submit Button */}
-              <motion.button
-                type="submit"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.7 }}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="w-full mt-6 px-6 py-4 rounded-xl bg-gradient-to-r from-brand-green-500 to-brand-green-600 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center gap-2 group"
-              >
-                <span>Comenzar mi diagnóstico</span>
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </motion.button>
-
-              {/* Privacy Notice */}
+              {/* Loading Spinner */}
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ delay: 0.8 }}
-                className="mt-6 flex items-start gap-3 p-4 bg-brand-green-50 rounded-xl border border-brand-green-100"
+                transition={{ delay: 0.5 }}
+                className="mt-8 flex justify-center"
               >
-                <Shield className="w-5 h-5 text-brand-green-600 flex-shrink-0 mt-0.5" />
-                <p className="text-xs text-neutral-600 leading-relaxed">
-                  Tu información está protegida y es completamente confidencial.
-                  Solo se usará para personalizar tu experiencia.
-                </p>
+                <div className="w-12 h-12 border-4 border-brand-green-200 border-t-brand-green-500 rounded-full animate-spin" />
               </motion.div>
-            </form>
+            </div>
           </div>
 
           {/* Footer Text */}
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.9 }}
+            transition={{ delay: 0.6 }}
             className="text-center mt-8 text-sm text-neutral-500"
           >
             100% gratuito • Sin compromiso • Resultados inmediatos

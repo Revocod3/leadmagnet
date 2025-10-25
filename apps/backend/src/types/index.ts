@@ -88,6 +88,7 @@ export interface CreateSessionRequest {
   userName?: string;
   userEmail?: string;
   language?: Language;
+  wordpressLeadId?: string;
 }
 
 export interface SendMessageRequest {

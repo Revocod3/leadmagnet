@@ -8,7 +8,7 @@ const validationService = new ValidationService();
 export class SessionController {
   async createSession(req: Request, res: Response): Promise<void> {
     try {
-      const { userName, userEmail, language }: CreateSessionRequest = req.body;
+      const { userName, userEmail, language, wordpressLeadId }: CreateSessionRequest = req.body;
 
       // Validate input
       if (userName) {
@@ -42,18 +42,19 @@ export class SessionController {
           userName: userName || null,
           userEmail: userEmail || null,
           language: language || 'es',
+          wordpressLeadId: wordpressLeadId || null,
           expiresAt,
         },
       });
 
       const sessionData: SessionData = {
         id: session.id,
-        userName: session.userName || undefined,
-        userEmail: session.userEmail || undefined,
+        ...(session.userName && { userName: session.userName }),
+        ...(session.userEmail && { userEmail: session.userEmail }),
         language: session.language as any,
         step: session.step as any,
         startTime: session.startTime,
-        completionTime: session.completionTime || undefined,
+        ...(session.completionTime && { completionTime: session.completionTime }),
         expiresAt: session.expiresAt,
       };
 
@@ -73,6 +74,14 @@ export class SessionController {
   async getSession(req: Request, res: Response): Promise<void> {
     try {
       const { sessionId } = req.params;
+
+      if (!sessionId) {
+        res.status(400).json({
+          success: false,
+          error: 'Session ID es requerido',
+        } as ApiResponse);
+        return;
+      }
 
       const sessionValidation = validationService.validateSessionId(sessionId);
       if (!sessionValidation.isValid) {
@@ -114,17 +123,17 @@ export class SessionController {
 
       const sessionData: SessionData = {
         id: session.id,
-        userId: session.userId || undefined,
-        userName: session.userName || undefined,
-        userEmail: session.userEmail || undefined,
+        ...(session.userId && { userId: session.userId }),
+        ...(session.userName && { userName: session.userName }),
+        ...(session.userEmail && { userEmail: session.userEmail }),
         language: session.language as any,
-        diagnosticType: session.diagnosticType as any,
+        ...(session.diagnosticType && { diagnosticType: session.diagnosticType as any }),
         step: session.step as any,
-        imageAnalysisText: session.imageAnalysisText || undefined,
-        assistantId: session.assistantId || undefined,
-        threadId: session.threadId || undefined,
+        ...(session.imageAnalysisText && { imageAnalysisText: session.imageAnalysisText }),
+        ...(session.assistantId && { assistantId: session.assistantId }),
+        ...(session.threadId && { threadId: session.threadId }),
         startTime: session.startTime,
-        completionTime: session.completionTime || undefined,
+        ...(session.completionTime && { completionTime: session.completionTime }),
         expiresAt: session.expiresAt,
       };
 
@@ -145,6 +154,14 @@ export class SessionController {
     try {
       const { sessionId } = req.params;
       const updates = req.body;
+
+      if (!sessionId) {
+        res.status(400).json({
+          success: false,
+          error: 'Session ID es requerido',
+        } as ApiResponse);
+        return;
+      }
 
       const sessionValidation = validationService.validateSessionId(sessionId);
       if (!sessionValidation.isValid) {
