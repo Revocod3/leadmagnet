@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { IntroScreen } from './components/screens/IntroScreen';
+import { AnimatePresence } from 'framer-motion';
 import { ChoiceScreen } from './components/screens/ChoiceScreen';
 import { ChatContainer } from './components/chat/ChatContainer';
 import { QuizContainer } from './components/quiz/QuizContainer';
@@ -26,23 +26,25 @@ const queryClient = new QueryClient({
 function MainFlow() {
   const navigate = useNavigate();
   const { setSession } = useSessionStore();
-  const [hasCompletedIntro, setHasCompletedIntro] = useState(() => {
-    // Check URL params first
-    const urlParams = new URLSearchParams(window.location.search);
-    const hasUrlParams = urlParams.get('nombre') && urlParams.get('email');
-
-    // If URL params exist, clear sessionStorage and start fresh
-    if (hasUrlParams) {
-      sessionStorage.removeItem('userData');
-      return false;
-    }
-
-    return !!sessionStorage.getItem('userData');
-  });
+  const [hasCompletedIntro, setHasCompletedIntro] = useState(false);
   const [showChoice, setShowChoice] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
   const [userName, setUserName] = useState('');
   const [etymology, setEtymology] = useState('');
+
+  // Auto-detect URL params and start flow
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const nombre = urlParams.get('nombre');
+    const email = urlParams.get('email');
+    const leadId = urlParams.get('leadId') || urlParams.get('lead_id');
+
+    if (nombre && email) {
+      // If URL params exist, start the flow automatically
+      handleIntroComplete(nombre, email, leadId || undefined);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleIntroComplete = async (name: string, email: string, leadId?: string) => {
     console.log('📝 handleIntroComplete llamado:', { name, email, leadId });
@@ -116,16 +118,19 @@ function MainFlow() {
 
   return (
     <>
-      {!hasCompletedIntro && <IntroScreen onComplete={handleIntroComplete} />}
-      {showWelcome && (
-        <WelcomeAnimation
-          userName={userName}
-          etymology={etymology}
-          onComplete={handleWelcomeComplete}
-          language="es"
-        />
-      )}
-      {hasCompletedIntro && !showWelcome && showChoice && <ChoiceScreen onSelect={handleChoiceSelect} />}
+      <AnimatePresence mode="wait">
+        {showWelcome && (
+          <WelcomeAnimation
+            userName={userName}
+            etymology={etymology}
+            onComplete={handleWelcomeComplete}
+            language="es"
+          />
+        )}
+        {hasCompletedIntro && !showWelcome && showChoice && (
+          <ChoiceScreen onSelect={handleChoiceSelect} />
+        )}
+      </AnimatePresence>
       <Routes>
         <Route path="/" element={<div />} />
         <Route path="/chat" element={<ChatContainer />} />
