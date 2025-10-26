@@ -5,6 +5,11 @@ import { VisionService } from './vision.service';
 import { EngagementTrackerService, type EngagementScore } from '../engagement-tracker.service';
 import { AdaptiveQuestionManagerService, type DiagnosticMode } from '../adaptive-question-manager.service';
 import { formatInitialInstructions } from '../../constants/diagnostic-messages';
+// AGI Services
+import { ContextManagerService } from '../agi/context-manager.service';
+import { PatternDetectorService } from '../agi/pattern-detector.service';
+import { InsightGeneratorService } from '../agi/insight-generator.service';
+import type { AGIInsight, DetectedPattern, AGIEnhancedFlowResponse, EmotionalTone, ExtractedInfo } from '../../types/agi.types';
 
 export type FlowStep =
   | 'initial'
@@ -41,17 +46,34 @@ export interface FlowResponse {
   nextQuestion?: string;
   questionDetails?: string | undefined;
   type?: 'welcome' | 'greeting' | 'question' | 'comment' | 'validation_error' | 'diagnosis_ready' | 'completed';
+
+  // AGI Enhancement fields
+  agiInsights?: AGIInsight[];
+  patternConnections?: DetectedPattern[];
+  metaReasoning?: { thought: string; explanation: string; strategy: string };
+  emotionalResponse?: string;
+  progressiveSummary?: { completionPercentage: number; currentPhase: string; keyPointsLearned: string[]; nextFocus: string; suggestedCorrections?: string[] };
+  thinkingTime?: number;
+  clarificationRequest?: string;
 }
 
 export class DiagnosticFlowService {
   private visionService: VisionService;
   private engagementTracker: EngagementTrackerService;
   private questionManager: AdaptiveQuestionManagerService;
+  // AGI Services
+  private contextManager: ContextManagerService;
+  private patternDetector: PatternDetectorService;
+  private insightGenerator: InsightGeneratorService;
 
   constructor() {
     this.visionService = new VisionService();
     this.engagementTracker = new EngagementTrackerService();
     this.questionManager = new AdaptiveQuestionManagerService();
+    // Initialize AGI Services
+    this.contextManager = new ContextManagerService();
+    this.patternDetector = new PatternDetectorService();
+    this.insightGenerator = new InsightGeneratorService();
   }
 
   /**
@@ -546,6 +568,9 @@ export class DiagnosticFlowService {
         newState,
         questionDetails: nextQuestion.questionDetails,
         type: 'comment',
+        agiInsights: [],
+        patternConnections: [],
+        metaReasoning: { thought: '', explanation: '', strategy: '' },
       };
     }
 
@@ -564,6 +589,76 @@ export class DiagnosticFlowService {
         imageAnalysis = null;
       }
     }
+
+    // ========== AGI ENHANCEMENT ==========
+    // 6. AGI: Update context with new information
+    const sessionId = 'session_' + currentState.userName + '_' + Date.now(); // Simplified session ID
+    const agiContext = await this.contextManager.getOrCreateContext(sessionId, currentState.userName || undefined);
+
+    // Detect emotional tone from answer
+    const emotionalTone = await this.detectEmotionalTone(userAnswer);
+
+    // Convert CollectedInfo to ExtractedInfo format
+    const extractedInfoForAGI: Partial<ExtractedInfo> = {
+      demographics: {
+        ...(updatedInfo.age && { age: updatedInfo.age }),
+        ...(updatedInfo.occupation && { occupation: updatedInfo.occupation }),
+        ...(updatedInfo.occupationType && { occupationType: updatedInfo.occupationType }),
+      },
+      health: {
+        ...(updatedInfo.mainProblem && { mainProblem: updatedInfo.mainProblem }),
+        ...(updatedInfo.duration && { duration: updatedInfo.duration }),
+        ...(updatedInfo.medicalConditions && { medicalConditions: updatedInfo.medicalConditions }),
+        ...(updatedInfo.medications && { medications: updatedInfo.medications }),
+        ...(updatedInfo.badFoods && { badFoods: updatedInfo.badFoods }),
+      },
+      lifestyle: {
+        ...(updatedInfo.diet && { diet: updatedInfo.diet }),
+        ...(updatedInfo.exercise && { exercise: updatedInfo.exercise }),
+        ...(updatedInfo.sleep && { sleep: updatedInfo.sleep }),
+        ...(updatedInfo.stress && { stress: updatedInfo.stress }),
+        ...(updatedInfo.waterIntake && { waterIntake: updatedInfo.waterIntake }),
+      },
+      goals: {
+        ...(updatedInfo.goal && { primary: updatedInfo.goal }),
+        ...(updatedInfo.motivation && { motivation: updatedInfo.motivation }),
+      },
+      patterns: [],
+    };
+
+    await this.contextManager.updateContext(sessionId, {
+      newAnswer: {
+        questionId: currentQuestion.id,
+        question: currentQuestion.question,
+        answer: userAnswer
+      },
+      extractedInfo: extractedInfoForAGI,
+      emotionalTone
+    });
+
+    // 7. AGI: Detect patterns
+    const recentAnswers = this.contextManager.getRecentAnswers(agiContext);
+    const detectedPatterns = await this.patternDetector.detectPatterns(
+      recentAnswers,
+      agiContext.longTermMemory,
+      emotionalTone
+    );
+
+    // 8. AGI: Generate insights
+    const agiInsights = await this.insightGenerator.generateInsightsForAnswer(
+      currentQuestion.id,
+      currentQuestion.question,
+      userAnswer,
+      {
+        extractedInfo: agiContext.longTermMemory,
+        recentAnswers,
+        emotionalTone,
+        detectedPatterns
+      }
+    );
+
+    // 9. AGI: Generate thinking insight for UI
+    const thinkingInsight = this.insightGenerator.generateThinkingInsight(currentQuestion.id);
 
     // Generar comentario empático
     const comment = await this.generateEmpathicComment(
@@ -633,6 +728,9 @@ export class DiagnosticFlowService {
         newState,
         questionDetails: nextQuestion.questionDetails,
         type: 'comment',
+        agiInsights,
+        patternConnections: detectedPatterns,
+        metaReasoning: { thought: thinkingInsight, explanation: '', strategy: '' },
       };
     } else {
       // Diagnosis complete - generate final diagnosis
@@ -674,6 +772,9 @@ export class DiagnosticFlowService {
         message: fullMessage,
         newState,
         type: 'diagnosis_ready',
+        agiInsights,
+        patternConnections: detectedPatterns,
+        metaReasoning: { thought: thinkingInsight, explanation: '', strategy: '' },
       };
     }
   }
@@ -702,7 +803,35 @@ export class DiagnosticFlowService {
   }
 
   /**
-   * Detecta el idioma del mensaje
+   * Detecta el tono emocional de una respuesta
+   */
+  private async detectEmotionalTone(text: string): Promise<EmotionalTone> {
+    try {
+      const response = await openai.chat.completions.create({
+        model: MODELS.TEXT,
+        messages: [
+          {
+            role: 'system',
+            content: 'Detecta el tono emocional de este texto y responde SOLO con una palabra: hopeful, frustrated, resigned, enthusiastic, anxious, neutral, overwhelmed.'
+          },
+          { role: 'user', content: text }
+        ],
+        temperature: 0.3,
+        max_tokens: 10,
+      });
+
+      const tone = response.choices[0]?.message?.content?.trim().toLowerCase() as EmotionalTone;
+      return ['hopeful', 'frustrated', 'resigned', 'enthusiastic', 'anxious', 'neutral', 'overwhelmed'].includes(tone)
+        ? tone
+        : 'neutral';
+    } catch (error) {
+      console.error('Error detecting emotional tone:', error);
+      return 'neutral';
+    }
+  }
+
+  /**
+   * Detecta el idioma del texto
    */
   private async detectLanguage(text: string): Promise<Language> {
     try {
