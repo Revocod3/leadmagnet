@@ -20,34 +20,37 @@ export class ContextManagerService {
       return this.contexts.get(sessionId)!;
     }
 
-    // Buscar en base de datos
-    const session = await prisma.session.findUnique({
-      where: { id: sessionId },
-      include: {
-        messages: {
-          orderBy: { createdAt: 'desc' },
-          take: 20 // Últimos 20 mensajes para contexto
+    // Intentar buscar en base de datos (opcional - puede no existir aún)
+    let session = null;
+    try {
+      session = await prisma.session.findUnique({
+        where: { id: sessionId },
+        include: {
+          messages: {
+            orderBy: { createdAt: 'desc' },
+            take: 20 // Últimos 20 mensajes para contexto
+          }
         }
-      }
-    });
-
-    if (!session) {
-      throw new Error('Sesión no encontrada');
+      });
+    } catch (error) {
+      console.log('Session not found in DB, creating in-memory context');
     }
 
-    // Crear contexto inicial
+    // Crear contexto inicial (con o sin sesión de DB)
     const context: AGIContext = {
       conversationId: sessionId,
-      userId: userId || session.userId || '',
-      sessionStart: session.startTime,
+      userId: userId || session?.userId || '',
+      sessionStart: session?.startTime || new Date(),
       shortTermMemory: [],
       longTermMemory: this.initializeExtractedInfo(),
       emotionalState: this.initializeEmotionalProfile(),
       personalityProfile: this.initializePersonalityProfile()
     };
 
-    // Cargar memoria desde mensajes existentes
-    await this.loadMemoryFromMessages(context, session.messages);
+    // Cargar memoria desde mensajes existentes si hay sesión
+    if (session?.messages) {
+      await this.loadMemoryFromMessages(context, session.messages);
+    }
 
     // Guardar en memoria
     this.contexts.set(sessionId, context);
