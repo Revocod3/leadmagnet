@@ -9,7 +9,6 @@
 
 import { openai } from '../config/openai';
 import {
-  CLARA_INSTRUCTIONS,
   buildDynamicInstructions,
   DIAGNOSIS_INSTRUCTIONS
 } from '../config/assistant-instructions';
