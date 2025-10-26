@@ -1,13 +1,12 @@
-import { Copy, ThumbsUp, ThumbsDown, RefreshCw, Check } from 'lucide-react';
+import { Copy, ThumbsUp, ThumbsDown, Check } from 'lucide-react';
 import { useState } from 'react';
 
 interface MessageActionsProps {
   messageText: string;
   isUserMessage?: boolean;
-  onRegenerate?: () => void | Promise<void>;
 }
 
-export const MessageActions = ({ messageText, isUserMessage = false, onRegenerate }: MessageActionsProps) => {
+export const MessageActions = ({ messageText, isUserMessage = false }: MessageActionsProps) => {
   const [copied, setCopied] = useState(false);
   const [liked, setLiked] = useState<'up' | 'down' | null>(null);
 
@@ -69,22 +68,6 @@ export const MessageActions = ({ messageText, isUserMessage = false, onRegenerat
       >
         <ThumbsDown className={`w-4 h-4 ${liked === 'down' ? 'fill-current' : ''}`} />
       </button>
-
-      {/* Regenerate */}
-      {!isUserMessage && onRegenerate && (
-        <button
-          onClick={async () => {
-            const button = document.activeElement as HTMLButtonElement;
-            button?.querySelector('svg')?.classList.add('animate-spin');
-            await onRegenerate();
-            button?.querySelector('svg')?.classList.remove('animate-spin');
-          }}
-          className="p-1.5 text-foreground/60 hover:text-foreground hover:bg-surface/50 transition-all duration-200 rounded-lg group"
-          title="Regenerar respuesta"
-        >
-          <RefreshCw className="w-4 h-4 group-hover:rotate-180 transition-transform duration-300" />
-        </button>
-      )}
     </div>
   );
 };

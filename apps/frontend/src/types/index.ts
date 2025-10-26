@@ -79,7 +79,6 @@ export interface SendMessageRequest {
   sessionId: string;
   message: string;
   language?: Language;
-  isRegenerate?: boolean;
 }
 
 export interface SubmitQuizAnswerRequest {

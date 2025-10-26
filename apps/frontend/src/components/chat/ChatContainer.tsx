@@ -27,7 +27,6 @@ export const ChatContainer = () => {
     isProcessing,
     initialize,
     processMessage,
-    regenerateLastResponse,
   } = useDiagnosticFlow(); const { generatePDF } = usePDFGenerator();
   const { isListening, transcript, startListening, stopListening, isSupported: isSpeechSupported } = useSpeechToText();
 
@@ -155,26 +154,6 @@ export const ChatContainer = () => {
 
   const handleImageClick = (imageUrl: string) => {
     setImageViewerUrl(imageUrl);
-  };
-
-  const handleRegenerateResponse = async () => {
-    // Encontrar el último mensaje del usuario
-    let lastUserMessage = null;
-    for (let i = messages.length - 1; i >= 0; i--) {
-      const msg = messages[i];
-      if (msg && msg.role === 'user') {
-        lastUserMessage = msg;
-        break;
-      }
-    }
-
-    if (!lastUserMessage) {
-      console.log('No hay mensaje de usuario para regenerar');
-      return;
-    }
-
-    // Usar la función especial de regenerar que no avanza el índice
-    await regenerateLastResponse(lastUserMessage.content);
   };
 
   // No-op: back button removed in single-flow UX
@@ -350,7 +329,6 @@ export const ChatContainer = () => {
                       {/* Message Actions */}
                       <MessageActions
                         messageText={message.content}
-                        {...(message.role === 'assistant' && message.type !== 'welcome' && { onRegenerate: handleRegenerateResponse })}
                         isUserMessage={message.role === 'user'}
                       />
                     </div>

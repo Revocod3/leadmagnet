@@ -368,8 +368,8 @@ export class DiagnosticFlowService {
 
     // Crear una transición cálida y profesional
     const transition = currentState.language === 'es'
-      ? `Perfecto, ${firstName || 'vamos a comenzar'}. 😊\n\nAntes de empezar, quiero que sepas que este no es un diagnóstico médico, sino una evaluación personalizada para entender tu situación digestiva y ofrecerte las mejores recomendaciones.\n\nComencemos con lo básico:`
-      : `Perfect, ${firstName || 'let\'s begin'}. 😊\n\nBefore we start, I want you to know that this is not a medical diagnosis, but a personalized assessment to understand your digestive situation and offer you the best recommendations.\n\nLet's start with the basics:`;
+      ? `Perfecto, ${firstName || 'vamos a comenzar'}.\n\nAntes de empezar, quiero que sepas que este no es un diagnóstico médico, sino una evaluación personalizada para entender tu situación digestiva y ofrecerte las mejores recomendaciones.\n\nComencemos con lo básico:`
+      : `Perfect, ${firstName || 'let\'s begin'}.\n\nBefore we start, I want you to know that this is not a medical diagnosis, but a personalized assessment to understand your digestive situation and offer you the best recommendations.\n\nLet's start with the basics:`;
 
     // Preparar estado actualizado - vamos directo a hacer preguntas
     const newState: DiagnosticFlowState = {
@@ -838,9 +838,10 @@ Respuesta: "${answer}"
 
 REQUISITOS:
 - Máximo 1-2 frases
-- Comenzar con emoji relevante
+- NO usar emojis
 - NO hacer preguntas adicionales
-- Ser empático y alentador`
+- Ser empático y alentador
+- Tono profesional pero cálido`
           : `Generate a short empathetic comment based on this questionnaire response.
 
 Question: "${question}"
@@ -848,9 +849,10 @@ Answer: "${answer}"
 
 REQUIREMENTS:
 - Maximum 1-2 sentences
-- Start with relevant emoji
+- DO NOT use emojis
 - DO NOT ask additional questions
-- Be empathetic and encouraging`;
+- Be empathetic and encouraging
+- Professional but warm tone`;
 
       const response = await openai.chat.completions.create({
         model: MODELS.TEXT,
@@ -863,8 +865,8 @@ REQUIREMENTS:
     } catch (error) {
       console.error('Error generating empathic comment:', error);
       return language === 'es'
-        ? '✨ Gracias por tu respuesta. Sigamos adelante.'
-        : "✨ Thank you for your answer. Let's continue.";
+        ? 'Gracias por tu respuesta. Sigamos adelante.'
+        : "Thank you for your answer. Let's continue.";
     }
   }
 

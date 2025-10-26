@@ -311,97 +311,6 @@ export const useDiagnosticFlow = () => {
     initialize();
   }, [initialize]);
 
-  // Regenerate last assistant response without advancing
-  const regenerateLastResponse = useCallback(
-    async (userMessage: string) => {
-      if (isProcessing) return;
-      setIsProcessing(true);
-
-      const sessionStore = useSessionStore.getState();
-      const sessionId = sessionStore.session?.id;
-
-      if (!sessionId) {
-        console.error('No session ID available');
-        setIsProcessing(false);
-        return;
-      }
-
-      try {
-        // Remove the last assistant message (the one we want to regenerate)
-        setMessages((prev) => {
-          const newMessages = [...prev];
-          // Find and remove the last assistant message
-          for (let i = newMessages.length - 1; i >= 0; i--) {
-            const msg = newMessages[i];
-            if (msg && msg.role === 'assistant') {
-              newMessages.splice(i, 1);
-              break;
-            }
-          }
-          return newMessages;
-        });
-
-        // Send message to backend with regenerate flag
-        const response: any = await apiClient.sendMessage({
-          sessionId,
-          message: userMessage,
-          language: state.language,
-          isRegenerate: true, // Flag to tell backend not to advance
-        });
-
-        // Extract metadata from response
-        const metadata = response.metadata || {};
-
-        // Update state but DON'T increment currentQuestionIndex
-        setState((prev) => {
-          const newState: DiagnosticState = {
-            ...prev,
-            step: metadata.step || prev.step,
-            // For regenerate, keep the same index
-            currentQuestionIndex: prev.currentQuestionIndex,
-            userName: metadata.userName || prev.userName,
-          };
-
-          if (metadata.diagnosisContent) {
-            newState.diagnosisContent = metadata.diagnosisContent;
-          }
-
-          return newState;
-        });
-
-        // Add new assistant message
-        setTimeout(() => {
-          const assistantMsg: FlowMessage = {
-            role: 'assistant',
-            content: response.content,
-            type: metadata.type,
-            timestamp: new Date().toISOString(),
-          };
-          setMessages((prev) => [...prev, assistantMsg]);
-          setIsProcessing(false);
-        }, 800);
-
-        // NO agregar nextQuestion en regeneración - el mensaje ya incluye la pregunta
-
-      } catch (error) {
-        console.error('Error regenerating response:', error);
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: 'assistant',
-            content:
-              state.language === 'es'
-                ? 'Lo siento, hubo un error al regenerar. Por favor, intenta de nuevo.'
-                : 'Sorry, there was an error regenerating. Please try again.',
-            timestamp: new Date().toISOString(),
-          },
-        ]);
-        setIsProcessing(false);
-      }
-    },
-    [state, isProcessing]
-  );
-
   return {
     messages,
     state,
@@ -412,6 +321,5 @@ export const useDiagnosticFlow = () => {
     processMessage,
     handleWelcomeComplete,
     reset,
-    regenerateLastResponse,
   };
 };
