@@ -1,5 +1,6 @@
 import { openai, MODELS, ASSISTANT_INSTRUCTIONS } from '../../config/openai';
 import { getDiagnosticQuestions, WELCOME_MESSAGES, GREETING_MESSAGES, DID_YOU_KNOW, DIAGNOSIS_READY_MESSAGE, OCCUPATION_PATTERNS, OCCUPATION_INSIGHTS, DIAGNOSIS_INTRO, type CollectedInfo } from '../../constants/questions';
+import { CLARA_CONVERSATIONAL_RULES } from '../../constants/prompts';
 import type { Language } from '../../types';
 import { VisionService } from './vision.service';
 import { EngagementTrackerService, type EngagementScore } from '../engagement-tracker.service';
@@ -694,7 +695,8 @@ export class DiagnosticFlowService {
         const comment = await this.generateEmpathicComment(
           currentQuestion.question,
           userAnswer,
-          currentState.language
+          currentState.language,
+          newState // Pasar estado para detectar situaciones
         );
         fullMessage = comment;
       }
@@ -919,70 +921,90 @@ export class DiagnosticFlowService {
 
   /**
    * Genera un comentario empático basado en la respuesta
-   * OPTIMIZADO: Comentarios más cortos y menos redundantes
+   * MEJORADO: Detecta situaciones conversacionales (resistencia, frustración, ambigüedad)
    */
   private async generateEmpathicComment(
     question: string,
     answer: string,
-    language: Language
+    language: Language,
+    currentState?: DiagnosticFlowState
   ): Promise<string> {
     try {
-      const prompt =
-        language === 'es'
-          ? `Genera un comentario BREVE de reconocimiento basado en esta respuesta.
+      const lowerAnswer = answer.toLowerCase();
+      
+      // DETECCIÓN SIMPLE de situaciones críticas usando regex
+      const isResistance = /no (quiero|me gustar[ií]a|hablar|decir)|prefiero no|paso|siguiente pregunta/.test(lowerAnswer);
+      const isAskingDiagnosis = /(pero y|entonces|cuándo|ya).*(diagnóstico|resultado|análisis)|diagnóstico/.test(lowerAnswer);
+      const isAmbiguous = answer.split(' ').length <= 3 || /puede que|supongo|creo que|tal vez/.test(lowerAnswer);
+      const hasFrustration = /pero|ya|cuándo|entonces/.test(lowerAnswer) && answer.includes('?');
+      
+      let specialInstructions = '';
+      const mainProblem = currentState?.collectedInfo?.mainProblem || 'tu problema digestivo';
+      
+      if (isResistance) {
+        specialInstructions = `
+SITUACIÓN CRÍTICA: Usuario muestra RESISTENCIA.
 
-Pregunta: "${question}"
-Respuesta: "${answer}"
+DEBES RESPONDER EXACTAMENTE ASÍ (en ${language}):
+"Entiendo que hablar de esto puede ser incómodo. Pero viniste aquí por 
+${mainProblem}, ¿verdad?
 
-REQUISITOS ESTRICTOS:
-- MÁXIMO 1 frase corta (5-8 palabras)
+No necesito detalles íntimos. Solo ayúdame con algo simple: 
+¿[HAZ UNA PREGUNTA MUY ESPECÍFICA Y CONCRETA sobre ${mainProblem}]?"
+
+NO cambies de tema. NO te rindas. Mantén el foco en ${mainProblem}.`;
+      }
+      
+      if (isAskingDiagnosis || hasFrustration) {
+        specialInstructions = `
+SITUACIÓN CRÍTICA: Usuario pregunta por el DIAGNÓSTICO (está frustrado).
+
+DEBES RESPONDER EXACTAMENTE ASÍ (en ${language}):
+"Tienes razón, volvamos al foco. Necesito hacerte 3 preguntas directas 
+para darte un diagnóstico útil:
+
+1. ¿Cuánto tiempo llevas con ${mainProblem}?
+2. ¿Hay alimentos que notes que te afectan más?
+3. ¿Es peor en algún momento del día?
+
+Con esas 3 respuestas te doy un análisis concreto."`;
+      }
+      
+      if (isAmbiguous && !isResistance && !isAskingDiagnosis) {
+        specialInstructions = `
+SITUACIÓN: Usuario dio respuesta AMBIGUA: "${answer}"
+
+HAZ una pregunta MÁS ESPECÍFICA y directa. Ejemplos (en ${language}):
+- "¿Es todos los días o solo a veces?"
+- "¿Después de comer o en cualquier momento?"
+- "¿Leve, moderado o fuerte?"
+- "¿Cuántas veces a la semana aproximadamente?"`;
+      }
+      
+      const prompt = `${CLARA_CONVERSATIONAL_RULES}
+
+CONTEXTO:
+Pregunta que hiciste: "${question}"
+Respuesta del usuario: "${answer}"
+Problema principal: "${mainProblem}"
+
+${specialInstructions}
+
+${specialInstructions 
+  ? `SIGUE LAS INSTRUCCIONES ESPECIALES DE ARRIBA AL PIE DE LA LETRA.`
+  : `Genera un comentario BREVE (MÁXIMO 1-2 frases cortas).
 - NO usar emojis
-- NO hacer preguntas
-- NO repetir la pregunta ni la respuesta
-- Ser breve y profesional
-- Evitar palabras como "Entiendo", "Comprendo", "Veo que"
+- NO hacer preguntas adicionales
+- Ser profesional y directo
+- Evitar frases como "Entiendo", "Comprendo", "Veo que" sin acción`}
 
-EJEMPLOS BUENOS:
-- "Gracias por compartir eso."
-- "Muy útil para entender tu caso."
-- "Perfecto, lo tengo anotado."
-- "Eso es importante saberlo."
-
-EJEMPLOS MALOS (muy largos):
-- "Entiendo que este último mes ha sido desafiante..."
-- "Comprendo que el dolor estomacal es muy incómodo..."
-
-Sé BREVE.`
-          : `Generate a BRIEF acknowledgment comment based on this response.
-
-Question: "${question}"
-Answer: "${answer}"
-
-STRICT REQUIREMENTS:
-- MAXIMUM 1 short sentence (5-8 words)
-- DO NOT use emojis
-- DO NOT ask questions
-- DO NOT repeat the question or answer
-- Be brief and professional
-- Avoid words like "I understand", "I see that"
-
-GOOD EXAMPLES:
-- "Thanks for sharing that."
-- "Very helpful for understanding your case."
-- "Perfect, noted."
-- "That's important to know."
-
-BAD EXAMPLES (too long):
-- "I understand that this last month has been challenging..."
-- "I see that stomach pain is very uncomfortable..."
-
-Be BRIEF.`;
+Responde en ${language}.`;
 
       const response = await openai.chat.completions.create({
         model: MODELS.TEXT,
         messages: [{ role: 'user', content: prompt }],
-        temperature: 0.5, // Reducido para más consistencia
-        max_tokens: 30, // Reducido de 80 a 30
+        temperature: specialInstructions ? 0.3 : 0.5, // Más determinista si hay situación especial
+        max_tokens: specialInstructions ? 150 : 30, // Más espacio para situaciones especiales
       });
 
       return response.choices[0]?.message?.content?.trim() || '';
