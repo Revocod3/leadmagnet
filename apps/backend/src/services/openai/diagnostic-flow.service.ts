@@ -931,16 +931,16 @@ export class DiagnosticFlowService {
   ): Promise<string> {
     try {
       const lowerAnswer = answer.toLowerCase();
-      
+
       // DETECCIÓN SIMPLE de situaciones críticas usando regex
       const isResistance = /no (quiero|me gustar[ií]a|hablar|decir)|prefiero no|paso|siguiente pregunta/.test(lowerAnswer);
       const isAskingDiagnosis = /(pero y|entonces|cuándo|ya).*(diagnóstico|resultado|análisis)|diagnóstico/.test(lowerAnswer);
       const isAmbiguous = answer.split(' ').length <= 3 || /puede que|supongo|creo que|tal vez/.test(lowerAnswer);
       const hasFrustration = /pero|ya|cuándo|entonces/.test(lowerAnswer) && answer.includes('?');
-      
+
       let specialInstructions = '';
       const mainProblem = currentState?.collectedInfo?.mainProblem || 'tu problema digestivo';
-      
+
       if (isResistance) {
         specialInstructions = `
 SITUACIÓN CRÍTICA: Usuario muestra RESISTENCIA.
@@ -954,7 +954,7 @@ No necesito detalles íntimos. Solo ayúdame con algo simple:
 
 NO cambies de tema. NO te rindas. Mantén el foco en ${mainProblem}.`;
       }
-      
+
       if (isAskingDiagnosis || hasFrustration) {
         specialInstructions = `
 SITUACIÓN CRÍTICA: Usuario pregunta por el DIAGNÓSTICO (está frustrado).
@@ -969,7 +969,7 @@ para darte un diagnóstico útil:
 
 Con esas 3 respuestas te doy un análisis concreto."`;
       }
-      
+
       if (isAmbiguous && !isResistance && !isAskingDiagnosis) {
         specialInstructions = `
 SITUACIÓN: Usuario dio respuesta AMBIGUA: "${answer}"
@@ -980,7 +980,7 @@ HAZ una pregunta MÁS ESPECÍFICA y directa. Ejemplos (en ${language}):
 - "¿Leve, moderado o fuerte?"
 - "¿Cuántas veces a la semana aproximadamente?"`;
       }
-      
+
       const prompt = `${CLARA_CONVERSATIONAL_RULES}
 
 CONTEXTO:
@@ -990,9 +990,9 @@ Problema principal: "${mainProblem}"
 
 ${specialInstructions}
 
-${specialInstructions 
-  ? `SIGUE LAS INSTRUCCIONES ESPECIALES DE ARRIBA AL PIE DE LA LETRA.`
-  : `Genera un comentario BREVE (MÁXIMO 1-2 frases cortas).
+${specialInstructions
+          ? `SIGUE LAS INSTRUCCIONES ESPECIALES DE ARRIBA AL PIE DE LA LETRA.`
+          : `Genera un comentario BREVE (MÁXIMO 1-2 frases cortas).
 - NO usar emojis
 - NO hacer preguntas adicionales
 - Ser profesional y directo
