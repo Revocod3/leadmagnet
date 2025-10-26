@@ -5,7 +5,58 @@ import type { Language } from '../types';
  * Emphasizes two key points:
  * 1. Quality of diagnosis depends on quality of answers
  * 2. Free diagnostic worth 30€+ and exclusive discount for completion
+ * 
+ * Variations to make it more dynamic
  */
+const INITIAL_INSTRUCTIONS_VARIANTS = {
+  es: [
+    {
+      greeting: '¡Hola, {userName}! Me alegra verte por aquí.',
+      intro: 'Voy a hacerte algunas preguntas para entender tu situación digestiva. Tu diagnóstico será tan completo como tú lo hagas — la honestidad es clave.',
+      value: '**Valorado en más de 30 €**, 100% **gratis**. Al completarlo, recibirás **30% de descuento** en nuestro programa.',
+      time: 'Solo te tomará **5-7 minutos**.',
+      cta: '¿Listo/a para empezar? Escribe "sí".'
+    },
+    {
+      greeting: '{userName}, ¡bienvenido/a!',
+      intro: 'Este diagnóstico personalizado depende completamente de tus respuestas. Cuanto más me cuentes, mejores serán las recomendaciones que recibirás.',
+      value: 'Es un análisis **valorado en más de 30 €** que te ofrezco gratis, más un **30% OFF** exclusivo.',
+      time: '**5-7 minutos** de tu tiempo que pueden marcar la diferencia.',
+      cta: 'Escribe "sí" cuando estés listo/a para comenzar.'
+    },
+    {
+      greeting: '¡Hola, {userName}! Encantado/a de conocerte.',
+      intro: 'Vamos a descubrir qué está pasando con tu sistema digestivo. La calidad de tu diagnóstico dependerá de tus respuestas — sé sincero/a conmigo.',
+      value: 'Es **completamente gratis** (valor 30€+) y si lo completas, te llevas **30% de descuento** en tu programa.',
+      time: 'Solo necesito **5-7 minutos** de tu atención.',
+      cta: '¿Empezamos? Escribe "sí".'
+    }
+  ],
+  en: [
+    {
+      greeting: 'Hi, {userName}! Glad to have you here.',
+      intro: "I'm going to ask you some questions to understand your digestive situation. Your diagnosis will be as complete as you make it — honesty is key.",
+      value: '**Valued at over €30**, 100% **free**. When you complete it, you\'ll get **30% off** our program.',
+      time: 'It will only take **5-7 minutes**.',
+      cta: 'Ready to start? Type "yes".'
+    },
+    {
+      greeting: '{userName}, welcome!',
+      intro: 'This personalized diagnosis completely depends on your answers. The more you tell me, the better the recommendations you\'ll receive.',
+      value: 'It\'s an analysis **valued at over €30** that I offer you for free, plus an exclusive **30% OFF**.',
+      time: '**5-7 minutes** of your time that can make the difference.',
+      cta: 'Type "yes" when you\'re ready to begin.'
+    },
+    {
+      greeting: 'Hi, {userName}! Nice to meet you.',
+      intro: "Let's find out what's going on with your digestive system. The quality of your diagnosis will depend on your answers — be honest with me.",
+      value: 'It\'s **completely free** (€30+ value) and if you complete it, you get **30% off** your program.',
+      time: 'I just need **5-7 minutes** of your attention.',
+      cta: 'Shall we start? Type "yes".'
+    }
+  ]
+};
+
 export const INITIAL_INSTRUCTIONS = {
   es: `**¡Hola, {userName}!**
 
@@ -115,12 +166,42 @@ export function formatDiagnosisReadyMessage(
 }
 
 /**
- * Formats the initial instructions with user name
+ * Formats the initial instructions with user name (now with variations)
  */
 export function formatInitialInstructions(
   language: Language,
   userName: string
 ): string {
-  const template = INITIAL_INSTRUCTIONS[language as 'es' | 'en'];
-  return template.replace('{userName}', userName);
+  // Get time-based variation
+  const hour = new Date().getHours();
+  const variantIndex = getTimeBasedVariantIndex(hour);
+
+  const variants = INITIAL_INSTRUCTIONS_VARIANTS[language as 'es' | 'en'];
+  const variant = variants[variantIndex % variants.length]!;
+
+  // Format with user name
+  const greeting = variant.greeting.replace('{userName}', userName);
+
+  return `**${greeting}**
+
+${variant.intro}
+
+${variant.value}
+
+${variant.time}
+
+**${variant.cta}**`;
+}
+
+/**
+ * Get variant index based on time of day
+ */
+function getTimeBasedVariantIndex(hour: number): number {
+  if (hour >= 6 && hour < 12) {
+    return 0; // Morning variant
+  } else if (hour >= 12 && hour < 18) {
+    return 1; // Afternoon variant
+  } else {
+    return 2; // Evening/night variant
+  }
 }

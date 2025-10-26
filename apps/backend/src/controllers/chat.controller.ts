@@ -1,308 +1,29 @@
+/**
+ * Chat Controller - Versión Minimalista
+ * 
+ * Controller SIMPLE que orquesta la conversación usando Assistants API.
+ * ~100 líneas total. CERO lógica conversacional aquí.
+ */
+
 import { Request, Response } from 'express';
 import { prisma } from '../config/database';
-import { DiagnosticFlowService, DiagnosticFlowState } from '../services/openai/diagnostic-flow.service';
+import { conversationalAssistant } from '../services/conversational-assistant.service';
 import { ValidationService } from '../services/openai/validation.service';
 import { DiscountService } from '../services/discount.service';
 import { wordPressSyncService } from '../services/wordpress-sync.service';
-import type { SendMessageRequest, ApiResponse, ChatMessage, Language } from '../types';
+import type { SendMessageRequest, ApiResponse, ChatMessage } from '../types';
 
 const validationService = new ValidationService();
-const diagnosticFlowService = new DiagnosticFlowService();
 const discountService = new DiscountService();
 
 export class ChatController {
-  async sendMessage(req: Request, res: Response): Promise<void> {
-    try {
-      const { sessionId, message, language, imageData }: SendMessageRequest & { imageData?: { base64: string; mimeType: string } } = req.body;
-
-      // Validate input
-      const sessionValidation = validationService.validateSessionId(sessionId);
-      if (!sessionValidation.isValid) {
-        res.status(400).json({
-          success: false,
-          error: sessionValidation.feedback,
-        } as ApiResponse);
-        return;
-      }
-
-      const messageValidation = validationService.validateMessage(message);
-      if (!messageValidation.isValid) {
-        res.status(400).json({
-          success: false,
-          error: messageValidation.feedback,
-        } as ApiResponse);
-        return;
-      }
-
-      // Get or create session
-      let session = await prisma.session.findUnique({
-        where: { id: sessionId },
-        include: {
-          diagnosis: true,
-        },
-      });
-
-      if (!session) {
-        res.status(404).json({
-          success: false,
-          error: 'Sesión no encontrada',
-        } as ApiResponse);
-        return;
-      }
-
-      // Check if session is expired
-      if (new Date() > session.expiresAt) {
-        res.status(410).json({
-          success: false,
-          error: 'Sesión expirada',
-        } as ApiResponse);
-        return;
-      }
-
-      // Get current flow state from session
-      const flowState: DiagnosticFlowState = (session.flowState as unknown as DiagnosticFlowState) || {
-        step: 'initial',
-        currentQuestionIndex: 0,
-        userName: null,
-        language: (language as Language) || 'es',
-        answers: [],
-        imageAnalysis: null,
-        diagnosisContent: null,
-      };
-
-      // Process message through diagnostic flow
-      const flowResponse = await diagnosticFlowService.processMessage(
-        message,
-        flowState,
-        imageData
-      );
-
-      // Save user message
-      await prisma.message.create({
-        data: {
-          sessionId,
-          role: 'user',
-          content: message,
-        },
-      });
-
-      // Save assistant response
-      await prisma.message.create({
-        data: {
-          sessionId,
-          role: 'assistant',
-          content: flowResponse.message,
-          metadata: {
-            type: flowResponse.type,
-            nextQuestion: flowResponse.nextQuestion,
-            questionDetails: flowResponse.questionDetails,
-            etymology: flowResponse.etymology,
-            requiresWelcomeAnimation: flowResponse.requiresWelcomeAnimation,
-          },
-        },
-      });
-
-      // Update session with new flow state
-      const updateData: any = {
-        flowState: flowResponse.newState as any,
-        step: flowResponse.newState.step,
-        currentQuestionIndex: flowResponse.newState.currentQuestionIndex,
-      };
-
-      if (flowResponse.newState.userName) {
-        updateData.userName = flowResponse.newState.userName;
-      }
-
-      if (flowResponse.newState.language) {
-        updateData.language = flowResponse.newState.language;
-      }
-
-      if (flowResponse.newState.imageAnalysis) {
-        updateData.imageAnalysisText = flowResponse.newState.imageAnalysis;
-      }
-
-      // Update engagement tracking fields
-      if ((flowResponse.newState as any).engagementScore) {
-        const engScore = (flowResponse.newState as any).engagementScore;
-        updateData.engagementScore = engScore.total;
-        updateData.engagementSignals = engScore.signals;
-      }
-
-      if ((flowResponse.newState as any).diagnosticMode) {
-        updateData.diagnosticMode = (flowResponse.newState as any).diagnosticMode;
-      }
-
-      if ((flowResponse.newState as any).askedQuestionIds) {
-        updateData.questionsAsked = (flowResponse.newState as any).askedQuestionIds.length;
-      }
-
-      if ((flowResponse.newState as any).engagementScore?.signals?.longAnswers) {
-        updateData.avgResponseLength = (flowResponse.newState as any).engagementScore.signals.longAnswers;
-      }
-
-      if ((flowResponse.newState as any).engagementScore?.signals?.timeSpent) {
-        updateData.timeSpent = (flowResponse.newState as any).engagementScore.signals.timeSpent;
-      }
-
-      // Mark completion time if completed or diagnosis ready
-      if (flowResponse.newState.step === 'completed' || flowResponse.newState.step === 'diagnosis_ready') {
-        updateData.completionTime = new Date();
-        updateData.completedDiagnosis = true;
-      }
-
-      await prisma.session.update({
-        where: { id: sessionId },
-        data: updateData,
-      });
-
-      // Sincronizar con WordPress cuando se complete el diagnóstico
-      if (flowResponse.newState.step === 'completed' || flowResponse.newState.step === 'diagnosis_ready') {
-        try {
-          console.log('🔄 Sincronizando diagnóstico completado con WordPress...', { sessionId });
-          await wordPressSyncService.syncDiagnosisCompletion(sessionId);
-        } catch (syncError) {
-          console.error('❌ Error sincronizando con WordPress:', syncError);
-          // No fallar la respuesta si falla la sincronización
-        }
-      }
-
-      // Save diagnosis if generated
-      if (flowResponse.newState.diagnosisContent && !session.diagnosis) {
-        const diagnosisData: any = {
-          sessionId,
-          content: flowResponse.newState.diagnosisContent,
-        };
-
-        if (session.userId) {
-          diagnosisData.userId = session.userId;
-        }
-
-        // Add engagement tracking to diagnosis
-        if ((flowResponse.newState as any).diagnosticMode) {
-          diagnosisData.diagnosticMode = (flowResponse.newState as any).diagnosticMode;
-        }
-
-        if ((flowResponse.newState as any).askedQuestionIds) {
-          diagnosisData.questionsAsked = (flowResponse.newState as any).askedQuestionIds.length;
-        }
-
-        if ((flowResponse.newState as any).engagementScore) {
-          diagnosisData.engagementScore = (flowResponse.newState as any).engagementScore.total;
-        }
-
-        await prisma.diagnosis.create({
-          data: diagnosisData,
-        });
-      }
-
-      // Generate discount code when diagnosis is ready
-      let discountCode: { code: string; percentage: number } | null = null;
-      if (flowResponse.newState.step === 'diagnosis_ready') {
-        try {
-          const discount = await discountService.createDiscountForSession(
-            sessionId,
-            (flowResponse.newState as any).diagnosticMode || 'standard',
-            (flowResponse.newState as any).engagementScore?.total || 0
-          );
-
-          discountCode = {
-            code: discount.code,
-            percentage: discount.percentage,
-          };
-
-          console.log('✅ Discount code generated:', discountCode.code);
-        } catch (error) {
-          console.error('Error generating discount code:', error);
-          // Don't block the flow if discount generation fails
-        }
-      }
-
-      // Build response
-      const chatMessage: ChatMessage = {
-        role: 'assistant',
-        content: flowResponse.message,
-      };
-
-      res.json({
-        success: true,
-        data: {
-          ...chatMessage,
-          metadata: {
-            type: flowResponse.type,
-            step: flowResponse.newState.step,
-            currentQuestionIndex: flowResponse.newState.currentQuestionIndex,
-            nextQuestion: flowResponse.nextQuestion,
-            questionDetails: flowResponse.questionDetails,
-            etymology: flowResponse.etymology,
-            requiresWelcomeAnimation: flowResponse.requiresWelcomeAnimation,
-            userName: flowResponse.newState.userName,
-            diagnosisContent: flowResponse.newState.diagnosisContent, // CRÍTICO: Enviar diagnosis content
-            discountCode: discountCode?.code, // Discount code if generated
-            discountPercentage: discountCode?.percentage, // Discount percentage (30%)
-          },
-        },
-      } as ApiResponse<ChatMessage>);
-    } catch (error) {
-      console.error('Error sending message:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Error interno del servidor',
-      } as ApiResponse);
-    }
-  }
-
-  async getChatHistory(req: Request, res: Response): Promise<void> {
-    try {
-      const { sessionId } = req.params;
-
-      if (!sessionId) {
-        res.status(400).json({
-          success: false,
-          error: 'Session ID is required',
-        } as ApiResponse);
-        return;
-      }
-
-      const sessionValidation = validationService.validateSessionId(sessionId);
-      if (!sessionValidation.isValid) {
-        res.status(400).json({
-          success: false,
-          error: sessionValidation.feedback,
-        } as ApiResponse);
-        return;
-      }
-
-      const messages = await prisma.message.findMany({
-        where: { sessionId },
-        orderBy: { createdAt: 'asc' },
-      });
-
-      const chatMessages: ChatMessage[] = messages.map(msg => ({
-        id: msg.id,
-        role: msg.role as 'user' | 'assistant',
-        content: msg.content,
-        createdAt: msg.createdAt,
-      }));
-
-      res.json({
-        success: true,
-        data: chatMessages,
-      } as ApiResponse<ChatMessage[]>);
-    } catch (error) {
-      console.error('Error getting chat history:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Error interno del servidor',
-      } as ApiResponse);
-    }
-  }
-
+  
   /**
-   * Initialize diagnostic flow for a session
+   * Inicializar nueva conversación
    */
   async initializeDiagnostic(req: Request, res: Response): Promise<void> {
     try {
-      const { sessionId, language } = req.body;
+      const { sessionId } = req.body;
 
       if (!sessionId) {
         res.status(400).json({
@@ -324,40 +45,284 @@ export class ChatController {
         return;
       }
 
-      // Usar el nombre de la sesión para personalizar el mensaje de bienvenida
-      const initialized = diagnosticFlowService.initializeFlow(
-        (language as Language) || session.language as Language || 'es',
-        session.userName || undefined
+      // 1. Crear thread y obtener mensaje de bienvenida
+      const { threadId, welcomeMessage } = await conversationalAssistant.startConversation(
+        session.userName || 'Usuario'
       );
 
-      // Save welcome message
+      // 2. Guardar threadId en sesión
+      await prisma.session.update({
+        where: { id: sessionId },
+        data: {
+          flowState: { threadId } as any, // Guardamos el threadId en flowState
+          step: 'asking_questions',
+        },
+      });
+
+      // 3. Guardar mensaje de bienvenida
       await prisma.message.create({
         data: {
           sessionId,
           role: 'assistant',
-          content: initialized.message,
+          content: welcomeMessage,
           metadata: { type: 'welcome' },
-        },
-      });
-
-      // Update session with initial flow state
-      await prisma.session.update({
-        where: { id: sessionId },
-        data: {
-          flowState: initialized.state as any,
-          language: initialized.state.language,
         },
       });
 
       res.json({
         success: true,
         data: {
-          message: initialized.message,
-          state: initialized.state,
+          message: welcomeMessage,
         },
       } as ApiResponse);
+      
     } catch (error) {
       console.error('Error initializing diagnostic:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Error interno del servidor',
+      } as ApiResponse);
+    }
+  }
+
+  /**
+   * Enviar mensaje del usuario
+   */
+  async sendMessage(req: Request, res: Response): Promise<void> {
+    try {
+      const { sessionId, message }: SendMessageRequest = req.body;
+
+      // Validar input
+      const sessionValidation = validationService.validateSessionId(sessionId);
+      if (!sessionValidation.isValid) {
+        res.status(400).json({
+          success: false,
+          error: sessionValidation.feedback,
+        } as ApiResponse);
+        return;
+      }
+
+      const messageValidation = validationService.validateMessage(message);
+      if (!messageValidation.isValid) {
+        res.status(400).json({
+          success: false,
+          error: messageValidation.feedback,
+        } as ApiResponse);
+        return;
+      }
+
+      // Obtener sesión
+      const session = await prisma.session.findUnique({
+        where: { id: sessionId },
+        include: { diagnosis: true },
+      });
+
+      if (!session) {
+        res.status(404).json({
+          success: false,
+          error: 'Sesión no encontrada',
+        } as ApiResponse);
+        return;
+      }
+
+      // Verificar expiración
+      if (new Date() > session.expiresAt) {
+        res.status(410).json({
+          success: false,
+          error: 'Sesión expirada',
+        } as ApiResponse);
+        return;
+      }
+
+      // Obtener threadId
+      const flowState = session.flowState as any;
+      const threadId = flowState?.threadId;
+
+      if (!threadId) {
+        res.status(400).json({
+          success: false,
+          error: 'Thread no inicializado. Llamar a /initialize primero.',
+        } as ApiResponse);
+        return;
+      }
+
+      // Contar turnos (número de mensajes del usuario)
+      const turnCount = await prisma.message.count({
+        where: { sessionId, role: 'user' },
+      });
+
+      // Detectar si tiene problema real (simple heurística)
+      const hasRealProblem = flowState?.hasRealProblem ?? turnCount > 0;
+
+      // Preparar contexto
+      const context: {
+        userName?: string;
+        mainProblem?: string;
+        turnCount: number;
+        hasRealProblem?: boolean;
+      } = {
+        turnCount: turnCount + 1,
+        hasRealProblem,
+      };
+      
+      if (session.userName) context.userName = session.userName;
+      if (flowState?.mainProblem) context.mainProblem = flowState.mainProblem;
+
+      // Procesar mensaje
+      const response = await conversationalAssistant.processMessage(
+        threadId,
+        message,
+        context
+      );
+
+      // Guardar mensajes
+      await prisma.message.create({
+        data: {
+          sessionId,
+          role: 'user',
+          content: message,
+        },
+      });
+
+      await prisma.message.create({
+        data: {
+          sessionId,
+          role: 'assistant',
+          content: response.message,
+        },
+      });
+
+      // Actualizar flowState
+      await prisma.session.update({
+        where: { id: sessionId },
+        data: {
+          flowState: {
+            ...flowState,
+            hasRealProblem: response.shouldEndConversation ? false : hasRealProblem,
+          } as any,
+          currentQuestionIndex: turnCount + 1,
+        },
+      });
+
+      // Generar diagnóstico si está listo
+      let diagnosisContent: string | null = null;
+      let discountCode: { code: string; percentage: number } | null = null;
+
+      if (response.isDiagnosisReady && hasRealProblem) {
+        diagnosisContent = await conversationalAssistant.generateDiagnosis(
+          threadId,
+          session.userName || 'Usuario'
+        );
+
+        // Guardar diagnóstico
+        if (!session.diagnosis) {
+          await prisma.diagnosis.create({
+            data: {
+              sessionId,
+              userId: session.userId || null,
+              content: diagnosisContent,
+              questionsAsked: turnCount + 1,
+            },
+          });
+        }
+
+        // Actualizar sesión
+        await prisma.session.update({
+          where: { id: sessionId },
+          data: {
+            step: 'diagnosis_ready',
+            completionTime: new Date(),
+            completedDiagnosis: true,
+          },
+        });
+
+        // Sincronizar con WordPress
+        try {
+          await wordPressSyncService.syncDiagnosisCompletion(sessionId);
+        } catch (syncError) {
+          console.error('Error sincronizando con WordPress:', syncError);
+        }
+
+        // Generar código de descuento
+        try {
+          const discount = await discountService.createDiscountForSession(
+            sessionId,
+            'deep',
+            0
+          );
+          discountCode = {
+            code: discount.code,
+            percentage: discount.percentage,
+          };
+        } catch (error) {
+          console.error('Error generating discount:', error);
+        }
+      }
+
+      // Responder
+      const chatMessage: ChatMessage = {
+        role: 'assistant',
+        content: response.message,
+      };
+
+      res.json({
+        success: true,
+        data: {
+          ...chatMessage,
+          metadata: {
+            type: response.isDiagnosisReady ? 'diagnosis' : 'question',
+            turnCount: turnCount + 1,
+            diagnosisContent,
+            discountCode: discountCode?.code,
+            discountPercentage: discountCode?.percentage,
+            shouldEndConversation: response.shouldEndConversation,
+          },
+        },
+      } as ApiResponse<ChatMessage>);
+      
+    } catch (error) {
+      console.error('Error sending message:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Error interno del servidor',
+      } as ApiResponse);
+    }
+  }
+
+  /**
+   * Obtener historial de chat
+   */
+  async getChatHistory(req: Request, res: Response): Promise<void> {
+    try {
+      const { sessionId } = req.params;
+
+      if (!sessionId) {
+        res.status(400).json({
+          success: false,
+          error: 'Session ID is required',
+        } as ApiResponse);
+        return;
+      }
+
+      const messages = await prisma.message.findMany({
+        where: { sessionId },
+        orderBy: { createdAt: 'asc' },
+      });
+
+      const chatMessages: ChatMessage[] = messages.map(msg => ({
+        id: msg.id,
+        role: msg.role as 'user' | 'assistant',
+        content: msg.content,
+        createdAt: msg.createdAt,
+      }));
+
+      res.json({
+        success: true,
+        data: chatMessages,
+      } as ApiResponse<ChatMessage[]>);
+      
+    } catch (error) {
+      console.error('Error getting chat history:', error);
       res.status(500).json({
         success: false,
         error: 'Error interno del servidor',
