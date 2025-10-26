@@ -10,6 +10,7 @@ const envSchema = z.object({
   OPENAI_API_KEY: z.string(),
   OPENAI_ASSISTANT_ID: z.string().optional(),
   OPENAI_MODEL: z.string().default('gpt-4o'),
+  USE_NEW_CONVERSATIONAL_SYSTEM: z.coerce.boolean().default(false),
   CORS_ORIGIN: z.string().default('http://localhost:5173'),
   SESSION_SECRET: z.string(),
   UPLOAD_MAX_SIZE: z.string().default('50MB'),

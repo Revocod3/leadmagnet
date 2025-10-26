@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import { prisma } from '../config/database';
+import { env } from '../config/env';
 import { DiagnosticFlowService, DiagnosticFlowState } from '../services/openai/diagnostic-flow.service';
+import { ConversationalAssistantService } from '../services/openai/conversational-assistant.service';
 import { ValidationService } from '../services/openai/validation.service';
 import { DiscountService } from '../services/discount.service';
 import { wordPressSyncService } from '../services/wordpress-sync.service';
@@ -8,10 +10,210 @@ import type { SendMessageRequest, ApiResponse, ChatMessage, Language } from '../
 
 const validationService = new ValidationService();
 const diagnosticFlowService = new DiagnosticFlowService();
+const conversationalAssistantService = new ConversationalAssistantService();
 const discountService = new DiscountService();
 
 export class ChatController {
   async sendMessage(req: Request, res: Response): Promise<void> {
+    // Check which system to use
+    if (env.USE_NEW_CONVERSATIONAL_SYSTEM) {
+      return this.sendMessageConversational(req, res);
+    } else {
+      return this.sendMessageDiagnosticFlow(req, res);
+    }
+  }
+
+  /**
+   * Send message using NEW Conversational Assistant System
+   */
+  private async sendMessageConversational(req: Request, res: Response): Promise<void> {
+    try {
+      const { sessionId, message, language }: SendMessageRequest = req.body;
+
+      // Validate input
+      const sessionValidation = validationService.validateSessionId(sessionId);
+      if (!sessionValidation.isValid) {
+        res.status(400).json({
+          success: false,
+          error: sessionValidation.feedback,
+        } as ApiResponse);
+        return;
+      }
+
+      const messageValidation = validationService.validateMessage(message);
+      if (!messageValidation.isValid) {
+        res.status(400).json({
+          success: false,
+          error: messageValidation.feedback,
+        } as ApiResponse);
+        return;
+      }
+
+      // Get session
+      let session = await prisma.session.findUnique({
+        where: { id: sessionId },
+        include: {
+          diagnosis: true,
+        },
+      });
+
+      if (!session) {
+        res.status(404).json({
+          success: false,
+          error: 'Sesión no encontrada',
+        } as ApiResponse);
+        return;
+      }
+
+      // Check if session is expired
+      if (new Date() > session.expiresAt) {
+        res.status(410).json({
+          success: false,
+          error: 'Sesión expirada',
+        } as ApiResponse);
+        return;
+      }
+
+      // Save user message
+      await prisma.message.create({
+        data: {
+          sessionId,
+          role: 'user',
+          content: message,
+        },
+      });
+
+      // Process message through conversational assistant
+      const conversationalResponse = await conversationalAssistantService.processMessage(
+        sessionId,
+        message,
+        (language as Language) || 'es'
+      );
+
+      // Save assistant response
+      await prisma.message.create({
+        data: {
+          sessionId,
+          role: 'assistant',
+          content: conversationalResponse.message,
+          metadata: {
+            type: 'conversational',
+            decision: conversationalResponse.decision.type,
+            keyMomentsDetected: conversationalResponse.keyMomentsDetected?.length || 0,
+            conversationPhase: conversationalResponse.updatedMemory.conversationPhase,
+            turnCount: conversationalResponse.updatedMemory.turnCount,
+          },
+        },
+      });
+
+      // Update session
+      const updateData: any = {
+        step: conversationalResponse.shouldConclude ? 'diagnosis_ready' : 'asking_questions',
+        currentQuestionIndex: conversationalResponse.updatedMemory.turnCount,
+        userName: session.userName,
+        language: language || session.language,
+      };
+
+      // Update engagement tracking
+      updateData.engagementScore = conversationalResponse.updatedMemory.currentHypothesis.confidence;
+      updateData.questionsAsked = conversationalResponse.updatedMemory.turnCount;
+
+      // Mark completion if concluded
+      if (conversationalResponse.shouldConclude) {
+        updateData.completionTime = new Date();
+        updateData.completedDiagnosis = true;
+      }
+
+      await prisma.session.update({
+        where: { id: sessionId },
+        data: updateData,
+      });
+
+      // Generate diagnosis if concluded
+      let diagnosisContent: string | null = null;
+      if (conversationalResponse.shouldConclude) {
+        diagnosisContent = await conversationalAssistantService.generateDiagnosis(
+          sessionId,
+          session.userName || 'Usuario',
+          (language as Language) || 'es'
+        );
+
+        // Save diagnosis
+        await prisma.diagnosis.create({
+          data: {
+            sessionId,
+            userId: session.userId || null,
+            content: diagnosisContent,
+            engagementScore: conversationalResponse.updatedMemory.currentHypothesis.confidence,
+            questionsAsked: conversationalResponse.updatedMemory.turnCount,
+          },
+        });
+
+        // Sync with WordPress
+        try {
+          console.log('🔄 Sincronizando diagnóstico completado con WordPress...', { sessionId });
+          await wordPressSyncService.syncDiagnosisCompletion(sessionId);
+        } catch (syncError) {
+          console.error('❌ Error sincronizando con WordPress:', syncError);
+        }
+      }
+
+      // Generate discount code if concluded
+      let discountCode: { code: string; percentage: number } | null = null;
+      if (conversationalResponse.shouldConclude) {
+        try {
+          const discount = await discountService.createDiscountForSession(
+            sessionId,
+            'deep', // Conversational system is always deep mode
+            conversationalResponse.updatedMemory.currentHypothesis.confidence
+          );
+
+          discountCode = {
+            code: discount.code,
+            percentage: discount.percentage,
+          };
+
+          console.log('✅ Discount code generated:', discountCode.code);
+        } catch (error) {
+          console.error('Error generating discount code:', error);
+        }
+      }
+
+      // Build response
+      const chatMessage: ChatMessage = {
+        role: 'assistant',
+        content: conversationalResponse.message,
+      };
+
+      res.json({
+        success: true,
+        data: {
+          ...chatMessage,
+          metadata: {
+            type: 'conversational',
+            step: conversationalResponse.shouldConclude ? 'diagnosis_ready' : 'asking_questions',
+            turnCount: conversationalResponse.updatedMemory.turnCount,
+            conversationPhase: conversationalResponse.updatedMemory.conversationPhase,
+            decisionType: conversationalResponse.decision.type,
+            diagnosisContent,
+            discountCode: discountCode?.code,
+            discountPercentage: discountCode?.percentage,
+          },
+        },
+      } as ApiResponse<ChatMessage>);
+    } catch (error) {
+      console.error('Error sending message (conversational):', error);
+      res.status(500).json({
+        success: false,
+        error: 'Error interno del servidor',
+      } as ApiResponse);
+    }
+  }
+
+  /**
+   * Send message using OLD Diagnostic Flow System (for backwards compatibility)
+   */
+  private async sendMessageDiagnosticFlow(req: Request, res: Response): Promise<void> {
     try {
       const { sessionId, message, language, imageData }: SendMessageRequest & { imageData?: { base64: string; mimeType: string } } = req.body;
 
@@ -301,6 +503,87 @@ export class ChatController {
    * Initialize diagnostic flow for a session
    */
   async initializeDiagnostic(req: Request, res: Response): Promise<void> {
+    // Check which system to use
+    if (env.USE_NEW_CONVERSATIONAL_SYSTEM) {
+      return this.initializeConversational(req, res);
+    } else {
+      return this.initializeDiagnosticFlow(req, res);
+    }
+  }
+
+  /**
+   * Initialize NEW Conversational System
+   */
+  private async initializeConversational(req: Request, res: Response): Promise<void> {
+    try {
+      const { sessionId, language } = req.body;
+
+      if (!sessionId) {
+        res.status(400).json({
+          success: false,
+          error: 'Session ID is required',
+        } as ApiResponse);
+        return;
+      }
+
+      const session = await prisma.session.findUnique({
+        where: { id: sessionId },
+      });
+
+      if (!session) {
+        res.status(404).json({
+          success: false,
+          error: 'Sesión no encontrada',
+        } as ApiResponse);
+        return;
+      }
+
+      // Initialize conversational assistant
+      const welcomeMessage = await conversationalAssistantService.initialize(
+        sessionId,
+        session.userName || 'Usuario',
+        (language as Language) || session.language as Language || 'es'
+      );
+
+      // Save welcome message
+      await prisma.message.create({
+        data: {
+          sessionId,
+          role: 'assistant',
+          content: welcomeMessage,
+          metadata: { type: 'welcome', system: 'conversational' },
+        },
+      });
+
+      // Update session
+      await prisma.session.update({
+        where: { id: sessionId },
+        data: {
+          language: (language as Language) || session.language || 'es',
+          step: 'asking_questions',
+        },
+      });
+
+      res.json({
+        success: true,
+        data: {
+          message: welcomeMessage,
+          system: 'conversational',
+        },
+      } as ApiResponse);
+    } catch (error) {
+      console.error('Error initializing conversational system:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Error interno del servidor',
+      } as ApiResponse);
+    }
+  }
+
+  /**
+   * Initialize OLD Diagnostic Flow System (for backwards compatibility)
+   */
+  private async initializeDiagnosticFlow(req: Request, res: Response): Promise<void> {
     try {
       const { sessionId, language } = req.body;
 
