@@ -1,7 +1,6 @@
 import { Router, type Router as ExpressRouter } from 'express';
 import sessionRoutes from './session.routes';
 import chatRoutes from './chat.routes';
-import quizRoutes from './quiz.routes';
 import discountRoutes from './discount.routes';
 import { webhookRoutes } from './webhook.routes';
 import { ImageController, uploadMiddleware } from '../controllers/image.controller';
@@ -17,7 +16,6 @@ router.get('/health', (req, res) => {
 // API routes
 router.use('/sessions', sessionRoutes);
 router.use('/chat', chatRoutes);
-router.use('/quiz', quizRoutes);
 router.use('/discount', discountRoutes);
 router.use('/webhooks', webhookRoutes);
 
