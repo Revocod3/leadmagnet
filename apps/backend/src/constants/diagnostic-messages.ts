@@ -7,23 +7,23 @@ import type { Language } from '../types';
  * 2. Free diagnostic worth 30€+ and exclusive discount for completion
  */
 export const INITIAL_INSTRUCTIONS = {
-  es: `👋 **¡Hola, {userName}!**
+  es: `**¡Hola, {userName}!**
 
 Tu diagnóstico **depende** de tus respuestas — sé sincero/a para obtener recomendaciones útiles.
 
-**Valorado en más de 30 €**, 100% **gratis**. 🎁 Complétalo y recibe **30% de descuento** en el acompañamiento.
+**Valorado en más de 30 €**, 100% **gratis**. Complétalo y recibe **30% de descuento** en el acompañamiento.
 
-⏱️ Solo **5–7 minutos**.
+Solo **5–7 minutos**.
 
 **¿Empezamos?** Escribe "sí" cuando estés listo/a.`,
 
-  en: `👋 **Hi, {userName}!**
+  en: `**Hi, {userName}!**
 
 Your diagnosis **depends** on your answers — be honest to get useful recommendations.
 
-**Valued at over €30**, 100% **free**. 🎁 Complete it and receive **30% off** the personalized program.
+**Valued at over €30**, 100% **free**. Complete it and receive **30% off** the personalized program.
 
-⏱️ Just **5–7 minutes**.
+Just **5–7 minutes**.
 
 **Ready to start?** Type "yes" when you're ready.`,
 };
@@ -32,28 +32,28 @@ Your diagnosis **depends** on your answers — be honest to get useful recommend
  * Reminder about quality of responses (can be shown mid-diagnostic)
  */
 export const QUALITY_REMINDER = {
-  es: `Recuerda: cuanto más me cuentes, mejor será tu diagnóstico. 😊`,
-  en: `Remember: the more you tell me, the better your diagnosis will be. 😊`,
+  es: `Recuerda: cuanto más me cuentes, mejor será tu diagnóstico.`,
+  en: `Remember: the more you tell me, the better your diagnosis will be.`,
 };
 
 /**
  * Message shown when diagnosis is ready with discount code
  */
 export const DIAGNOSIS_READY_MESSAGE = {
-  es: `🎉 ¡Excelente, {userName}! Has completado tu diagnóstico.
+  es: `¡Excelente, {userName}! Has completado tu diagnóstico.
 
-**Aquí está tu análisis personalizado** 📋
+**Aquí está tu análisis personalizado**
 
 {diagnosisContent}
 
 ---
 
-**🎁 TU RECOMPENSA POR COMPLETAR EL DIAGNÓSTICO:**
+**TU RECOMPENSA POR COMPLETAR EL DIAGNÓSTICO:**
 
 Como te prometí, aquí tienes tu **descuento EXCLUSIVO del 30%**:
 
 **Código de descuento:** \`{discountCode}\`
-⏰ **Válido por 7 días**
+**Válido por 7 días**
 
 Este código te da acceso preferente a nuestro programa de acompañamiento personalizado 24/7.
 
@@ -64,24 +64,24 @@ Este código te da acceso preferente a nuestro programa de acompañamiento perso
 ✅ Recetas personalizadas según tus intolerancias
 ✅ Soporte cuando lo necesites
 
-📄 **PLUS:** Puedes descargar tu diagnóstico completo en PDF (valorado en más de 30€, tuyo gratis por completar el cuestionario)
+**PLUS:** Puedes descargar tu diagnóstico completo en PDF (valorado en más de 30€, tuyo gratis por completar el cuestionario)
 
 **¿Quieres dar el siguiente paso y empezar tu transformación con tu descuento exclusivo del 30%?**`,
 
-  en: `🎉 Excellent, {userName}! You've completed your diagnosis.
+  en: `Excellent, {userName}! You've completed your diagnosis.
 
-**Here is your personalized analysis** 📋
+**Here is your personalized analysis**
 
 {diagnosisContent}
 
 ---
 
-**🎁 YOUR REWARD FOR COMPLETING THE DIAGNOSIS:**
+**YOUR REWARD FOR COMPLETING THE DIAGNOSIS:**
 
 As I promised, here's your **EXCLUSIVE 30% DISCOUNT**:
 
 **Discount code:** \`{discountCode}\`
-⏰ **Valid for 7 days**
+**Valid for 7 days**
 
 This code gives you preferred access to our 24/7 personalized support program.
 
@@ -92,7 +92,7 @@ This code gives you preferred access to our 24/7 personalized support program.
 ✅ Personalized recipes according to your intolerances
 ✅ Support when you need it
 
-📄 **PLUS:** You can download your complete diagnosis in PDF (valued at over €30, yours free for completing the questionnaire)
+**PLUS:** You can download your complete diagnosis in PDF (valued at over €30, yours free for completing the questionnaire)
 
 **Do you want to take the next step and start your transformation with your exclusive 30% discount?**`,
 };

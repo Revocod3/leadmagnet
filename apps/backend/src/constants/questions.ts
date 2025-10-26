@@ -428,8 +428,8 @@ export const WELCOME_MESSAGES = {
 };
 
 export const GREETING_MESSAGES = {
-  es: 'Encantado de conocerte, {userName}. 😊',
-  en: 'Nice to meet you, {userName}. 😊',
+  es: 'Encantado de conocerte, {userName}.',
+  en: 'Nice to meet you, {userName}.',
 };
 
 export const DID_YOU_KNOW = {
