@@ -5,12 +5,6 @@ import { VisionService } from './vision.service';
 import { EngagementTrackerService, type EngagementScore } from '../engagement-tracker.service';
 import { AdaptiveQuestionManagerService, type DiagnosticMode } from '../adaptive-question-manager.service';
 import { formatInitialInstructions } from '../../constants/diagnostic-messages';
-// AGI Services
-import { ContextManagerService } from '../agi/context-manager.service';
-import { PatternDetectorService } from '../agi/pattern-detector.service';
-import { InsightGeneratorService } from '../agi/insight-generator.service';
-import { QuestionGeneratorService } from '../agi/question-generator.service';
-import type { AGIInsight, DetectedPattern, AGIEnhancedFlowResponse, EmotionalTone, ExtractedInfo } from '../../types/agi.types';
 
 export type FlowStep =
   | 'initial'
@@ -37,13 +31,6 @@ export interface DiagnosticFlowState {
   questionStartTime: number; // Timestamp when question was asked
   askedQuestionIds: number[]; // IDs of questions already asked
   previousEngagementScore: number; // To track if engagement is increasing/decreasing
-
-  // Dynamic Question Flow
-  questionOrder: string[]; // Order of question topics (dynamic)
-  currentEmotionalTone: EmotionalTone; // Current emotional state
-
-  // AGI Session
-  agiSessionId: string; // Persistent session ID for AGI context
 }export interface FlowResponse {
   message: string;
   newState: DiagnosticFlowState;
@@ -52,36 +39,17 @@ export interface DiagnosticFlowState {
   nextQuestion?: string;
   questionDetails?: string | undefined;
   type?: 'welcome' | 'greeting' | 'question' | 'comment' | 'validation_error' | 'diagnosis_ready' | 'completed';
-
-  // AGI Enhancement fields
-  agiInsights?: AGIInsight[];
-  patternConnections?: DetectedPattern[];
-  metaReasoning?: { thought: string; explanation: string; strategy: string };
-  emotionalResponse?: string;
-  progressiveSummary?: { completionPercentage: number; currentPhase: string; keyPointsLearned: string[]; nextFocus: string; suggestedCorrections?: string[] };
-  thinkingTime?: number;
-  clarificationRequest?: string;
 }
 
 export class DiagnosticFlowService {
   private visionService: VisionService;
   private engagementTracker: EngagementTrackerService;
   private questionManager: AdaptiveQuestionManagerService;
-  // AGI Services
-  private contextManager: ContextManagerService;
-  private patternDetector: PatternDetectorService;
-  private insightGenerator: InsightGeneratorService;
-  private questionGenerator: QuestionGeneratorService;
 
   constructor() {
     this.visionService = new VisionService();
     this.engagementTracker = new EngagementTrackerService();
     this.questionManager = new AdaptiveQuestionManagerService();
-    // Initialize AGI Services
-    this.contextManager = new ContextManagerService();
-    this.patternDetector = new PatternDetectorService();
-    this.insightGenerator = new InsightGeneratorService();
-    this.questionGenerator = new QuestionGeneratorService();
   }
 
   /**
@@ -319,15 +287,6 @@ export class DiagnosticFlowService {
     // Initialize engagement tracking
     const engagementScore = this.engagementTracker.initialize();
 
-    // Generate dynamic question order
-    const questionOrder = this.questionGenerator.generateDynamicQuestionOrder(
-      'standard', // Start with standard mode
-      {} // No collected info yet
-    );
-
-    // Generate persistent AGI session ID
-    const agiSessionId = `agi_${userName || 'guest'}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
     const state: DiagnosticFlowState = {
       step: 'initial',
       currentQuestionIndex: 0, // Start from first question (index 0)
@@ -345,14 +304,9 @@ export class DiagnosticFlowService {
       questionStartTime: Date.now(),
       askedQuestionIds: [],
       previousEngagementScore: 50, // Start at medium
+    };
 
-      // Dynamic question flow
-      questionOrder,
-      currentEmotionalTone: 'neutral',
-
-      // AGI Session
-      agiSessionId,
-    };    // Use new initial instructions that explain value and discount
+    // Use new initial instructions that explain value and discount
     const firstName = userName ? userName.trim().split(' ')[0] || 'amigo/a' : 'amigo/a';
     const welcomeMessage = formatInitialInstructions(language, firstName);
 
@@ -403,42 +357,30 @@ export class DiagnosticFlowService {
   }
 
   /**
-   * Obtiene la siguiente pregunta dinámica según el contexto
+   * Obtiene la siguiente pregunta según engagement y preguntas ya hechas
    */
-  private async getNextDynamicQuestion(
+  private getNextQuestion(
     currentState: DiagnosticFlowState
-  ): Promise<{ id: number; blockId: number; question: string; questionDetails?: string } | null> {
-    // Obtener el siguiente topic del order
-    const currentIndex = currentState.questionOrder.findIndex(topic => {
-      const metadata = this.questionGenerator['getQuestionMetadata'](topic);
-      return !currentState.askedQuestionIds.includes(metadata.id);
-    });
+  ): { id: number; blockId: number; question: string; questionDetails?: string } | null {
+    const questions = getDiagnosticQuestions(currentState.language);
 
-    if (currentIndex === -1) {
+    // Get next question using adaptive manager
+    const nextQuestion = this.questionManager.getNextQuestion(
+      currentState.diagnosticMode,
+      currentState.collectedInfo,
+      currentState.askedQuestionIds,
+      currentState.language
+    );
+
+    if (!nextQuestion) {
       return null; // No more questions
     }
 
-    const nextTopic = currentState.questionOrder[currentIndex];
-    if (!nextTopic) {
-      return null;
-    }
-
-    // Generar pregunta dinámica
-    const dynamicQuestion = await this.questionGenerator.generateDynamicQuestion(
-      nextTopic,
-      {
-        collectedInfo: currentState.collectedInfo,
-        emotionalTone: currentState.currentEmotionalTone,
-        previousQuestions: currentState.askedQuestionIds,
-        language: currentState.language
-      }
-    );
-
     return {
-      id: dynamicQuestion.id,
-      blockId: dynamicQuestion.blockId,
-      question: dynamicQuestion.question,
-      ...(dynamicQuestion.questionDetails && { questionDetails: dynamicQuestion.questionDetails })
+      id: nextQuestion.id,
+      blockId: nextQuestion.blockId,
+      question: nextQuestion.question,
+      ...(nextQuestion.questionDetails && { questionDetails: nextQuestion.questionDetails })
     };
   }
 
@@ -449,21 +391,12 @@ export class DiagnosticFlowService {
     userMessage: string,
     currentState: DiagnosticFlowState
   ): Promise<FlowResponse> {
-    // Get first question dynamically
-    const firstTopic = currentState.questionOrder[0];
-    if (!firstTopic) {
-      throw new Error('No question topics available');
-    }
+    const questions = getDiagnosticQuestions(currentState.language);
+    const firstQuestion = questions[0]; // First question (index 0)
 
-    const dynamicQuestion = await this.questionGenerator.generateDynamicQuestion(
-      firstTopic,
-      {
-        collectedInfo: currentState.collectedInfo,
-        emotionalTone: currentState.currentEmotionalTone,
-        previousQuestions: currentState.askedQuestionIds,
-        language: currentState.language
-      }
-    );
+    if (!firstQuestion) {
+      throw new Error('First question not found');
+    }
 
     // Extraer solo el primer nombre
     const firstName = this.getFirstName(currentState.userName);
@@ -476,16 +409,16 @@ export class DiagnosticFlowService {
       ...currentState,
       step: 'asking_questions',
       currentQuestionIndex: 0,
-      currentBlockId: dynamicQuestion.blockId,
+      currentBlockId: firstQuestion.blockId,
       questionStartTime: Date.now(), // Start timer for first question
-      askedQuestionIds: [dynamicQuestion.id], // Mark first question as asked
+      askedQuestionIds: [firstQuestion.id], // Mark first question as asked
     };
 
     // Combinar la transición con la primera pregunta
     return {
-      message: `${transitions}\n\n${dynamicQuestion.question}`,
+      message: `${transitions}\n\n${firstQuestion.question}`,
       newState,
-      questionDetails: dynamicQuestion.questionDetails,
+      questionDetails: firstQuestion.questionDetails,
       type: 'question',
     };
   }
@@ -653,12 +586,11 @@ export class DiagnosticFlowService {
         currentState.language
       );
 
-      // Get next question dynamically
-      const nextQuestion = await this.getNextDynamicQuestion({
+      // Get next question
+      const nextQuestion = this.getNextQuestion({
         ...currentState,
         collectedInfo: updatedInfo,
         diagnosticMode: newMode,
-        currentEmotionalTone: 'neutral' // Will be detected in next response
       });
 
       if (!nextQuestion) {
@@ -689,9 +621,6 @@ export class DiagnosticFlowService {
         newState,
         questionDetails: nextQuestion.questionDetails,
         type: 'comment',
-        agiInsights: [],
-        patternConnections: [],
-        metaReasoning: { thought: '', explanation: '', strategy: '' },
       };
     }
 
@@ -711,85 +640,11 @@ export class DiagnosticFlowService {
       }
     }
 
-    // ========== AGI ENHANCEMENT ==========
-    // 6. AGI: Update context with new information
-    // Use persistent AGI session ID
-    const agiContext = await this.contextManager.getOrCreateContext(
-      currentState.agiSessionId,
-      currentState.userName || undefined
-    );
-
-    // Detect emotional tone from answer
-    const emotionalTone = await this.detectEmotionalTone(userAnswer);
-
-    // Convert CollectedInfo to ExtractedInfo format
-    const extractedInfoForAGI: Partial<ExtractedInfo> = {
-      demographics: {
-        ...(updatedInfo.age && { age: updatedInfo.age }),
-        ...(updatedInfo.occupation && { occupation: updatedInfo.occupation }),
-        ...(updatedInfo.occupationType && { occupationType: updatedInfo.occupationType }),
-      },
-      health: {
-        ...(updatedInfo.mainProblem && { mainProblem: updatedInfo.mainProblem }),
-        ...(updatedInfo.duration && { duration: updatedInfo.duration }),
-        ...(updatedInfo.medicalConditions && { medicalConditions: updatedInfo.medicalConditions }),
-        ...(updatedInfo.medications && { medications: updatedInfo.medications }),
-        ...(updatedInfo.badFoods && { badFoods: updatedInfo.badFoods }),
-      },
-      lifestyle: {
-        ...(updatedInfo.diet && { diet: updatedInfo.diet }),
-        ...(updatedInfo.exercise && { exercise: updatedInfo.exercise }),
-        ...(updatedInfo.sleep && { sleep: updatedInfo.sleep }),
-        ...(updatedInfo.stress && { stress: updatedInfo.stress }),
-        ...(updatedInfo.waterIntake && { waterIntake: updatedInfo.waterIntake }),
-      },
-      goals: {
-        ...(updatedInfo.goal && { primary: updatedInfo.goal }),
-        ...(updatedInfo.motivation && { motivation: updatedInfo.motivation }),
-      },
-      patterns: [],
-    };
-
-    await this.contextManager.updateContext(currentState.agiSessionId, {
-      newAnswer: {
-        questionId: currentQuestion.id,
-        question: currentQuestion.question,
-        answer: userAnswer
-      },
-      extractedInfo: extractedInfoForAGI,
-      emotionalTone
-    });
-
-    // 7. AGI: Detect patterns
-    const recentAnswers = this.contextManager.getRecentAnswers(agiContext);
-    const detectedPatterns = await this.patternDetector.detectPatterns(
-      recentAnswers,
-      agiContext.longTermMemory,
-      emotionalTone
-    );
-
-    // 8. AGI: Generate insights
-    const agiInsights = await this.insightGenerator.generateInsightsForAnswer(
-      currentQuestion.id,
-      currentQuestion.question,
-      userAnswer,
-      {
-        extractedInfo: agiContext.longTermMemory,
-        recentAnswers,
-        emotionalTone,
-        detectedPatterns
-      }
-    );
-
-    // 9. AGI: Generate thinking insight for UI
-    const thinkingInsight = this.insightGenerator.generateThinkingInsight(currentQuestion.id);
-
-    // 4. DYNAMIC QUESTION: Get next question dynamically based on context
-    const nextQuestion = await this.getNextDynamicQuestion({
+    // Get next question based on engagement and context
+    const nextQuestion = this.getNextQuestion({
       ...currentState,
       collectedInfo: updatedInfo,
       diagnosticMode: newMode,
-      currentEmotionalTone: emotionalTone
     });
 
     // 5. Check if we should continue based on engagement and question count
@@ -822,9 +677,6 @@ export class DiagnosticFlowService {
         questionStartTime: Date.now(), // Start timer for next question
         askedQuestionIds: [...currentState.askedQuestionIds, nextQuestion.id],
         previousEngagementScore: currentState.engagementScore.total,
-
-        // Update emotional tone
-        currentEmotionalTone: emotionalTone,
       };
 
       // Build message: Optimizado para evitar redundancias
@@ -859,9 +711,6 @@ export class DiagnosticFlowService {
         newState,
         questionDetails: nextQuestion.questionDetails,
         type: 'comment',
-        agiInsights,
-        patternConnections: detectedPatterns,
-        metaReasoning: { thought: thinkingInsight, explanation: '', strategy: '' },
       };
     } else {
       // Diagnosis complete - generate final diagnosis
@@ -922,9 +771,6 @@ export class DiagnosticFlowService {
         message: fullMessage,
         newState,
         type: 'diagnosis_ready',
-        agiInsights,
-        patternConnections: detectedPatterns,
-        metaReasoning: { thought: thinkingInsight, explanation: '', strategy: '' },
       };
     }
   }
@@ -950,34 +796,6 @@ export class DiagnosticFlowService {
       newState,
       type: 'completed',
     };
-  }
-
-  /**
-   * Detecta el tono emocional de una respuesta
-   */
-  private async detectEmotionalTone(text: string): Promise<EmotionalTone> {
-    try {
-      const response = await openai.chat.completions.create({
-        model: MODELS.TEXT,
-        messages: [
-          {
-            role: 'system',
-            content: 'Detecta el tono emocional de este texto y responde SOLO con una palabra: hopeful, frustrated, resigned, enthusiastic, anxious, neutral, overwhelmed.'
-          },
-          { role: 'user', content: text }
-        ],
-        temperature: 0.3,
-        max_tokens: 10,
-      });
-
-      const tone = response.choices[0]?.message?.content?.trim().toLowerCase() as EmotionalTone;
-      return ['hopeful', 'frustrated', 'resigned', 'enthusiastic', 'anxious', 'neutral', 'overwhelmed'].includes(tone)
-        ? tone
-        : 'neutral';
-    } catch (error) {
-      console.error('Error detecting emotional tone:', error);
-      return 'neutral';
-    }
   }
 
   /**

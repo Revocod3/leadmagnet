@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 import { prisma } from '../config/database';
 import { env } from '../config/env';
 import { DiagnosticFlowService, DiagnosticFlowState } from '../services/openai/diagnostic-flow.service';
-import { ConversationalAssistantService } from '../services/openai/conversational-assistant.service';
 import { ValidationService } from '../services/openai/validation.service';
 import { DiscountService } from '../services/discount.service';
 import { wordPressSyncService } from '../services/wordpress-sync.service';
@@ -10,23 +9,25 @@ import type { SendMessageRequest, ApiResponse, ChatMessage, Language } from '../
 
 const validationService = new ValidationService();
 const diagnosticFlowService = new DiagnosticFlowService();
-const conversationalAssistantService = new ConversationalAssistantService();
 const discountService = new DiscountService();
 
 export class ChatController {
   async sendMessage(req: Request, res: Response): Promise<void> {
-    // Check which system to use
-    if (env.USE_NEW_CONVERSATIONAL_SYSTEM) {
-      return this.sendMessageConversational(req, res);
-    } else {
-      return this.sendMessageDiagnosticFlow(req, res);
-    }
+    // Use diagnostic flow (conversational system removed - bloat)
+    return this.sendMessageDiagnosticFlow(req, res);
   }
 
   /**
    * Send message using NEW Conversational Assistant System
+   * DEPRECATED - Removed as bloat, usando Diagnostic Flow ahora
    */
   private async sendMessageConversational(req: Request, res: Response): Promise<void> {
+    res.status(400).json({
+      success: false,
+      error: 'Conversational system deprecated. Use diagnostic flow.',
+    });
+    return;
+    /* CÓDIGO COMENTADO - BLOAT REMOVIDO
     try {
       const { sessionId, message, language }: SendMessageRequest = req.body;
 
@@ -208,10 +209,11 @@ export class ChatController {
         error: 'Error interno del servidor',
       } as ApiResponse);
     }
+    */
   }
 
   /**
-   * Send message using OLD Diagnostic Flow System (for backwards compatibility)
+   * Send message using Diagnostic Flow System
    */
   private async sendMessageDiagnosticFlow(req: Request, res: Response): Promise<void> {
     try {
@@ -503,18 +505,21 @@ export class ChatController {
    * Initialize diagnostic flow for a session
    */
   async initializeDiagnostic(req: Request, res: Response): Promise<void> {
-    // Check which system to use
-    if (env.USE_NEW_CONVERSATIONAL_SYSTEM) {
-      return this.initializeConversational(req, res);
-    } else {
-      return this.initializeDiagnosticFlow(req, res);
-    }
+    // Use diagnostic flow (conversational system removed)
+    return this.initializeDiagnosticFlow(req, res);
   }
 
   /**
    * Initialize NEW Conversational System
+   * DEPRECATED - Removed as bloat
    */
   private async initializeConversational(req: Request, res: Response): Promise<void> {
+    res.status(400).json({
+      success: false,
+      error: 'Conversational system deprecated. Use diagnostic flow.',
+    });
+    return;
+    /* CÓDIGO COMENTADO - BLOAT REMOVIDO
     try {
       const { sessionId, language } = req.body;
 
@@ -578,10 +583,11 @@ export class ChatController {
         error: 'Error interno del servidor',
       } as ApiResponse);
     }
+    */
   }
 
   /**
-   * Initialize OLD Diagnostic Flow System (for backwards compatibility)
+   * Initialize Diagnostic Flow System
    */
   private async initializeDiagnosticFlow(req: Request, res: Response): Promise<void> {
     try {
