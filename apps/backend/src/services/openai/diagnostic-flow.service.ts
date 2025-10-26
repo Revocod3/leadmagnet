@@ -278,24 +278,38 @@ export class DiagnosticFlowService {
     state: DiagnosticFlowState
   ): string {
     const userName = state.userName || 'amigo/a';
+    const firstName = this.getFirstName(userName);
 
-    switch (toBlockId) {
-      case 2: // Problem
-        return `Perfecto ${userName}, ahora cuéntame qué te trae aquí...`;
+    // Usar variaciones para evitar repetitividad
+    const variations = {
+      2: [ // Problem block
+        `Perfecto, ${firstName}. Ahora cuéntame sobre tu situación actual.`,
+        `Gracias, ${firstName}. Vamos a profundizar un poco más en lo que te trae aquí.`,
+        `Bien, ${firstName}. Ahora hablemos de tu motivo de consulta.`
+      ],
+      3: [ // Lifestyle block
+        `Entiendo. Ahora me gustaría conocer tus hábitos diarios.`,
+        `Perfecto. Hablemos sobre tu día a día y estilo de vida.`,
+        `Gracias por compartir. Ahora sobre tus rutinas habituales.`
+      ],
+      4: [ // Health block - FIXED: No usar nombre completo
+        `Excelente. Ahora algunas preguntas sobre tu salud.`,
+        `Gracias. Continuemos con tu historial de salud.`,
+        `Bien. Ahora sobre aspectos importantes de tu salud.`
+      ],
+      5: [ // Motivation block
+        `${firstName}, ya casi terminamos. Hablemos de tus objetivos.`,
+        `Perfecto, ${firstName}. Una última sección sobre tus expectativas.`,
+        `Genial, ${firstName}. Para finalizar, sobre tus metas y motivación.`
+      ]
+    };
 
-      case 3: // Lifestyle
-        const problem = state.collectedInfo.mainProblem || 'tu molestia';
-        return `Entiendo, ${problem} puede ser muy incómodo. Ahora hablemos un poco de tus hábitos diarios.`;
+    // Seleccionar variación basada en el número de respuestas (para distribuir variedad)
+    const blockVariations = variations[toBlockId as keyof typeof variations];
+    if (!blockVariations) return '';
 
-      case 4: // Health
-        return `Gracias por compartir eso, ${userName}. Ahora, sobre tu salud en general...`;
-
-      case 5: // Motivation
-        return `${userName}, ya casi terminamos. Hablemos de tus objetivos y expectativas.`;
-
-      default:
-        return '';
-    }
+    const index = state.answers.length % blockVariations.length;
+    return blockVariations[index]!;
   }
 
   /**
@@ -454,10 +468,8 @@ export class DiagnosticFlowService {
     // Extraer solo el primer nombre
     const firstName = this.getFirstName(currentState.userName);
 
-    // Crear una transición cálida y profesional
-    const transition = currentState.language === 'es'
-      ? `Perfecto, ${firstName || 'vamos a comenzar'}.\n\nAntes de empezar, quiero que sepas que este no es un diagnóstico médico, sino una evaluación personalizada para entender tu situación digestiva y ofrecerte las mejores recomendaciones.\n`
-      : `Perfect, ${firstName || 'let\'s begin'}.\n\nBefore we start, I want you to know that this is not a medical diagnosis, but a personalized assessment to understand your digestive situation and offer you the best recommendations.\n\nLet's start with the basics:`;
+    // Crear transiciones dinámicas basadas en la hora del día
+    const transitions = this.generateDynamicTransitions(firstName, currentState.language);
 
     // Preparar estado actualizado - vamos directo a hacer preguntas
     const newState: DiagnosticFlowState = {
@@ -471,11 +483,54 @@ export class DiagnosticFlowService {
 
     // Combinar la transición con la primera pregunta
     return {
-      message: `${transition}\n\n${dynamicQuestion.question}`,
+      message: `${transitions}\n\n${dynamicQuestion.question}`,
       newState,
       questionDetails: dynamicQuestion.questionDetails,
       type: 'question',
     };
+  }
+
+  /**
+   * Genera transiciones dinámicas basadas en hora del día y contexto
+   */
+  private generateDynamicTransitions(firstName: string, language: Language): string {
+    const hour = new Date().getHours();
+
+    const transitionsES = [
+      // Mañana (6-12)
+      `Perfecto, ${firstName || 'vamos a comenzar'}.\n\nAntes de empezar, quiero que sepas que este no es un diagnóstico médico, sino una evaluación personalizada para entender tu situación digestiva y ofrecerte las mejores recomendaciones.`,
+
+      // Tarde (12-18)  
+      `Excelente, ${firstName || 'comencemos'}.\n\nEste cuestionario me ayudará a entender tu caso particular. No es un diagnóstico médico, sino una evaluación detallada de tu salud digestiva para darte recomendaciones personalizadas.`,
+
+      // Noche (18-6)
+      `Genial, ${firstName || 'empezamos'}.\n\nRecuerda: esto no reemplaza una consulta médica, es una evaluación personalizada para comprender tu situación digestiva y brindarte las mejores recomendaciones adaptadas a ti.`
+    ];
+
+    const transitionsEN = [
+      // Morning (6-12)
+      `Perfect, ${firstName || 'let\'s begin'}.\n\nBefore we start, I want you to know that this is not a medical diagnosis, but a personalized assessment to understand your digestive situation and offer you the best recommendations.`,
+
+      // Afternoon (12-18)
+      `Excellent, ${firstName || 'let\'s start'}.\n\nThis questionnaire will help me understand your particular case. It's not a medical diagnosis, but a detailed assessment of your digestive health to give you personalized recommendations.`,
+
+      // Evening (18-6)
+      `Great, ${firstName || 'let\'s get started'}.\n\nRemember: this doesn't replace a medical consultation, it's a personalized assessment to understand your digestive situation and provide you with the best recommendations tailored to you.`
+    ];
+
+    const transitions = language === 'es' ? transitionsES : transitionsEN;
+
+    // Select based on time of day
+    let index = 0;
+    if (hour >= 6 && hour < 12) {
+      index = 0; // Morning
+    } else if (hour >= 12 && hour < 18) {
+      index = 1; // Afternoon
+    } else {
+      index = 2; // Evening
+    }
+
+    return transitions[index]!;
   }
 
   /**
@@ -729,13 +784,6 @@ export class DiagnosticFlowService {
     // 9. AGI: Generate thinking insight for UI
     const thinkingInsight = this.insightGenerator.generateThinkingInsight(currentQuestion.id);
 
-    // Generar comentario empático
-    const comment = await this.generateEmpathicComment(
-      currentQuestion.question,
-      userAnswer,
-      currentState.language
-    );
-
     // 4. DYNAMIC QUESTION: Get next question dynamically based on context
     const nextQuestion = await this.getNextDynamicQuestion({
       ...currentState,
@@ -779,18 +827,29 @@ export class DiagnosticFlowService {
         currentEmotionalTone: emotionalTone,
       };
 
-      // Build message: comment + progress + transition + next question
-      let fullMessage = comment;
+      // Build message: Optimizado para evitar redundancias
+      let fullMessage = '';
+
+      // OPTIMIZACIÓN: Solo generar comentario cuando NO hay transición de bloque
+      // Cuando cambia de bloque, usar SOLO la transición (que ya incluye contexto)
+      // Cuando NO cambia de bloque, usar SOLO el comentario empático
+      if (nextQuestion.blockId !== currentQuestion.blockId) {
+        // Cambio de bloque: usar transición (más contextual e informativa)
+        const blockTransition = this.generateBlockTransition(nextQuestion.blockId, newState);
+        fullMessage = blockTransition;
+      } else {
+        // Mismo bloque: generar y usar comentario empático (más personal)
+        const comment = await this.generateEmpathicComment(
+          currentQuestion.question,
+          userAnswer,
+          currentState.language
+        );
+        fullMessage = comment;
+      }
 
       // Add progress message if any
       if (progressMessage) {
         fullMessage += `\n\n${progressMessage}`;
-      }
-
-      // Add block transition if changed
-      if (nextQuestion.blockId !== currentQuestion.blockId) {
-        const blockTransition = this.generateBlockTransition(nextQuestion.blockId, newState);
-        fullMessage += `\n\n${blockTransition}`;
       }
 
       fullMessage += `\n\n${nextQuestion.question}`;
@@ -807,9 +866,28 @@ export class DiagnosticFlowService {
     } else {
       // Diagnosis complete - generate final diagnosis
       const userName = currentState.userName || 'amigo/a';
+      const firstName = this.getFirstName(userName);
 
       console.log(`✅ Diagnosis complete! Asked ${currentState.askedQuestionIds.length} questions in ${newMode} mode`);
       console.log(`📊 Final engagement score: ${newEngagementScore.total}`);
+
+      // Mensaje de transición antes de generar diagnóstico
+      const waitingMessages = {
+        es: [
+          `Perfecto, ${firstName}. Ya tengo toda la información necesaria. Déjame analizar tu caso...`,
+          `Excelente, ${firstName}. Con esto completamos el cuestionario. Estoy procesando tu diagnóstico...`,
+          `Genial, ${firstName}. Tengo todo lo necesario. Analizando tu situación...`
+        ],
+        en: [
+          `Perfect, ${firstName}. I have all the necessary information. Let me analyze your case...`,
+          `Excellent, ${firstName}. With this we complete the questionnaire. I'm processing your diagnosis...`,
+          `Great, ${firstName}. I have everything I need. Analyzing your situation...`
+        ]
+      };
+
+      const waitingMessage = waitingMessages[currentState.language as 'es' | 'en'][
+        Math.floor(Math.random() * 3)
+      ];
 
       // Generar el diagnóstico
       const diagnosis = await this.generateDiagnosis(
@@ -836,9 +914,9 @@ export class DiagnosticFlowService {
         previousEngagementScore: currentState.engagementScore.total,
       };
 
-      // Mostrar mensaje de venta con los beneficios (NO el diagnóstico completo)
-      const readyMessage = DIAGNOSIS_READY_MESSAGE[currentState.language as 'es' | 'en'].replace('{userName}', userName);
-      const fullMessage = `${comment}\n\n${readyMessage}`;
+      // Mostrar mensaje de espera + mensaje de diagnóstico listo
+      const readyMessage = DIAGNOSIS_READY_MESSAGE[currentState.language as 'es' | 'en'].replace('{userName}', firstName);
+      const fullMessage = `${waitingMessage}\n\n---\n\n${readyMessage}`;
 
       return {
         message: fullMessage,
@@ -1023,6 +1101,7 @@ export class DiagnosticFlowService {
 
   /**
    * Genera un comentario empático basado en la respuesta
+   * OPTIMIZADO: Comentarios más cortos y menos redundantes
    */
   private async generateEmpathicComment(
     question: string,
@@ -1032,42 +1111,68 @@ export class DiagnosticFlowService {
     try {
       const prompt =
         language === 'es'
-          ? `Genera un comentario corto y empático basado en esta respuesta del cuestionario.
+          ? `Genera un comentario BREVE de reconocimiento basado en esta respuesta.
 
 Pregunta: "${question}"
 Respuesta: "${answer}"
 
-REQUISITOS:
-- Máximo 1-2 frases
+REQUISITOS ESTRICTOS:
+- MÁXIMO 1 frase corta (5-8 palabras)
 - NO usar emojis
-- NO hacer preguntas adicionales
-- Ser empático y alentador
-- Tono profesional pero cálido`
-          : `Generate a short empathetic comment based on this questionnaire response.
+- NO hacer preguntas
+- NO repetir la pregunta ni la respuesta
+- Ser breve y profesional
+- Evitar palabras como "Entiendo", "Comprendo", "Veo que"
+
+EJEMPLOS BUENOS:
+- "Gracias por compartir eso."
+- "Muy útil para entender tu caso."
+- "Perfecto, lo tengo anotado."
+- "Eso es importante saberlo."
+
+EJEMPLOS MALOS (muy largos):
+- "Entiendo que este último mes ha sido desafiante..."
+- "Comprendo que el dolor estomacal es muy incómodo..."
+
+Sé BREVE.`
+          : `Generate a BRIEF acknowledgment comment based on this response.
 
 Question: "${question}"
 Answer: "${answer}"
 
-REQUIREMENTS:
-- Maximum 1-2 sentences
+STRICT REQUIREMENTS:
+- MAXIMUM 1 short sentence (5-8 words)
 - DO NOT use emojis
-- DO NOT ask additional questions
-- Be empathetic and encouraging
-- Professional but warm tone`;
+- DO NOT ask questions
+- DO NOT repeat the question or answer
+- Be brief and professional
+- Avoid words like "I understand", "I see that"
+
+GOOD EXAMPLES:
+- "Thanks for sharing that."
+- "Very helpful for understanding your case."
+- "Perfect, noted."
+- "That's important to know."
+
+BAD EXAMPLES (too long):
+- "I understand that this last month has been challenging..."
+- "I see that stomach pain is very uncomfortable..."
+
+Be BRIEF.`;
 
       const response = await openai.chat.completions.create({
         model: MODELS.TEXT,
         messages: [{ role: 'user', content: prompt }],
-        temperature: 0.7,
-        max_tokens: 80,
+        temperature: 0.5, // Reducido para más consistencia
+        max_tokens: 30, // Reducido de 80 a 30
       });
 
       return response.choices[0]?.message?.content?.trim() || '';
     } catch (error) {
       console.error('Error generating empathic comment:', error);
       return language === 'es'
-        ? 'Gracias por tu respuesta. Sigamos adelante.'
-        : "Thank you for your answer. Let's continue.";
+        ? 'Gracias por tu respuesta.'
+        : "Thanks for your answer.";
     }
   }
 

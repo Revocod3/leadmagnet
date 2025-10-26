@@ -266,14 +266,17 @@ export class ContextManagerService {
   }
 
   private async persistContext(sessionId: string, context: AGIContext): Promise<void> {
-    // Persistir en base de datos - simplificación
+    // NOTA: sessionId aquí es el agiSessionId (agi_username_timestamp_random)
+    // NO es el ID real de la sesión en la base de datos
+    // Por ahora, guardamos el contexto solo en memoria
     // En producción, podríamos tener una tabla dedicada para contextos AGI
-    await prisma.session.update({
-      where: { id: sessionId },
-      data: {
-        // Aquí podríamos guardar un resumen serializado
-        // Por ahora, solo actualizamos el flowState existente
-      }
-    });
+
+    // NO hacer update a session porque el sessionId no es el ID correcto
+    // await prisma.session.update({
+    //   where: { id: sessionId },
+    //   data: {
+    //     // Aquí podríamos guardar un resumen serializado
+    //   }
+    // });
   }
 }
