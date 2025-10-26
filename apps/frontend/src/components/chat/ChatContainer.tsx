@@ -264,10 +264,8 @@ export const ChatContainer = () => {
                       {/* Message Bubble */}
                       <div
                         className={`${message.role === 'user'
-                            ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 rounded-full px-4 py-2'
-                            : message.type === 'welcome'
-                              ? 'bg-gradient-to-br from-white to-neutral-50 dark:from-neutral-800 dark:to-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-2xl px-6 py-4 shadow-lg'
-                              : 'bg-transparent text-foreground rounded-full px-4 py-2'
+                          ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 rounded-full px-4 pt-2'
+                          : 'bg-transparent text-foreground'
                           }`}
                       >
                         {/* Render with ReactMarkdown for better formatting */}
@@ -277,16 +275,22 @@ export const ChatContainer = () => {
                             dangerouslySetInnerHTML={{ __html: message.content }}
                           />
                         ) : (
-                          <div className={`${message.type === 'welcome' ? 'text-base' : 'text-[15px]'} leading-relaxed`}>
+                          <div className="text-[15px] leading-relaxed">
                             <ReactMarkdown
                               components={{
-                                p: ({ children }) => (
-                                  <p className={`${message.type === 'welcome' ? 'mb-3' : 'mb-2'} whitespace-pre-wrap break-words`}>
-                                    {children}
-                                  </p>
-                                ),
+                                p: ({ children }) => {
+                                  // Detectar si el párrafo contiene una pregunta (termina con ?)
+                                  const text = String(children);
+                                  const isQuestion = text.trim().endsWith('?');
+
+                                  return (
+                                    <p className={`mb-2 whitespace-pre-wrap break-words ${isQuestion ? 'font-semibold' : ''}`}>
+                                      {children}
+                                    </p>
+                                  );
+                                },
                                 strong: ({ children }) => (
-                                  <strong className={`font-semibold ${message.type === 'welcome' ? 'text-brand-green-600 dark:text-brand-green-400' : ''}`}>
+                                  <strong className="font-semibold text-foreground">
                                     {children}
                                   </strong>
                                 ),
@@ -346,7 +350,7 @@ export const ChatContainer = () => {
                       {/* Message Actions */}
                       <MessageActions
                         messageText={message.content}
-                        {...(message.role === 'assistant' && { onRegenerate: handleRegenerateResponse })}
+                        {...(message.role === 'assistant' && message.type !== 'welcome' && { onRegenerate: handleRegenerateResponse })}
                         isUserMessage={message.role === 'user'}
                       />
                     </div>

@@ -17,14 +17,17 @@ export const WelcomeAnimation = ({
   const [showEtymology, setShowEtymology] = useState(false);
   const [showButton, setShowButton] = useState(false);
 
+  // Extraer solo el primer nombre
+  const firstName = userName.trim().split(/\s+/)[0];
+
   const messages = {
     es: {
-      greeting: `¡Hola, ${userName}!`,
+      greeting: `¡Hola, ${firstName}!`,
       subtitle: 'Preparando tu experiencia personalizada',
       buttonText: 'Comenzar mi diagnóstico',
     },
     en: {
-      greeting: `Hello, ${userName}!`,
+      greeting: `Hello, ${firstName}!`,
       subtitle: 'Preparing your personalized experience',
       buttonText: 'Start my diagnosis',
     },

@@ -336,6 +336,15 @@ export class DiagnosticFlowService {
   }
 
   /**
+   * Helper para extraer solo el primer nombre
+   */
+  private getFirstName(fullName: string | null): string {
+    if (!fullName) return '';
+    const firstName = fullName.trim().split(/\s+/)[0];
+    return firstName || '';
+  }
+
+  /**
    * Maneja el primer mensaje del usuario (cuando ya tiene nombre, solo responde "sí" al welcome)
    */
   private async handleInitialMessage(
@@ -354,6 +363,14 @@ export class DiagnosticFlowService {
       throw new Error('No questions available');
     }
 
+    // Extraer solo el primer nombre
+    const firstName = this.getFirstName(currentState.userName);
+
+    // Crear una transición cálida y profesional
+    const transition = currentState.language === 'es'
+      ? `Perfecto, ${firstName || 'vamos a comenzar'}. 😊\n\nAntes de empezar, quiero que sepas que este no es un diagnóstico médico, sino una evaluación personalizada para entender tu situación digestiva y ofrecerte las mejores recomendaciones.\n\nComencemos con lo básico:`
+      : `Perfect, ${firstName || 'let\'s begin'}. 😊\n\nBefore we start, I want you to know that this is not a medical diagnosis, but a personalized assessment to understand your digestive situation and offer you the best recommendations.\n\nLet's start with the basics:`;
+
     // Preparar estado actualizado - vamos directo a hacer preguntas
     const newState: DiagnosticFlowState = {
       ...currentState,
@@ -364,9 +381,9 @@ export class DiagnosticFlowService {
       askedQuestionIds: [firstQuestion.id], // Mark first question as asked
     };
 
-    // NO enviar nextQuestion aquí porque el message YA ES la pregunta
+    // Combinar la transición con la primera pregunta
     return {
-      message: firstQuestion.question,
+      message: `${transition}\n\n${firstQuestion.question}`,
       newState,
       questionDetails: firstQuestion.questionDetails,
       type: 'question',

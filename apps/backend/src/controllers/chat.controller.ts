@@ -13,7 +13,7 @@ const discountService = new DiscountService();
 export class ChatController {
   async sendMessage(req: Request, res: Response): Promise<void> {
     try {
-      const { sessionId, message, language, imageData }: SendMessageRequest & { imageData?: { base64: string; mimeType: string } } = req.body;
+      const { sessionId, message, language, imageData, isRegenerate }: SendMessageRequest & { imageData?: { base64: string; mimeType: string }; isRegenerate?: boolean } = req.body;
 
       // Validate input
       const sessionValidation = validationService.validateSessionId(sessionId);
@@ -70,6 +70,17 @@ export class ChatController {
         diagnosisContent: null,
       };
 
+      // Si es regeneración, eliminar la última respuesta del historial de answers
+      // para que el backend no avance el índice
+      if (isRegenerate && flowState.answers.length > 0) {
+        console.log('🔄 Regenerando respuesta - eliminando última respuesta del historial');
+        flowState.answers = flowState.answers.slice(0, -1);
+        // También decrementar el índice si es mayor que 0
+        if (flowState.currentQuestionIndex > 0) {
+          flowState.currentQuestionIndex--;
+        }
+      }
+
       // Process message through diagnostic flow
       const flowResponse = await diagnosticFlowService.processMessage(
         message,
@@ -77,14 +88,17 @@ export class ChatController {
         imageData
       );
 
-      // Save user message
-      await prisma.message.create({
-        data: {
-          sessionId,
-          role: 'user',
-          content: message,
-        },
-      });
+      // Solo guardar mensajes si NO es regeneración
+      if (!isRegenerate) {
+        // Save user message
+        await prisma.message.create({
+          data: {
+            sessionId,
+            role: 'user',
+            content: message,
+          },
+        });
+      }
 
       // Save assistant response
       await prisma.message.create({
@@ -231,7 +245,7 @@ export class ChatController {
             type: flowResponse.type,
             step: flowResponse.newState.step,
             currentQuestionIndex: flowResponse.newState.currentQuestionIndex,
-            nextQuestion: flowResponse.nextQuestion,
+            nextQuestion: isRegenerate ? undefined : flowResponse.nextQuestion, // No enviar nextQuestion en regeneración
             questionDetails: flowResponse.questionDetails,
             etymology: flowResponse.etymology,
             requiresWelcomeAnimation: flowResponse.requiresWelcomeAnimation,

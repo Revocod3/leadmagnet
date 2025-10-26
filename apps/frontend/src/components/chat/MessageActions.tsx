@@ -31,15 +31,15 @@ export const MessageActions = ({ messageText, isUserMessage = false, onRegenerat
 
   return (
     <div
-      className={`flex gap-2 mt-2.5 pt-2.5 px-2.5 ${isUserMessage ? 'justify-end pr-0 pl-2.5' : 'justify-start pl-2.5 pr-0'
+      className={`flex gap-0.5 mt-1.5 ${isUserMessage ? 'justify-end' : 'justify-start'
         }`}
     >
       {/* Copy */}
       <button
         onClick={handleCopy}
         className={`p-1.5 transition-all duration-200 rounded-lg ${copied
-            ? 'text-brand-green-500 bg-brand-green-50 dark:bg-brand-green-500/10'
-            : 'text-foreground/60 hover:text-foreground hover:bg-surface/50'
+          ? 'text-brand-green-500 bg-brand-green-50 dark:bg-brand-green-500/10'
+          : 'text-foreground/60 hover:text-foreground hover:bg-surface/50'
           }`}
         title={copied ? '¡Copiado!' : 'Copiar'}
       >
