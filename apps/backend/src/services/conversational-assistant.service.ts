@@ -91,65 +91,104 @@ export class ConversationalAssistantService {
     isDiagnosisReady?: boolean;
     shouldEndConversation?: boolean;
   }> {
-    try {
-      // 1. Agregar mensaje del usuario al thread
-      await openai.beta.threads.messages.create(threadId, {
-        role: 'user',
-        content: userMessage
-      });
+    const maxRetries = 2;
+    let lastError: Error | null = null;
 
-      // 2. Construir instrucciones dinámicas basadas en contexto
-      const additionalInstructions = buildDynamicInstructions(context);
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        // 1. Agregar mensaje del usuario al thread (solo en el primer intento)
+        if (attempt === 0) {
+          await openai.beta.threads.messages.create(threadId, {
+            role: 'user',
+            content: userMessage
+          });
+        }
 
-      // 3. Ejecutar run con instrucciones dinámicas
-      const run = await openai.beta.threads.runs.create(threadId, {
-        assistant_id: ASSISTANT_ID,
-        additional_instructions: additionalInstructions
-      });
+        // 2. Construir instrucciones dinámicas basadas en contexto
+        const additionalInstructions = buildDynamicInstructions(context);
 
-      // 4. Esperar completación
-      const completedRun = await this.waitForCompletion(threadId, run.id);
+        // 3. Ejecutar run con instrucciones dinámicas
+        const run = await openai.beta.threads.runs.create(threadId, {
+          assistant_id: ASSISTANT_ID,
+          additional_instructions: additionalInstructions
+        });
 
-      if (completedRun.status !== 'completed') {
-        throw new Error('Run did not complete successfully');
+        // 4. Esperar completación
+        const completedRun = await this.waitForCompletion(threadId, run.id);
+
+        if (completedRun.status !== 'completed') {
+          logger.error('Run did not complete successfully', {
+            status: completedRun.status,
+            lastError: completedRun.last_error,
+            threadId,
+            runId: run.id,
+            attempt: attempt + 1
+          });
+
+          if (attempt < maxRetries) {
+            logger.info(`Retrying... attempt ${attempt + 2}/${maxRetries + 1}`);
+            await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1))); // Exponential backoff
+            continue;
+          }
+
+          throw new Error(`Run failed with status: ${completedRun.status}`);
+        }
+
+        // 5. Obtener respuesta del assistant
+        const messages = await openai.beta.threads.messages.list(threadId, {
+          limit: 1,
+          order: 'desc'
+        });
+
+        const firstContent = messages.data[0]?.content[0];
+
+        if (!firstContent || firstContent.type !== 'text') {
+          logger.error('Invalid message format from assistant', {
+            threadId,
+            runId: run.id,
+            messageData: messages.data[0]
+          });
+          throw new Error('Invalid response format from assistant');
+        }
+
+        const messageText = firstContent.text.value;
+
+        // 6. Detectar si es momento de generar diagnóstico
+        const isDiagnosisReady = this.shouldGenerateDiagnosis(
+          messageText,
+          context.turnCount,
+          context.hasRealProblem
+        );
+
+        // 7. Detectar si debe terminar conversación (usuario no tiene problema)
+        const shouldEndConversation = this.shouldEndConversation(
+          messageText,
+          context.hasRealProblem
+        );
+
+        logger.info(`Message processed successfully, turn: ${context.turnCount}, diagnosis ready: ${isDiagnosisReady}`);
+
+        return {
+          message: messageText,
+          isDiagnosisReady,
+          shouldEndConversation
+        };
+
+      } catch (error) {
+        lastError = error as Error;
+        logger.error(`Error processing message (attempt ${attempt + 1}/${maxRetries + 1}):`, { error });
+
+        if (attempt < maxRetries) {
+          logger.info(`Retrying... attempt ${attempt + 2}/${maxRetries + 1}`);
+          await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+          continue;
+        }
       }
-
-      // 5. Obtener respuesta del assistant
-      const messages = await openai.beta.threads.messages.list(threadId, {
-        limit: 1,
-        order: 'desc'
-      });
-
-      const firstContent = messages.data[0]?.content[0];
-      const messageText = firstContent && firstContent.type === 'text'
-        ? firstContent.text.value
-        : 'Lo siento, hubo un error.';
-
-      // 6. Detectar si es momento de generar diagnóstico
-      const isDiagnosisReady = this.shouldGenerateDiagnosis(
-        messageText,
-        context.turnCount,
-        context.hasRealProblem
-      );
-
-      // 7. Detectar si debe terminar conversación (usuario no tiene problema)
-      const shouldEndConversation = this.shouldEndConversation(
-        messageText,
-        context.hasRealProblem
-      );
-
-      logger.info(`Message processed, turn: ${context.turnCount}, diagnosis ready: ${isDiagnosisReady}`);
-
-      return {
-        message: messageText,
-        isDiagnosisReady,
-        shouldEndConversation
-      };
-
-    } catch (error) {
-      logger.error('Error processing message:', { error });
-      throw error;
     }
+
+    // Si llegamos aquí, todos los reintentos fallaron
+    logger.error('All retry attempts failed', { lastError });
+    throw lastError || new Error('Failed to process message after all retries');
   }
 
   /**

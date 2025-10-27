@@ -282,9 +282,15 @@ export class ChatController {
 
     } catch (error) {
       console.error('Error sending message:', error);
+
+      // Mensaje más amigable para el usuario
+      const errorMessage = error instanceof Error && error.message.includes('Run failed')
+        ? 'Disculpa, tuve un pequeño problema procesando tu respuesta. ¿Podrías reformularla de otra manera?'
+        : 'Error interno del servidor';
+
       res.status(500).json({
         success: false,
-        error: 'Error interno del servidor',
+        error: errorMessage,
       } as ApiResponse);
     }
   }
