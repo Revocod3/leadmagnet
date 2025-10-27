@@ -33,6 +33,7 @@ export const ChatContainer = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const plusMenuRef = useRef<HTMLDivElement>(null);
 
   // Initialize only once when session is available
   useEffect(() => {
@@ -49,8 +50,22 @@ export const ChatContainer = () => {
 
   // Auto-scroll
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }, [messages]);
+
+  // Auto-scroll when keyboard opens (detect input focus)
+  useEffect(() => {
+    const handleResize = () => {
+      if (document.activeElement === textareaRef.current) {
+        setTimeout(() => {
+          messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }, 100);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Auto-resize textarea
   useEffect(() => {
@@ -66,6 +81,25 @@ export const ChatContainer = () => {
       setInputMessage((prev) => prev + (prev ? ' ' : '') + transcript);
     }
   }, [transcript]);
+
+  // Close plus menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+      if (plusMenuRef.current && !plusMenuRef.current.contains(event.target as Node)) {
+        setIsPlusMenuOpen(false);
+      }
+    };
+
+    if (isPlusMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside as EventListener);
+      document.addEventListener('touchstart', handleClickOutside as EventListener);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside as EventListener);
+      document.removeEventListener('touchstart', handleClickOutside as EventListener);
+    };
+  }, [isPlusMenuOpen]);
 
   const handleSendMessage = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -201,8 +235,8 @@ export const ChatContainer = () => {
         </header>
 
         {/* Messages Area */}
-        <main className="flex-1 overflow-y-auto smooth-scroll">
-          <div className="container-narrow py-8">
+        <main className="flex-1 overflow-y-auto smooth-scroll scroll-pt-4">
+          <div className="container-narrow pt-4 pb-4">
             {/* Empty State - Solo mostrar cuando realmente no hay mensajes Y no estamos cargando */}
             {messages.length === 0 && !isProcessing && (
               <div className="flex flex-col items-center justify-center min-h-[50vh] text-center px-4">
@@ -296,7 +330,7 @@ export const ChatContainer = () => {
 
               <div className="flex items-end gap-2">
                 {/* Plus Button with React Dropdown Menu */}
-                <div className="relative flex-shrink-0">
+                <div ref={plusMenuRef} className="relative flex-shrink-0">
                   <button
                     type="button"
                     onClick={() => setIsPlusMenuOpen((v) => !v)}
