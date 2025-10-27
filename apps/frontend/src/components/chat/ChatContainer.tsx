@@ -4,12 +4,12 @@ import { useDiagnosticFlow } from '../../hooks/useDiagnosticFlow';
 import { useSpeechToText } from '../../hooks/useSpeechToText';
 import { usePDFGenerator } from '../../hooks/usePDFGenerator';
 import { useSessionStore } from '../../stores/sessionStore';
-import { Moon, Sun, Mic, Download, Plus, ArrowUp, Camera, Image } from 'lucide-react';
+import { Moon, Sun, Mic, Plus, ArrowUp, Camera, Image } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CameraModal } from '../modals/CameraModal';
 import { ImageViewerModal } from '../modals/ImageViewerModal';
-import { MessageActions } from './MessageActions';
-import ReactMarkdown from 'react-markdown';
+import { ChatMessage } from './ChatMessage';
+import { TypingIndicator } from '../animations/TypingIndicator';
 
 export const ChatContainer = () => {
   const { session } = useSessionStore();
@@ -36,7 +36,12 @@ export const ChatContainer = () => {
 
   // Initialize only once when session is available
   useEffect(() => {
-    if (messages.length === 0 && session?.id) {
+    // Solo inicializar si:
+    // 1. No hay mensajes
+    // 2. Hay una sesión activa
+    // 3. No estamos procesando
+    if (messages.length === 0 && session?.id && !isProcessing) {
+      console.log('🎬 Inicializando chat...');
       initialize();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -198,8 +203,8 @@ export const ChatContainer = () => {
         {/* Messages Area */}
         <main className="flex-1 overflow-y-auto smooth-scroll">
           <div className="container-narrow py-8">
-            {/* Empty State */}
-            {messages.length === 0 && (
+            {/* Empty State - Solo mostrar cuando realmente no hay mensajes Y no estamos cargando */}
+            {messages.length === 0 && !isProcessing && (
               <div className="flex flex-col items-center justify-center min-h-[50vh] text-center px-4">
                 <motion.div
                   initial={{ scale: 0 }}
@@ -210,10 +215,10 @@ export const ChatContainer = () => {
                   <img src="/assets/images/favicon.webp" alt="OVP" className="w-full h-full object-contain drop-shadow-lg" />
                 </motion.div>
                 <h2 className="text-2xl font-bold text-foreground mb-2">
-                  Comencemos tu diagnóstico
+                  Preparando tu diagnóstico
                 </h2>
                 <p className="text-secondary max-w-md">
-                  Estoy aquí para ayudarte a entender mejor tu salud digestiva
+                  Un momento por favor...
                 </p>
               </div>
             )}
@@ -222,124 +227,14 @@ export const ChatContainer = () => {
             <div className="space-y-6">
               <AnimatePresence mode="popLayout">
                 {messages.map((message, index) => (
-                  <motion.div
+                  <ChatMessage
                     key={index}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    transition={{ duration: 0.3 }}
-                    className={`flex gap-4 ${message.role === 'user' ? 'justify-end' : 'justify-start'
-                      }`}
-                  >
-                    {/* Avatar for assistant */}
-                    {message.role === 'assistant' && (
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full overflow-hidden shadow-sm ring-2 ring-brand-green-500/20 dark:ring-brand-green-400/30">
-                        <img src="/assets/images/favicon.webp" alt="OVP" className="w-full h-full object-cover" />
-                      </div>
-                    )}
-
-                    {/* Message Content Wrapper */}
-                    <div className={`flex flex-col ${message.role === 'user' ? 'items-end max-w-[85%] sm:max-w-[75%]' : 'max-w-[85%] sm:max-w-[75%]'}`}>
-                      {/* Message Bubble */}
-                      <div
-                        className={`${message.role === 'user'
-                          ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 rounded-full px-4 pt-2'
-                          : 'bg-transparent text-foreground'
-                          }`}
-                      >
-                        {/* Render with ReactMarkdown for better formatting */}
-                        {message.type === 'diagnosis_ready' ? (
-                          <div
-                            className="text-[15px] leading-relaxed whitespace-pre-wrap break-words"
-                            dangerouslySetInnerHTML={{ __html: message.content }}
-                          />
-                        ) : (
-                          <div className="text-[15px] leading-relaxed">
-                            <ReactMarkdown
-                              components={{
-                                p: ({ children }) => {
-                                  // Detectar si el párrafo contiene una pregunta (termina con ?)
-                                  const text = String(children);
-                                  const isQuestion = text.trim().endsWith('?');
-
-                                  return (
-                                    <p className={`mb-2 whitespace-pre-wrap break-words ${isQuestion ? 'font-semibold' : ''}`}>
-                                      {children}
-                                    </p>
-                                  );
-                                },
-                                strong: ({ children }) => (
-                                  <strong className="font-semibold text-foreground">
-                                    {children}
-                                  </strong>
-                                ),
-                                em: ({ children }) => <em className="italic">{children}</em>,
-                              }}
-                            >
-                              {message.content}
-                            </ReactMarkdown>
-                          </div>
-                        )}
-
-                        {/* Show 2 buttons when diagnosis is ready */}
-                        {message.type === 'diagnosis_ready' && state.diagnosisContent && (
-                          <div className="mt-6 flex flex-col gap-3">
-                            {/* Download PDF Button */}
-                            <button
-                              onClick={handleDownloadPDF}
-                              disabled={isGeneratingPDF}
-                              className="w-full py-3 px-5 rounded-lg bg-brand-green-600 hover:bg-brand-green-700 text-white font-semibold text-base flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              {isGeneratingPDF ? (
-                                <>
-                                  <span className="animate-spin">⏳</span>
-                                  Generando PDF...
-                                </>
-                              ) : (
-                                <>
-                                  <Download className="w-5 h-5" />
-                                  Descargar mi diagnóstico
-                                </>
-                              )}
-                            </button>
-
-                            {/* Subscription Button */}
-                            <a
-                              href="https://objetivovientreplano.com/suscripcion/"
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="w-full py-3.5 px-6 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold text-base flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-                            >
-                              <span>✨</span>
-                              Descubrir el Método Completo
-                              <span>→</span>
-                            </a>
-                          </div>
-                        )}
-
-
-                        {/* Show question details if available */}
-                        {message.question?.questionDetails && (
-                          <p className="mt-2 text-sm opacity-80 whitespace-pre-wrap">
-                            {message.question.questionDetails}
-                          </p>
-                        )}
-                      </div>
-
-                      {/* Message Actions */}
-                      <MessageActions
-                        messageText={message.content}
-                        isUserMessage={message.role === 'user'}
-                      />
-                    </div>
-
-                    {/* Avatar for user */}
-                    {message.role === 'user' && (
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-semibold shadow-sm">
-                        {state.userName?.charAt(0).toUpperCase() || 'U'}
-                      </div>
-                    )}
-                  </motion.div>
+                    message={message}
+                    state={state}
+                    isLatest={index === messages.length - 1}
+                    onDownloadPDF={handleDownloadPDF}
+                    isGeneratingPDF={isGeneratingPDF}
+                  />
                 ))}
               </AnimatePresence>
 
@@ -348,18 +243,9 @@ export const ChatContainer = () => {
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="flex gap-4"
+                  exit={{ opacity: 0 }}
                 >
-                  <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 shadow-sm ring-2 ring-brand-green-500/20 dark:ring-brand-green-400/30">
-                    <img src="/assets/images/favicon.webp" alt="OVP" className="w-full h-full object-cover" />
-                  </div>
-                  <div className="bg-transparent rounded-2xl px-5 py-4">
-                    <div className="flex gap-1.5">
-                      <span className="w-2 h-2 bg-neutral-400 dark:bg-neutral-500 rounded-full animate-pulse-soft" />
-                      <span className="w-2 h-2 bg-neutral-400 dark:bg-neutral-500 rounded-full animate-pulse-soft [animation-delay:0.2s]" />
-                      <span className="w-2 h-2 bg-neutral-400 dark:bg-neutral-500 rounded-full animate-pulse-soft [animation-delay:0.4s]" />
-                    </div>
-                  </div>
+                  <TypingIndicator />
                 </motion.div>
               )}
 

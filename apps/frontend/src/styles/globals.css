@@ -418,6 +418,40 @@
     }
   }
 
+  /* Pulse animation for typing indicator */
+  .animate-pulse-soft {
+    animation: pulse-soft 1.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes pulse-soft {
+
+    0%,
+    100% {
+      opacity: 0.4;
+    }
+
+    50% {
+      opacity: 1;
+    }
+  }
+
+  /* Strong pulse for "En Línea" */
+  .animated-pulse-strong {
+    animation: pulse-strong 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-strong {
+
+    0%,
+    100% {
+      opacity: 1;
+    }
+
+    50% {
+      opacity: 0.6;
+    }
+  }
+
   /* Ring Offset Background */
   .ring-offset-background {
     --tw-ring-offset-color: rgb(var(--color-background));
