@@ -68,6 +68,18 @@
     @apply border-border;
   }
 
+  html {
+    /* Fixed viewport for mobile keyboard handling */
+    height: 100%;
+    height: 100dvh;
+    /* Dynamic viewport height - modern browsers */
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+    top: 0;
+    left: 0;
+  }
+
   body {
     @apply bg-background text-foreground;
     @apply antialiased;
@@ -75,6 +87,25 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
+
+    /* Fixed viewport for mobile keyboard handling */
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+    top: 0;
+    left: 0;
+
+    /* Prevent overscroll bounce on mobile */
+    overscroll-behavior: none;
+  }
+
+  #root {
+    height: 100%;
+    overflow: hidden;
+    position: relative;
   }
 
   /* Smooth theme switch: apply temporary transitions only while toggling theme */
@@ -141,10 +172,31 @@
     html {
       -webkit-text-size-adjust: 100%;
       touch-action: manipulation;
+      /* iOS Safari specific */
+      height: -webkit-fill-available;
     }
 
     body {
       overscroll-behavior-y: none;
+      /* iOS Safari specific */
+      height: -webkit-fill-available;
+    }
+
+    /* Prevent zoom on input focus (iOS) */
+    input,
+    textarea,
+    select {
+      font-size: 16px !important;
+    }
+  }
+
+  /* iOS Safari specific fixes */
+  @supports (-webkit-touch-callout: none) {
+
+    html,
+    body {
+      height: -webkit-fill-available;
+      min-height: -webkit-fill-available;
     }
   }
 }
@@ -398,6 +450,79 @@
   /* Tap Highlight */
   .no-tap-highlight {
     -webkit-tap-highlight-color: transparent;
+  }
+
+  /* ===============================================
+     MOBILE KEYBOARD FIXES - Chat Structure
+     =============================================== */
+
+  /* 
+    Chat container custom class - NO usar h-screen de Tailwind
+    Esta clase maneja correctamente el viewport en móviles cuando se abre el teclado
+  */
+  .mobile-chat-container {
+    /* Desktop y fallback */
+    height: 100vh;
+    /* Modern browsers - dynamic viewport */
+    height: 100dvh;
+
+    /* Estructura flex */
+    display: flex;
+    flex-direction: column;
+
+    /* Prevenir overflow */
+    overflow: hidden;
+
+    /* Position relative para que sticky funcione */
+    position: relative;
+  }
+
+  /* iOS Safari - critical fix */
+  @supports (-webkit-touch-callout: none) {
+    .mobile-chat-container {
+      height: -webkit-fill-available;
+      min-height: -webkit-fill-available;
+      max-height: -webkit-fill-available;
+    }
+  }
+
+  /* Mobile specific */
+  @media (max-width: 768px) {
+    .mobile-chat-container {
+      /* Asegurar que usa todo el espacio disponible */
+      width: 100%;
+      max-width: 100%;
+    }
+  }
+
+  /* Header fijo en la parte superior */
+  .mobile-chat-header {
+    position: sticky;
+    top: 0;
+    flex-shrink: 0;
+    /* No se comprime */
+    z-index: 10;
+  }
+
+  /* Main content area - área con scroll */
+  .mobile-chat-main {
+    flex: 1 1 0%;
+    min-height: 0;
+    /* Critical para que flex child pueda hacer scroll */
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    /* Previene bounce en iOS */
+  }
+
+  /* Footer fijo en la parte inferior */
+  .mobile-chat-footer {
+    position: sticky;
+    bottom: 0;
+    flex-shrink: 0;
+    /* No se comprime */
+    z-index: 10;
   }
 
   /* Animated Gradient */

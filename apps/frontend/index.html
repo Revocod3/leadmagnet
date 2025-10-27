@@ -14,6 +14,48 @@
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="description" content="Diagnóstico interactivo gratuito - Objetivo Vientre Plano" />
   <title>Diagnóstico Interactivo - Objetivo Vientre Plano</title>
+
+  <style>
+    /* Critical inline styles to prevent FOUC and keyboard push issues */
+    html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      /* Modern dynamic viewport height - falls back to 100% in older browsers */
+      height: 100dvh;
+      overflow: hidden;
+      position: fixed;
+      width: 100%;
+      top: 0;
+      left: 0;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+      position: fixed;
+      width: 100%;
+      top: 0;
+      left: 0;
+    }
+
+    #root {
+      height: 100%;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* iOS Safari specific fix */
+    @supports (-webkit-touch-callout: none) {
+
+      html,
+      body {
+        height: -webkit-fill-available;
+      }
+    }
+  </style>
 </head>
 
 <body>

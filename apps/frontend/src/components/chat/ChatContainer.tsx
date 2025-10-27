@@ -199,9 +199,9 @@ export const ChatContainer = () => {
 
   return (
     <>
-      <div className={`flex flex-col h-screen ${isDarkMode ? 'dark' : ''} bg-neutral-50 dark:bg-neutral-900 bg-chat-lighting transition-colors duration-200`}>
+      <div className={`mobile-chat-container ${isDarkMode ? 'dark' : ''} bg-neutral-50 dark:bg-neutral-900 bg-chat-lighting transition-colors duration-200`}>
         {/* Header */}
-        <header className="sticky top-0 z-10 backdrop-blur-xl bg-gradient-to-b from-white/80 to-white/60 dark:from-neutral-900/80 dark:to-neutral-900/60 border-b border-neutral-200/80 dark:border-neutral-800/70">
+        <header className="mobile-chat-header backdrop-blur-xl bg-gradient-to-b from-white/80 to-white/60 dark:from-neutral-900/80 dark:to-neutral-900/60 border-b border-neutral-200/80 dark:border-neutral-800/70">
           <div className="container-narrow py-3 flex items-center justify-between">
             {/* Left spacer (back removed) */}
             <div className="w-9" />
@@ -235,7 +235,7 @@ export const ChatContainer = () => {
         </header>
 
         {/* Messages Area */}
-        <main className="flex-1 overflow-y-auto smooth-scroll scroll-pt-4">
+        <main className="mobile-chat-main smooth-scroll scroll-pt-4">
           <div className="container-narrow pt-4 pb-4">
             {/* Empty State - Solo mostrar cuando realmente no hay mensajes Y no estamos cargando */}
             {messages.length === 0 && !isProcessing && (
@@ -289,7 +289,7 @@ export const ChatContainer = () => {
         </main>
 
         {/* Input Area - ChatGPT Style */}
-        <footer className="sticky bottom-0 bg-gradient-to-t from-neutral-50 to-neutral-50/80 dark:from-neutral-900 dark:to-neutral-900/70 pb-safe">
+        <footer className="mobile-chat-footer bg-gradient-to-t from-neutral-50 to-neutral-50/80 dark:from-neutral-900 dark:to-neutral-900/70 pb-safe">
           <div className="max-w-3xl mx-auto px-4 py-4">
             {/* Selected Image Preview */}
             {selectedImage && (
