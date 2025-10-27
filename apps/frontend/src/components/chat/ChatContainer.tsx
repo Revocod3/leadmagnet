@@ -241,12 +241,11 @@ export const ChatContainer = () => {
             {messages.length === 0 && !isProcessing && (
               <div className="flex flex-col items-center justify-center min-h-[50vh] text-center px-4">
                 <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: "spring", duration: 0.5 }}
-                  className="w-16 h-16 mb-6"
+                  animate={{ scale: [1, 1.1, 1] }}
+                  transition={{ duration: 1.5, repeat: Infinity }}
+                  className="w-20 h-20 mb-6 rounded-full"
                 >
-                  <img src="/assets/images/favicon.webp" alt="OVP" className="w-full h-full object-contain drop-shadow-lg" />
+                  <img src="/assets/images/favicon.webp" alt="OVP" className="w-full h-full object-contain drop-shadow-2xl" />
                 </motion.div>
                 <h2 className="text-2xl font-bold text-foreground mb-2">
                   Preparando tu diagnóstico
