@@ -33,7 +33,7 @@ export class ConversationalAssistantService {
       // 2. Agregar mensaje de sistema para inicializar
       await openai.beta.threads.messages.create(thread.id, {
         role: 'user',
-        content: `Mi nombre es ${userName}. Hola.`
+        content: `Mi nombre es ${userName}. Comienza el diagnóstico.`
       });
 
       // 3. Ejecutar assistant con instrucciones iniciales
