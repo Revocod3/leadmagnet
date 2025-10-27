@@ -162,7 +162,52 @@ VITE_OPENAI_API_KEY=sk-proj-hIJ7rys... # Solo para etimología
 
 ---
 
-## 🔧 Comandos de Gestión
+## � Proceso de Deployment
+
+### Método 1: GitHub Actions (Recomendado)
+
+**Opción A: Deploy Automático**
+```bash
+# Hacer cambios en el código
+git add .
+git commit -m "descripción de cambios"
+git push origin main
+```
+Esto activará automáticamente el workflow de deployment.
+
+**Opción B: Deploy Manual**
+1. Ir a GitHub → Actions
+2. Seleccionar "Deploy to Production"
+3. Click en "Run workflow"
+4. Seleccionar branch "main"
+5. Click en "Run workflow"
+
+**Seguimiento del Deploy**:
+- GitHub Actions ejecutará:
+  1. Checkout del código
+  2. Setup de Node.js 20
+  3. Instalación de pnpm
+  4. Instalación de dependencias
+  5. Build del frontend
+  6. Deploy al servidor vía SSH
+  7. Restart de PM2
+
+### Método 2: Deploy Manual SSH (Solo Emergencias)
+
+**Solo usar si GitHub Actions falla**
+```bash
+ssh root@139.59.152.82 << 'EOF'
+cd /var/www/leadmagnet
+git pull
+pnpm install
+cd apps/frontend && pnpm build
+pm2 restart all
+EOF
+```
+
+---
+
+## �🔧 Comandos de Gestión
 
 ### Ver Estado de Servicios
 ```bash
@@ -182,7 +227,7 @@ ssh root@139.59.152.82 'pm2 logs leadmagnet-frontend'
 ssh root@139.59.152.82 'pm2 logs'
 ```
 
-### Reiniciar Servicios
+### Reiniciar Servicios (Sin Deploy)
 ```bash
 # Backend
 ssh root@139.59.152.82 'pm2 restart leadmagnet-backend'
@@ -192,17 +237,6 @@ ssh root@139.59.152.82 'pm2 restart leadmagnet-frontend'
 
 # Ambos
 ssh root@139.59.152.82 'pm2 restart all'
-```
-
-### Actualizar Código desde Git
-```bash
-ssh root@139.59.152.82 << 'EOF'
-cd /var/www/leadmagnet
-git pull
-pnpm install
-cd apps/frontend && pnpm build
-pm2 restart all
-EOF
 ```
 
 ### Ver Uso de Recursos

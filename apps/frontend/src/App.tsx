@@ -25,7 +25,7 @@ function MainFlow() {
   const location = useLocation();
   const { setSession } = useSessionStore();
   const [, setHasCompletedIntro] = useState(false);
-  const [showWelcome, setShowWelcome] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(true); // Cambiar a true por defecto
   const [userName, setUserName] = useState('');
   const [etymology, setEtymology] = useState('');
   const hasInitializedRef = useRef(false);
@@ -60,11 +60,12 @@ function MainFlow() {
 
     const userDataStr = sessionStorage.getItem('userData');
 
-    // Si no hay params pero tenemos userData guardado: asegurar sesión
+    // Si no hay params pero tenemos userData guardado: asegurar sesión y NO mostrar animación
     if (userDataStr) {
       const parsed = JSON.parse(userDataStr);
       setUserName(parsed.name);
       setHasCompletedIntro(true);
+      setShowWelcome(false); // No mostrar animación cuando regresamos
       hasInitializedRef.current = true;
       return;
     }
@@ -104,10 +105,6 @@ function MainFlow() {
       // Continue anyway, will show error later if needed
     }
 
-    // Show welcome animation immediately
-    console.log('🎬 Mostrando animación de bienvenida...');
-    setShowWelcome(true);
-
     // Generate etymology for the welcome animation in background
     try {
       const etymologyText = await openaiService.generateNameEtymology(name, 'es');
@@ -127,25 +124,41 @@ function MainFlow() {
   return (
     <>
       <AnimatePresence mode="wait">
-        {showWelcome && (
-          <WelcomeAnimation
-            userName={userName}
-            etymology={etymology}
-            onComplete={handleWelcomeComplete}
-            language="es"
-          />
-        )}
-      </AnimatePresence>
-
-      {/* Solo mostrar el chat cuando NO se está mostrando la animación de bienvenida */}
-      <AnimatePresence mode="wait">
-        {!showWelcome && (
+        {showWelcome ? (
+          userName ? (
+            <WelcomeAnimation
+              userName={userName}
+              etymology={etymology}
+              onComplete={handleWelcomeComplete}
+              language="es"
+            />
+          ) : (
+            // Loading screen mientras se obtiene el nombre
+            <motion.div
+              key="loading"
+              initial={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[9999] flex items-center justify-center"
+              style={{
+                background: 'linear-gradient(135deg, #99AB75 0%, #A0AD5E 50%, #A5B26C 100%)'
+              }}
+            >
+              <motion.div
+                animate={{ scale: [1, 1.1, 1] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+                className="w-20 h-20"
+              >
+                <img src="/assets/images/favicon.webp" alt="OVP" className="w-full h-full object-contain drop-shadow-2xl" />
+              </motion.div>
+            </motion.div>
+          )
+        ) : (
           <motion.div
             key="chat-container"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.5, ease: 'easeOut' }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.4, ease: 'easeOut' }}
           >
             <Routes>
               <Route path="/" element={<ChatContainer />} />

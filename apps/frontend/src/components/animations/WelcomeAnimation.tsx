@@ -56,14 +56,14 @@ export const WelcomeAnimation = ({
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
+      initial={{ opacity: 1 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
       transition={{
         opacity: { duration: 0.4 },
         scale: { duration: 0.4 }
       }}
-      className="fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden backdrop-blur-sm"
+      className="fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden"
       style={{
         background: 'linear-gradient(135deg, #99AB75 0%, #A0AD5E 50%, #A5B26C 100%)'
       }}
