@@ -1,0 +1,55 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch: # Permite ejecutar manualmente
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 🛎️ Checkout code
+      uses: actions/checkout@v4
+
+    - name: 🔧 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: 📦 Install pnpm
+      uses: pnpm/action-setup@v2
+      with:
+        version: 10
+
+    - name: 📥 Install dependencies
+      run: pnpm install
+
+    - name: 🧪 Run tests (opcional)
+      run: |
+        echo "Tests would run here"
+        # pnpm test
+
+    - name: 🏗️ Build frontend
+      run: pnpm --filter @ovp/frontend build
+
+    - name: 📤 Deploy to server
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USER }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script: |
+          cd /var/www/leadmagnet
+          git pull origin main
+          pnpm install
+          cd apps/frontend && pnpm build
+          pm2 restart all
+          pm2 status
+
+    - name: ✅ Deployment complete
+      run: |
+        echo "🎉 Deployed successfully to production!"
+        echo "Frontend: http://${{ secrets.SERVER_HOST }}:5173"
+        echo "Backend: http://${{ secrets.SERVER_HOST }}:3003"
