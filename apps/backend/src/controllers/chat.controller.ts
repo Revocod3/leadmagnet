@@ -17,7 +17,7 @@ const validationService = new ValidationService();
 const discountService = new DiscountService();
 
 export class ChatController {
-  
+
   /**
    * Inicializar nueva conversación
    */
@@ -75,7 +75,7 @@ export class ChatController {
           message: welcomeMessage,
         },
       } as ApiResponse);
-      
+
     } catch (error) {
       console.error('Error initializing diagnostic:', error);
       res.status(500).json({
@@ -164,7 +164,7 @@ export class ChatController {
         turnCount: turnCount + 1,
         hasRealProblem,
       };
-      
+
       if (session.userName) context.userName = session.userName;
       if (flowState?.mainProblem) context.mainProblem = flowState.mainProblem;
 
@@ -270,7 +270,7 @@ export class ChatController {
         data: {
           ...chatMessage,
           metadata: {
-            type: response.isDiagnosisReady ? 'diagnosis' : 'question',
+            type: response.isDiagnosisReady ? 'diagnosis_ready' : 'question',
             turnCount: turnCount + 1,
             diagnosisContent,
             discountCode: discountCode?.code,
@@ -279,7 +279,7 @@ export class ChatController {
           },
         },
       } as ApiResponse<ChatMessage>);
-      
+
     } catch (error) {
       console.error('Error sending message:', error);
       res.status(500).json({
@@ -320,7 +320,7 @@ export class ChatController {
         success: true,
         data: chatMessages,
       } as ApiResponse<ChatMessage[]>);
-      
+
     } catch (error) {
       console.error('Error getting chat history:', error);
       res.status(500).json({
