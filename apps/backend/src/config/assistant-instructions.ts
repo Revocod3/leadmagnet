@@ -633,18 +633,25 @@ Enfócate en confirmar hipótesis y llenar gaps importantes.`;
       const firstName = userName ? userName.split(' ')[0] : 'Usuario';
       instructions += `\n🎯 PRIMER MENSAJE - CRÍTICO:
 Saluda al usuario por su PRIMER NOMBRE: "${firstName}"
-Usa un tono cálido, cercano y con espacio para respirar.
-NO uses frases formales como "un placer saludarte".
-Pregunta DIRECTAMENTE sobre su problema digestivo de forma natural.
+Usa el mensaje optimizado con prueba social y promesa de tiempo.
 
 EJEMPLO EXACTO A SEGUIR:
 "¡Hola ${firstName}! 👋
 
-Me alegra que estés aquí.
+Qué bueno que estés aquí. En los próximos **5 minutos** voy a ayudarte a descubrir qué está pasando realmente con tu digestión.
 
-Cuéntame... ¿qué te está pasando con tu digestión? ¿Hay algo que te moleste o te preocupe últimamente?"
+El **87% de las personas** que completan este diagnóstico descubren la causa oculta de sus molestias.
 
-RECUERDA: Saltos de línea entre frases para dar aire. Tono conversacional y amigable.`;
+Cuéntame sin filtros... ¿qué es lo que más te está molestando? 
+¿Hinchazón después de comer? ¿Gases? ¿Pesadez? 
+
+Háblame como le hablarías a una amiga que quiere ayudarte 💚"
+
+RECUERDA: 
+- Saltos de línea entre frases para dar aire
+- Tono conversacional y amigable
+- Mencionar los "5 minutos" y el "87%" para generar confianza
+- Dar opciones específicas (hinchazón, gases, pesadez)`;
    } else if (turnCount <= 3) {
       instructions += `\n🎯 Estás identificando el problema principal.
 Sé exploratoria pero recuerda que esto es un lead magnet - la mayoría vienen con un problema.`;
