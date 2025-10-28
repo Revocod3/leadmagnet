@@ -183,37 +183,51 @@ export const ChatMessage = ({
 
           {/* Show 2 buttons when diagnosis is ready */}
           {message.type === 'diagnosis_ready' && state.diagnosisContent && onDownloadPDF && (
-            <div className="mt-6 flex flex-col gap-3">
-              {/* Download PDF Button */}
-              <button
-                onClick={onDownloadPDF}
-                disabled={isGeneratingPDF}
-                className="w-full py-3 px-5 rounded-lg bg-brand-green-600 hover:bg-brand-green-700 text-white font-semibold text-base flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isGeneratingPDF ? (
-                  <>
-                    <span className="animate-spin">⏳</span>
-                    Generando PDF...
-                  </>
-                ) : (
-                  <>
-                    <Download className="w-5 h-5" />
-                    Descargar mi diagnóstico
-                  </>
-                )}
-              </button>
-
-              {/* Subscription Button */}
+            <div className="mt-8 flex flex-col gap-4">
+              {/* Primary CTA - Subscription Button */}
               <a
                 href="https://objetivovientreplano.com/suscripcion/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full py-3.5 px-6 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold text-base flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                className="group w-full py-5 px-6 rounded-2xl bg-gradient-to-r from-brand-green-500 via-brand-green-600 to-brand-green-700 hover:from-brand-green-600 hover:via-brand-green-700 hover:to-brand-green-800 text-white font-bold text-lg flex flex-col items-center justify-center gap-3 transition-all shadow-2xl hover:shadow-3xl transform hover:-translate-y-1 hover:scale-[1.02] relative overflow-hidden"
               >
-                <span>✨</span>
-                Descubrir el Método Completo
-                <span>→</span>
+                {/* Animated background effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent transform -skew-x-12 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000"></div>
+
+                <div className="flex items-center gap-3 relative z-10">
+                  <span className="text-2xl">🎁</span>
+                  <span>Comenzar Mi Transformación con 30% OFF</span>
+                  <span className="text-xl group-hover:translate-x-1 transition-transform">→</span>
+                </div>
+
+                <div className="flex items-center gap-4 text-sm font-normal opacity-90 relative z-10">
+                  <span>✅ Acceso inmediato</span>
+                  <span>•</span>
+                  <span>✅ Clara 24/7</span>
+                  <span>•</span>
+                  <span>⏰ Expira en 48h</span>
+                </div>
               </a>
+
+              {/* Secondary CTA - Download PDF Button */}
+              <button
+                onClick={onDownloadPDF}
+                disabled={isGeneratingPDF}
+                className="w-full py-4 px-6 rounded-xl bg-white dark:bg-neutral-800 border-2 border-brand-green-500 hover:bg-brand-green-50 dark:hover:bg-neutral-700 text-brand-green-700 dark:text-brand-green-400 font-semibold text-base flex items-center justify-center gap-3 transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transform hover:-translate-y-0.5"
+              >
+                {isGeneratingPDF ? (
+                  <>
+                    <span className="animate-spin">⏳</span>
+                    Generando tu diagnóstico en PDF...
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-5 h-5" />
+                    Descargar mi diagnóstico en PDF
+                    <span className="text-xs bg-brand-green-100 dark:bg-brand-green-900 px-2 py-0.5 rounded-full">Gratis</span>
+                  </>
+                )}
+              </button>
             </div>
           )}
 

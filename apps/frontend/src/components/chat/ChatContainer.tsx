@@ -15,7 +15,7 @@ import { TypingIndicator } from '../animations/TypingIndicator';
 const ProgressIndicator = ({ turnCount, hasRealProblem }: { turnCount: number; hasRealProblem: boolean }) => {
   if (!hasRealProblem || turnCount < 2) return null;
 
-  const maxTurns = 12;
+  const maxTurns = 16;
   const progress = Math.min((turnCount / maxTurns) * 100, 90);
 
   const milestones = {
