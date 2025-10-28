@@ -13,6 +13,24 @@ interface ChatMessageProps {
   isGeneratingPDF?: boolean;
 }
 
+// Helper function to enhance diagnosis HTML with better CTAs
+const enhanceDiagnosisHTML = (html: string): string => {
+  // Replace links with styled buttons
+  const enhancedHTML = html.replace(
+    /<a\s+href="([^"]+)"[^>]*>([^<]+)<\/a>/gi,
+    (_match, href, text) => {
+      // Check if it's the main CTA
+      if (text.includes('Comenzar') || text.includes('transformación') || text.includes('AHORA')) {
+        return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-brand-green-500 to-brand-green-600 hover:from-brand-green-600 hover:to-brand-green-700 text-white font-bold rounded-lg transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 no-underline my-3 text-center">${text} <span>→</span></a>`;
+      }
+      // Secondary links
+      return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 px-4 py-2 bg-brand-green-500 hover:bg-brand-green-600 text-white rounded-full text-sm font-medium transition-all shadow-sm hover:shadow-md transform hover:-translate-y-0.5 no-underline">${text} <span class="text-xs">→</span></a>`;
+    }
+  );
+
+  return enhancedHTML;
+};
+
 export const ChatMessage = ({
   message,
   state,
@@ -43,16 +61,69 @@ export const ChatMessage = ({
         {/* Message Bubble */}
         <div
           className={`${isUser
-              ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 rounded-2xl px-5 py-3'
-              : 'bg-transparent text-foreground'
+            ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 rounded-2xl px-5 py-3'
+            : 'bg-transparent text-foreground'
             }`}
         >
-          {/* Render diagnosis content with HTML */}
+          {/* Render diagnosis content with enhanced presentation */}
           {message.type === 'diagnosis_ready' ? (
-            <div
-              className="text-[15px] leading-relaxed whitespace-pre-wrap break-words prose prose-sm dark:prose-invert max-w-none"
-              dangerouslySetInnerHTML={{ __html: message.content }}
-            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="space-y-4"
+            >
+              {/* Header del diagnóstico */}
+              <div className="bg-gradient-to-r from-brand-green-500 to-brand-green-600 text-white rounded-xl p-4">
+                <h3 className="text-lg font-bold mb-2">
+                  🎯 Tu Diagnóstico Personalizado
+                </h3>
+                <p className="text-sm opacity-90">
+                  Basado en el análisis de tus {state.currentQuestionIndex} respuestas
+                </p>
+              </div>
+
+              {/* Contenido del diagnóstico */}
+              <div
+                className="prose prose-sm dark:prose-invert max-w-none space-y-4"
+                dangerouslySetInnerHTML={{ __html: enhanceDiagnosisHTML(message.content) }}
+              />
+
+              {/* Urgency Box */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+                className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4"
+              >
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl">⏰</span>
+                  <div>
+                    <p className="text-sm font-semibold text-yellow-900 dark:text-yellow-100">
+                      Oferta por tiempo limitado
+                    </p>
+                    <p className="text-xs text-yellow-800 dark:text-yellow-200 mt-1">
+                      Tu descuento del 30% expira en 48 horas. No volverá a estar disponible.
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Stats sociales */}
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div className="bg-neutral-100 dark:bg-neutral-800 rounded-lg p-3">
+                  <p className="text-2xl font-bold text-brand-green-600">+500</p>
+                  <p className="text-xs text-neutral-600 dark:text-neutral-400">Este mes</p>
+                </div>
+                <div className="bg-neutral-100 dark:bg-neutral-800 rounded-lg p-3">
+                  <p className="text-2xl font-bold text-brand-green-600">87%</p>
+                  <p className="text-xs text-neutral-600 dark:text-neutral-400">Satisfacción</p>
+                </div>
+                <div className="bg-neutral-100 dark:bg-neutral-800 rounded-lg p-3">
+                  <p className="text-2xl font-bold text-brand-green-600">24/7</p>
+                  <p className="text-xs text-neutral-600 dark:text-neutral-400">Soporte</p>
+                </div>
+              </div>
+            </motion.div>
           ) : (
             /* Render normal messages with Markdown and typewriter effect */
             <div className="text-[15px] leading-relaxed">
@@ -90,6 +161,17 @@ export const ChatMessage = ({
                     ),
                     li: ({ children }) => (
                       <li className="ml-2">{children}</li>
+                    ),
+                    a: ({ href, children }) => (
+                      <a
+                        href={href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 px-3 py-1 bg-brand-green-500 hover:bg-brand-green-600 text-white rounded-full text-sm font-medium transition-all shadow-sm hover:shadow-md transform hover:-translate-y-0.5 no-underline"
+                      >
+                        {children}
+                        <span className="text-xs">→</span>
+                      </a>
                     ),
                   }}
                 >
