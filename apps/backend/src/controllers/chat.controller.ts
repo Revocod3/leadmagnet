@@ -160,9 +160,11 @@ export class ChatController {
         mainProblem?: string;
         turnCount: number;
         hasRealProblem?: boolean;
+        sessionId?: string;
       } = {
         turnCount: turnCount + 1,
         hasRealProblem,
+        sessionId,
       };
 
       if (session.userName) context.userName = session.userName;

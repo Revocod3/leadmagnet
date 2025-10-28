@@ -11,6 +11,84 @@ import { ImageViewerModal } from '../modals/ImageViewerModal';
 import { ChatMessage } from './ChatMessage';
 import { TypingIndicator } from '../animations/TypingIndicator';
 
+// Progress Indicator Component
+const ProgressIndicator = ({ turnCount, hasRealProblem }: { turnCount: number; hasRealProblem: boolean }) => {
+  if (!hasRealProblem || turnCount < 2) return null;
+
+  const maxTurns = 12;
+  const progress = Math.min((turnCount / maxTurns) * 100, 90);
+
+  const milestones = {
+    25: { message: "🎯 Identificando tu problema...", reward: "" },
+    50: { message: "💡 Analizando patrones...", reward: "15% descuento desbloqueado" },
+    75: { message: "✨ Preparando diagnóstico...", reward: "30% descuento garantizado" },
+    90: { message: "🎁 ¡Casi listo!", reward: "Diagnóstico valorado en 30€" }
+  };
+
+  const currentMilestone = Object.entries(milestones)
+    .filter(([threshold]) => progress >= Number(threshold))
+    .pop();
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="sticky top-0 z-20 bg-white/95 dark:bg-neutral-900/95 backdrop-blur-lg border-b border-neutral-200 dark:border-neutral-800 px-4 py-3"
+    >
+      <div className="max-w-2xl mx-auto">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-xs font-medium text-neutral-600 dark:text-neutral-400">
+            Tu diagnóstico
+          </span>
+          <span className="text-xs font-bold text-brand-green-600 dark:text-brand-green-400">
+            {Math.round(progress)}% completado
+          </span>
+        </div>
+
+        <div className="relative">
+          <div className="h-2 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden">
+            <motion.div
+              className="h-full bg-gradient-to-r from-brand-green-500 to-brand-green-600"
+              initial={{ width: 0 }}
+              animate={{ width: `${progress}%` }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
+            />
+          </div>
+
+          {/* Milestone dots */}
+          {[25, 50, 75].map((threshold) => (
+            <div
+              key={threshold}
+              className={`absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-2 
+                ${progress >= threshold
+                  ? 'bg-brand-green-500 border-brand-green-500'
+                  : 'bg-white dark:bg-neutral-800 border-neutral-300 dark:border-neutral-600'}`}
+              style={{ left: `${threshold}%`, transform: 'translate(-50%, -50%)' }}
+            />
+          ))}
+        </div>
+
+        {currentMilestone && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="mt-2 flex items-center justify-between"
+          >
+            <span className="text-xs text-neutral-600 dark:text-neutral-400">
+              {currentMilestone[1].message}
+            </span>
+            {currentMilestone[1].reward && (
+              <span className="text-xs font-semibold text-brand-green-600 dark:text-brand-green-400 animate-pulse">
+                {currentMilestone[1].reward}
+              </span>
+            )}
+          </motion.div>
+        )}
+      </div>
+    </motion.div>
+  );
+};
+
 export const ChatContainer = () => {
   const { session } = useSessionStore();
   const [inputMessage, setInputMessage] = useState('');
@@ -233,6 +311,11 @@ export const ChatContainer = () => {
             </div>
           </div>
         </header>
+
+        {/* Progress Indicator */}
+        {state.step === 'asking_questions' && (
+          <ProgressIndicator turnCount={state.currentQuestionIndex} hasRealProblem={true} />
+        )}
 
         {/* Messages Area */}
         <main className="mobile-chat-main smooth-scroll scroll-pt-4">

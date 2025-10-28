@@ -13,6 +13,7 @@ import {
   DIAGNOSIS_INSTRUCTIONS
 } from '../config/assistant-instructions';
 import { logger } from '../utils/logger';
+import { prisma } from '../config/database';
 
 // ID del Assistant (se crea una vez y se reutiliza)
 const ASSISTANT_ID = process.env.CLARA_ASSISTANT_ID || '';
@@ -85,6 +86,7 @@ export class ConversationalAssistantService {
       mainProblem?: string;
       turnCount: number;
       hasRealProblem?: boolean;
+      sessionId?: string;
     }
   ): Promise<{
     message: string;
@@ -166,6 +168,15 @@ export class ConversationalAssistantService {
           context.hasRealProblem
         );
 
+        // 8. Tracking de progreso (solo si hay sessionId)
+        if (context.sessionId) {
+          if (context.turnCount === 5) {
+            await this.trackConversationMetrics(context.sessionId, 'MILESTONE_5_QUESTIONS');
+          } else if (context.turnCount === 10) {
+            await this.trackConversationMetrics(context.sessionId, 'MILESTONE_10_QUESTIONS');
+          }
+        }
+
         logger.info(`Message processed successfully, turn: ${context.turnCount}, diagnosis ready: ${isDiagnosisReady}`);
 
         return {
@@ -189,6 +200,36 @@ export class ConversationalAssistantService {
     // Si llegamos aquí, todos los reintentos fallaron
     logger.error('All retry attempts failed', { lastError });
     throw lastError || new Error('Failed to process message after all retries');
+  }
+
+  /**
+   * Tracks conversation metrics for optimization
+   */
+  private async trackConversationMetrics(
+    sessionId: string,
+    event: string,
+    metadata?: any
+  ): Promise<void> {
+    try {
+      await prisma.session.update({
+        where: { id: sessionId },
+        data: {
+          engagementSignals: {
+            lastEvent: event,
+            timestamp: new Date(),
+            ...metadata
+          }
+        }
+      });
+
+      // Log para análisis
+      logger.info(`[METRICS] ${event}`, {
+        sessionId,
+        ...metadata
+      });
+    } catch (error) {
+      logger.error('Error tracking metrics:', { error: error instanceof Error ? error.message : 'Unknown error' });
+    }
   }
 
   /**
