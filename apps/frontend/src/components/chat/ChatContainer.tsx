@@ -98,6 +98,7 @@ export const ChatContainer = () => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [isPlusMenuOpen, setIsPlusMenuOpen] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   const {
     messages,
@@ -186,25 +187,31 @@ export const ChatContainer = () => {
     const messageToSend = inputMessage;
     setInputMessage('');
 
-    // If we have a selected image and we're on question 17, send it with the message
-    if (selectedImage && state.currentQuestionIndex === 16) {
-      const base64Data = selectedImage.split(',')[1];
-      if (base64Data) {
-        const imageData = {
-          base64: base64Data,
-          mimeType: 'image/jpeg',
-        };
-        await processMessage(messageToSend, imageData);
-        setSelectedImage(null);
-      } else {
-        await processMessage(messageToSend);
-      }
-    } else {
-      await processMessage(messageToSend);
-    }
-  };
+    let imageFile: File | undefined;
 
-  const handleDownloadPDF = () => {
+    // If there's a selected image, convert it to File
+    if (selectedImage) {
+      try {
+        setIsUploadingImage(true);
+        const response = await fetch(selectedImage);
+        const blob = await response.blob();
+        imageFile = new File([blob], 'image.jpg', { type: 'image/jpeg' });
+      } catch (error) {
+        console.error('Error preparing image:', error);
+        setIsUploadingImage(false);
+        return; // Don't send message if image preparation failed
+      }
+    }
+
+    // Send the message with optional image
+    await processMessage(messageToSend, imageFile);
+
+    // Clear the image preview and uploading state after sending message
+    if (selectedImage) {
+      setSelectedImage(null);
+      setIsUploadingImage(false);
+    }
+  }; const handleDownloadPDF = () => {
     if (!state.diagnosisContent) return;
 
     setIsGeneratingPDF(true);
@@ -253,17 +260,19 @@ export const ChatContainer = () => {
     }
   };
 
-  const handleCameraCapture = (imageDataUrl: string) => {
+  const handleCameraCapture = async (imageDataUrl: string) => {
     setSelectedImage(imageDataUrl);
+    // Image will be uploaded when user sends a message
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && file.type.startsWith('image/')) {
       const reader = new FileReader();
       reader.onload = (event) => {
         const imageDataUrl = event.target?.result as string;
         setSelectedImage(imageDataUrl);
+        // Image will be uploaded when user sends a message
       };
       reader.readAsDataURL(file);
     }
@@ -387,12 +396,17 @@ export const ChatContainer = () => {
                   onClick={() => handleImageClick(selectedImage)}
                 />
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-neutral-900 dark:text-white">Imagen seleccionada</p>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400">Se enviará con tu próximo mensaje</p>
+                  <p className="text-sm font-medium text-neutral-900 dark:text-white">
+                    {isUploadingImage ? 'Subiendo imagen...' : 'Imagen lista'}
+                  </p>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                    {isUploadingImage ? 'Analizando...' : '✓ Analizada correctamente'}
+                  </p>
                 </div>
                 <button
                   onClick={() => setSelectedImage(null)}
                   className="p-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors text-neutral-500 dark:text-neutral-400"
+                  disabled={isUploadingImage}
                 >
                   ✕
                 </button>

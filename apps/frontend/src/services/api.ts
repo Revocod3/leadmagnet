@@ -76,8 +76,26 @@ class ApiClient {
     return response.data.data;
   }
 
-  async sendMessage(data: SendMessageRequest): Promise<ChatMessage> {
-    const response = await this.client.post<ApiResponse<ChatMessage>>('/chat', data);
+  async sendMessage(data: SendMessageRequest, imageFile?: File): Promise<ChatMessage> {
+    let response;
+
+    if (imageFile) {
+      // Send as FormData with image
+      const formData = new FormData();
+      formData.append('sessionId', data.sessionId);
+      formData.append('message', data.message);
+      formData.append('image', imageFile);
+
+      response = await this.client.post<ApiResponse<ChatMessage>>('/chat', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+    } else {
+      // Send as JSON without image
+      response = await this.client.post<ApiResponse<ChatMessage>>('/chat', data);
+    }
+
     if (!response.data.success || !response.data.data) {
       throw new Error(response.data.error || 'Error al enviar mensaje');
     }

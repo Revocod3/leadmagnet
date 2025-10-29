@@ -87,7 +87,9 @@ export class ConversationalAssistantService {
       turnCount: number;
       hasRealProblem?: boolean;
       sessionId?: string;
-    }
+      hasImage?: boolean;
+    },
+    imageBuffer?: Buffer
   ): Promise<{
     message: string;
     isDiagnosisReady?: boolean;
@@ -100,10 +102,32 @@ export class ConversationalAssistantService {
       try {
         // 1. Agregar mensaje del usuario al thread (solo en el primer intento)
         if (attempt === 0) {
-          await openai.beta.threads.messages.create(threadId, {
-            role: 'user',
-            content: userMessage
-          });
+          // Si hay imagen, convertirla a base64 y agregarla al mensaje
+          if (imageBuffer) {
+            const base64Image = imageBuffer.toString('base64');
+
+            await openai.beta.threads.messages.create(threadId, {
+              role: 'user',
+              content: [
+                {
+                  type: 'text',
+                  text: userMessage
+                },
+                {
+                  type: 'image_url',
+                  image_url: {
+                    url: `data:image/jpeg;base64,${base64Image}`
+                  }
+                }
+              ] as any
+            });
+          } else {
+            // Sin imagen, solo texto
+            await openai.beta.threads.messages.create(threadId, {
+              role: 'user',
+              content: userMessage
+            });
+          }
         }
 
         // 2. Construir instrucciones dinámicas basadas en contexto

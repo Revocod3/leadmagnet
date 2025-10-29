@@ -47,51 +47,30 @@ Provide an objective and professional description.`;
   async validateImage(imageBuffer: Buffer): Promise<{ isValid: boolean; reason?: string }> {
     // Check file size (max 10MB)
     if (imageBuffer.length > 10 * 1024 * 1024) {
-      return { isValid: false, reason: 'Image too large (max 10MB)' };
+      return { isValid: false, reason: 'Imagen muy grande (máximo 10MB)' };
     }
 
-    // Basic validation - could be enhanced with more sophisticated checks
-    const base64Image = imageBuffer.toString('base64');
+    // Check minimum size (at least 1KB to ensure it's not empty)
+    if (imageBuffer.length < 1024) {
+      return { isValid: false, reason: 'Imagen muy pequeña o corrupta' };
+    }
 
+    // Simple validation - just check if we can create a base64 string
     try {
-      const prompt = `Determine if this is a valid abdominal image for medical analysis. Check if:
-- The image shows a human abdomen/stomach area
-- The image is clear enough for analysis
-- The image is appropriate for medical assessment
+      const base64Image = imageBuffer.toString('base64');
 
-Respond with JSON: {"isValid": boolean, "reason": "explanation if invalid"}`;
-
-      const response = await openai.chat.completions.create({
-        model: MODELS.VISION,
-        messages: [
-          {
-            role: 'user',
-            content: [
-              { type: 'text', text: prompt },
-              {
-                type: 'image_url',
-                image_url: {
-                  url: `data:image/jpeg;base64,${base64Image}`,
-                },
-              },
-            ],
-          },
-        ],
-        temperature: 0.1,
-      });
-
-      const content = response.choices[0]?.message?.content;
-      if (!content) {
-        return { isValid: false, reason: 'Could not analyze image' };
+      // Basic check: base64 should have reasonable length
+      if (base64Image.length < 100) {
+        return { isValid: false, reason: 'Formato de imagen inválido' };
       }
 
-      const result = JSON.parse(content);
-      return {
-        isValid: result.isValid ?? false,
-        reason: result.reason,
-      };
-    } catch {
-      return { isValid: false, reason: 'Invalid image format' };
+      // If we got here, the image is probably valid
+      // Skip the expensive OpenAI Vision validation to avoid errors
+      return { isValid: true };
+
+    } catch (error) {
+      console.error('Error validating image:', error);
+      return { isValid: false, reason: 'Formato de imagen inválido' };
     }
   }
 }

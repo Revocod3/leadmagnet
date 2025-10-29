@@ -140,7 +140,7 @@ export const useDiagnosticFlow = () => {
 
   // Process user message based on current step
   const processMessage = useCallback(
-    async (userMessage: string, imageData?: { base64: string; mimeType: string }) => {
+    async (userMessage: string, imageFile?: File) => {
       if (isProcessing) return;
       setIsProcessing(true);
 
@@ -162,18 +162,15 @@ export const useDiagnosticFlow = () => {
         };
         setMessages((prev) => [...prev, userMsg]);
 
-        // Send message to backend
-        const requestData: any = {
-          sessionId,
-          message: userMessage,
-          language: state.language,
-        };
-
-        if (imageData) {
-          requestData.imageData = imageData;
-        }
-
-        const response: any = await apiClient.sendMessage(requestData);
+        // Send message to backend (with optional image file)
+        const response: any = await apiClient.sendMessage(
+          {
+            sessionId,
+            message: userMessage,
+            language: state.language,
+          },
+          imageFile
+        );
 
         // Extract metadata from response
         const metadata = response.metadata || {};

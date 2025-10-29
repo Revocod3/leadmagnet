@@ -13,9 +13,25 @@ import { DiscountService } from '../services/discount.service';
 import { wordPressSyncService } from '../services/wordpress-sync.service';
 import { INTERACTION_LIMITS, LIMIT_EXCEEDED_MESSAGES } from '../constants/limits';
 import type { SendMessageRequest, ApiResponse, ChatMessage } from '../types';
+import multer from 'multer';
 
 const validationService = new ValidationService();
 const discountService = new DiscountService();
+
+// Configure multer for memory storage (for optional image uploads)
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Solo se permiten archivos de imagen'));
+    }
+  },
+});
 
 export class ChatController {
 
@@ -194,6 +210,9 @@ export class ChatController {
       // Detectar si tiene problema real (simple heurística)
       const hasRealProblem = flowState?.hasRealProblem ?? turnCount > 0;
 
+      // Check if there's an image attached (from multer)
+      const imageBuffer = (req as any).file?.buffer;
+
       // Preparar contexto
       const context: {
         userName?: string;
@@ -201,20 +220,31 @@ export class ChatController {
         turnCount: number;
         hasRealProblem?: boolean;
         sessionId?: string;
+        hasImage?: boolean;
       } = {
         turnCount: turnCount + 1,
         hasRealProblem,
         sessionId,
+        hasImage: !!imageBuffer, // Indicar si hay imagen en este mensaje
       };
 
       if (session.userName) context.userName = session.userName;
       if (flowState?.mainProblem) context.mainProblem = flowState.mainProblem;
 
-      // Procesar mensaje
+      // If image is provided, mark session as having shared image
+      if (imageBuffer && !session.hasSharedImage) {
+        await prisma.session.update({
+          where: { id: sessionId },
+          data: { hasSharedImage: true },
+        });
+      }
+
+      // Procesar mensaje (con o sin imagen)
       const response = await conversationalAssistant.processMessage(
         threadId,
         message,
-        context
+        context,
+        imageBuffer
       );
 
       // Guardar mensajes
@@ -384,3 +414,6 @@ export class ChatController {
     }
   }
 }
+
+// Export multer middleware for optional image upload
+export const chatUploadMiddleware: any = upload.single('image');
