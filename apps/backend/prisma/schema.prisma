@@ -47,6 +47,11 @@ model Session {
   convertedToChat      Boolean   @default(false)
   engagementSignals    Json?     // EngagementSignals object
   wordpressLeadId      String?   // WordPress lead ID
+  
+  // Interaction limits tracking
+  hasSharedImage       Boolean   @default(false)  // Track if user shared a photo
+  messageCount         Int       @default(0)      // Total user messages sent
+  postDiagnosisMessageCount Int  @default(0)      // Messages after diagnosis delivered
 
   user                  User?                   @relation(fields: [userId], references: [id])
   messages              Message[]

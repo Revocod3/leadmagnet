@@ -6,7 +6,6 @@ let redis: Redis | null = null;
 if (env.REDIS_URL) {
   redis = new Redis(env.REDIS_URL, {
     maxRetriesPerRequest: 3,
-    retryDelayOnFailover: 100,
     enableReadyCheck: false,
     lazyConnect: true,
   });

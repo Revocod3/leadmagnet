@@ -3,6 +3,7 @@ import multer from 'multer';
 import { prisma } from '../config/database';
 import { VisionService } from '../services/openai/vision.service';
 import { ValidationService } from '../services/openai/validation.service';
+import { INTERACTION_LIMITS, LIMIT_EXCEEDED_MESSAGES } from '../constants/limits';
 import type { ApiResponse } from '../types';
 
 const visionService = new VisionService();
@@ -70,6 +71,18 @@ export class ImageController {
         return;
       }
 
+      // Check if user has already shared an image
+      if (session.hasSharedImage) {
+        const language = session.language || 'es';
+        const limitMessage = LIMIT_EXCEEDED_MESSAGES[language as keyof typeof LIMIT_EXCEEDED_MESSAGES].photoLimit;
+
+        res.status(400).json({
+          success: false,
+          error: limitMessage,
+        } as ApiResponse);
+        return;
+      }
+
       const imageBuffer = req.file.buffer;
 
       // Validate image
@@ -91,7 +104,10 @@ export class ImageController {
       // Save analysis to session
       await prisma.session.update({
         where: { id: sessionId },
-        data: { imageAnalysisText: analysis },
+        data: {
+          imageAnalysisText: analysis,
+          hasSharedImage: true,  // Mark that user has shared an image
+        },
       });
 
       res.json({
@@ -110,6 +126,14 @@ export class ImageController {
   async getImageAnalysis(req: Request, res: Response): Promise<void> {
     try {
       const { sessionId } = req.params;
+
+      if (!sessionId) {
+        res.status(400).json({
+          success: false,
+          error: 'Session ID is required',
+        } as ApiResponse);
+        return;
+      }
 
       const sessionValidation = validationService.validateSessionId(sessionId);
       if (!sessionValidation.isValid) {
@@ -149,5 +173,5 @@ export class ImageController {
   }
 }
 
-// Export multer middleware
-export const uploadMiddleware = upload.single('image');
+// Export multer middleware with explicit type
+export const uploadMiddleware: any = upload.single('image');

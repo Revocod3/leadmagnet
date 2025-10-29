@@ -11,6 +11,7 @@ import { conversationalAssistant } from '../services/conversational-assistant.se
 import { ValidationService } from '../services/openai/validation.service';
 import { DiscountService } from '../services/discount.service';
 import { wordPressSyncService } from '../services/wordpress-sync.service';
+import { INTERACTION_LIMITS, LIMIT_EXCEEDED_MESSAGES } from '../constants/limits';
 import type { SendMessageRequest, ApiResponse, ChatMessage } from '../types';
 
 const validationService = new ValidationService();
@@ -134,6 +135,45 @@ export class ChatController {
         return;
       }
 
+      // Verificar límites de interacción
+      const language = session.language || 'es';
+      const hasCompletedDiagnosis = session.completedDiagnosis;
+
+      // Check post-diagnosis limit
+      if (hasCompletedDiagnosis) {
+        if (session.postDiagnosisMessageCount >= INTERACTION_LIMITS.POST_DIAGNOSIS_LIMIT) {
+          // Exceeded post-diagnosis limit
+          const limitMessage = LIMIT_EXCEEDED_MESSAGES[language as keyof typeof LIMIT_EXCEEDED_MESSAGES].postDiagnosis;
+
+          res.json({
+            success: true,
+            data: {
+              role: 'assistant',
+              content: limitMessage,
+              metadata: {
+                type: 'limit_exceeded',
+                limitType: 'post_diagnosis',
+                shouldShowSubscriptionCTA: true,
+              },
+            },
+          } as ApiResponse<ChatMessage>);
+          return;
+        }
+      } else {
+        // Check pre-diagnosis limit
+        const maxMessages = session.hasSharedImage
+          ? INTERACTION_LIMITS.MAX_MESSAGES_WITH_PHOTO
+          : INTERACTION_LIMITS.MAX_MESSAGES_WITHOUT_PHOTO;
+
+        if (session.messageCount >= maxMessages) {
+          // Force diagnosis generation
+          const forceDiagnosis = true;
+
+          // Continue processing to generate diagnosis
+          // (will be handled below in the normal flow)
+        }
+      }
+
       // Obtener threadId
       const flowState = session.flowState as any;
       const threadId = flowState?.threadId;
@@ -194,10 +234,16 @@ export class ChatController {
         },
       });
 
+      // Actualizar contadores de mensajes
+      const messageCountUpdate = hasCompletedDiagnosis
+        ? { postDiagnosisMessageCount: session.postDiagnosisMessageCount + 1 }
+        : { messageCount: session.messageCount + 1 };
+
       // Actualizar flowState
       await prisma.session.update({
         where: { id: sessionId },
         data: {
+          ...messageCountUpdate,
           flowState: {
             ...flowState,
             hasRealProblem: response.shouldEndConversation ? false : hasRealProblem,
@@ -317,7 +363,7 @@ export class ChatController {
         orderBy: { createdAt: 'asc' },
       });
 
-      const chatMessages: ChatMessage[] = messages.map(msg => ({
+      const chatMessages: ChatMessage[] = messages.map((msg: any): ChatMessage => ({
         id: msg.id,
         role: msg.role as 'user' | 'assistant',
         content: msg.content,
