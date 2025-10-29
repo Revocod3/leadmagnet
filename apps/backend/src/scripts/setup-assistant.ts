@@ -30,7 +30,7 @@ async function setupAssistant() {
       const assistant = await openai.beta.assistants.update(existingAssistantId, {
         name: 'Clara - Especialista en Salud Digestiva',
         instructions: CLARA_INSTRUCTIONS,
-        model: 'gpt-4o',
+        model: 'gpt-4o-mini',
         tools: [],
       });
 
@@ -46,7 +46,7 @@ async function setupAssistant() {
       const assistant = await openai.beta.assistants.create({
         name: 'Clara - Especialista en Salud Digestiva',
         instructions: CLARA_INSTRUCTIONS,
-        model: 'gpt-4o',
+        model: 'gpt-4o-mini',
         tools: [],
       });
 
