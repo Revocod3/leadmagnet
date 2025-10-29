@@ -5,7 +5,7 @@
  */
 
 import OpenAI from 'openai';
-import { CLARA_INSTRUCTIONS } from '../config/assistant-instructions';
+import { CLARA_INSTRUCTIONS } from '../config/assistant-instructions-optimized';
 import * as dotenv from 'dotenv';
 
 // Cargar variables de entorno

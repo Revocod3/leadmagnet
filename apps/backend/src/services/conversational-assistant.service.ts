@@ -11,7 +11,7 @@ import { openai } from '../config/openai';
 import {
   buildDynamicInstructions,
   DIAGNOSIS_INSTRUCTIONS
-} from '../config/assistant-instructions';
+} from '../config/assistant-instructions-optimized';
 import { logger } from '../utils/logger';
 import { prisma } from '../config/database';
 
