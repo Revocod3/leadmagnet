@@ -1,5 +1,4 @@
 import { motion } from 'framer-motion';
-import ReactMarkdown from 'react-markdown';
 import { Download } from 'lucide-react';
 import { MessageActions } from './MessageActions';
 import { TypewriterText } from './TypewriterText';
@@ -34,12 +33,10 @@ const enhanceDiagnosisHTML = (html: string): string => {
 export const ChatMessage = ({
   message,
   state,
-  isLatest,
   onDownloadPDF,
   isGeneratingPDF = false
 }: ChatMessageProps) => {
   const isUser = message.role === 'user';
-  const shouldAnimate = isLatest && !isUser;
 
   return (
     <motion.div
@@ -127,56 +124,18 @@ export const ChatMessage = ({
           ) : (
             /* Render normal messages with Markdown and typewriter effect */
             <div className="text-[15px] leading-relaxed">
-              {shouldAnimate ? (
+              {!isUser ? (
+                /* Siempre usar TypewriterText para mensajes del asistente */
                 <TypewriterText
                   text={message.content}
                   speed={20}
-                  className="whitespace-pre-wrap break-words"
+                  className=""
                 />
               ) : (
-                <ReactMarkdown
-                  components={{
-                    p: ({ children }) => (
-                      <p className="mb-3 last:mb-0 whitespace-pre-wrap break-words">
-                        {children}
-                      </p>
-                    ),
-                    strong: ({ children }) => (
-                      <strong className="font-semibold text-foreground">
-                        {children}
-                      </strong>
-                    ),
-                    em: ({ children }) => (
-                      <em className="italic">{children}</em>
-                    ),
-                    ul: ({ children }) => (
-                      <ul className="list-disc list-inside mb-3 space-y-1">
-                        {children}
-                      </ul>
-                    ),
-                    ol: ({ children }) => (
-                      <ol className="list-decimal list-inside mb-3 space-y-1">
-                        {children}
-                      </ol>
-                    ),
-                    li: ({ children }) => (
-                      <li className="ml-2">{children}</li>
-                    ),
-                    a: ({ href, children }) => (
-                      <a
-                        href={href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 px-3 py-1 bg-brand-green-500 hover:bg-brand-green-600 text-white rounded-full text-sm font-medium transition-all shadow-sm hover:shadow-md transform hover:-translate-y-0.5 no-underline"
-                      >
-                        {children}
-                        <span className="text-xs">→</span>
-                      </a>
-                    ),
-                  }}
-                >
+                /* Solo mensajes de usuario en texto plano */
+                <div className="whitespace-pre-wrap break-words">
                   {message.content}
-                </ReactMarkdown>
+                </div>
               )}
             </div>
           )}

@@ -103,6 +103,7 @@ export const useDiagnosticFlow = () => {
       const data = await apiClient.initializeChat(sessionId, sessionStore.language);
 
       if (data) {
+        console.log('✅ Mensaje de bienvenida recibido del backend:', data.message.substring(0, 50));
         // Add welcome message from backend (already personalized with name)
         setMessages([
           {
@@ -203,6 +204,7 @@ export const useDiagnosticFlow = () => {
 
         // Add assistant message to UI with a small delay to simulate typing
         setTimeout(() => {
+          console.log('➕ Agregando mensaje del asistente:', response.content.substring(0, 50));
           const assistantMsg: FlowMessage = {
             role: 'assistant',
             content: response.content,
