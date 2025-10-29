@@ -286,8 +286,23 @@ export class ConversationalAssistantService {
     while (attempts < maxAttempts) {
       const run = await openai.beta.threads.runs.retrieve(threadId, runId);
 
-      if (run.status === 'completed' || run.status === 'failed' || run.status === 'cancelled') {
+      if (run.status === 'completed') {
         return run;
+      }
+
+      if (run.status === 'failed') {
+        logger.error('Run failed:', {
+          threadId,
+          runId,
+          status: run.status,
+          last_error: run.last_error
+        });
+        throw new Error(`Run failed: ${run.last_error?.message || 'Unknown error'}`);
+      }
+
+      if (run.status === 'cancelled') {
+        logger.error('Run was cancelled:', { threadId, runId });
+        throw new Error('Run was cancelled');
       }
 
       // Esperar 1 segundo antes de verificar de nuevo
