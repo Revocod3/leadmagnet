@@ -211,12 +211,12 @@ export const ChatContainer = () => {
       setSelectedImage(null);
       setIsUploadingImage(false);
     }
-  }; const handleDownloadPDF = () => {
+  }; const handleDownloadPDF = async () => {
     if (!state.diagnosisContent) return;
 
     setIsGeneratingPDF(true);
     try {
-      const success = generatePDF({
+      const success = await generatePDF({
         userName: state.userName || 'Usuario',
         diagnosisContent: state.diagnosisContent,
         language: state.language,

@@ -1,7 +1,8 @@
 import { Router } from 'express';
+import type { Router as ExpressRouter } from 'express';
 import { SessionController } from '../controllers/session.controller';
 
-const router = Router();
+const router: ExpressRouter = Router();
 const sessionController = new SessionController();
 
 // POST /api/sessions - Create new session

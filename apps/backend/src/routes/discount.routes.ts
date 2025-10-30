@@ -1,9 +1,9 @@
-import { Router } from 'express';
-import { Request, Response } from 'express';
+import { Router, Request, Response } from 'express';
+import type { Router as ExpressRouter } from 'express';
 import { DiscountService } from '../services/discount.service';
 import type { ApiResponse } from '../types';
 
-const router = Router();
+const router: ExpressRouter = Router();
 const discountService = new DiscountService();
 
 /**

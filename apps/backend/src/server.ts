@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import express from 'express';
+import type { Express } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
@@ -13,7 +14,7 @@ import { rateLimitMiddleware } from './middleware/rateLimit.middleware';
 import { authMiddleware } from './middleware/auth.middleware';
 import { logger } from './utils/logger';
 
-const app = express();
+const app: Express = express();
 
 // Trust proxy for rate limiting behind reverse proxy
 app.set('trust proxy', 1);
