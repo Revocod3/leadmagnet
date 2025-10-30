@@ -12,14 +12,21 @@ import type {
   DiagnosisResponse,
 } from '../types';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+// Use undefined check instead of falsy check to distinguish between empty string and undefined
+const API_URL = import.meta.env.VITE_API_URL !== undefined
+  ? import.meta.env.VITE_API_URL
+  : 'http://localhost:3000';
 
 class ApiClient {
   private client: AxiosInstance;
 
   constructor() {
+    // If API_URL is empty string (production), use relative path /api
+    // If API_URL has value (dev), append /api to it
+    const baseURL = API_URL === '' ? '/api' : `${API_URL}/api`;
+
     this.client = axios.create({
-      baseURL: `${API_URL}/api`,
+      baseURL,
       headers: {
         'Content-Type': 'application/json',
       },

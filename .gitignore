@@ -3,7 +3,7 @@ dist/
 build/
 .env
 .env.local
-.env.production
+# .env.production can be committed (no secrets, only public API URLs)
 *.log
 .DS_Store
 .vscode/
