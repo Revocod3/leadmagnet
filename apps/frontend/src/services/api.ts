@@ -23,7 +23,7 @@ class ApiClient {
       headers: {
         'Content-Type': 'application/json',
       },
-      timeout: 30000,
+      timeout: 60000, // 60 segundos para dar tiempo a generar diagnósticos
     });
 
     // Response interceptor for error handling
