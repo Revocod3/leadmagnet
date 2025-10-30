@@ -208,7 +208,9 @@ export class ChatController {
       });
 
       // Detectar si tiene problema real (simple heurística)
-      const hasRealProblem = flowState?.hasRealProblem ?? turnCount > 0;
+      // Por default, si hay turnos, asumimos que tiene problema real
+      // Solo se marca como false si explícitamente el assistant detecta que no tiene problema
+      const hasRealProblem = turnCount > 0;
 
       // Check if there's an image attached (from multer)
       const imageBuffer = (req as any).file?.buffer;
