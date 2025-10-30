@@ -1,110 +1,118 @@
 /**
  * Conversational Assistant Service
- * 
- * Servicio MINIMALISTA que orquesta la conversación usando Assistants API.
- * 
+ *
+ * Refactor: Assistants API -> Responses API (+ Conversations)
+ *
  * FILOSOFÍA: 80% lógica en instrucciones, 20% orquestación en código.
  * Este archivo es SOLO orquestación. NO contiene lógica conversacional.
  */
 
-import { openai } from '../config/openai';
+import { openai, MODELS } from '../config/openai';
 import {
   buildDynamicInstructions,
-  DIAGNOSIS_INSTRUCTIONS
+  DIAGNOSIS_INSTRUCTIONS,
+  CLARA_INSTRUCTIONS,
 } from '../config/assistant-instructions-optimized';
 import { logger } from '../utils/logger';
 import { prisma } from '../config/database';
 
-// ID del Assistant (se crea una vez y se reutiliza)
-const ASSISTANT_ID = process.env.CLARA_ASSISTANT_ID || '';
-
 export class ConversationalAssistantService {
 
   /**
-   * Crea un nuevo thread y obtiene mensaje de bienvenida
+   * Helper: extrae texto plano de un Response de la Responses API
+   */
+  private extractTextFromResponse(resp: any): string {
+    try {
+      // Aggregated convenience field (if present in newer SDKs)
+      if (resp?.output_text) return resp.output_text as string;
+
+      const outputs = resp?.output || [];
+      for (const item of outputs) {
+        if (item?.type === 'message') {
+          const parts = item?.content || [];
+          const texts: string[] = [];
+          for (const p of parts) {
+            if (p?.type === 'output_text' && typeof p?.text === 'string') {
+              texts.push(p.text);
+            }
+          }
+          if (texts.length) return texts.join('');
+        }
+      }
+    } catch (e) {
+      logger.error('Error extracting text from response', { error: e });
+    }
+    return '';
+  }
+
+  /**
+   * Crea una nueva conversación (OpenAI Conversations) y obtiene mensaje de bienvenida
    */
   async startConversation(userName: string): Promise<{
-    threadId: string;
+    conversationId: string;
     welcomeMessage: string;
   }> {
     const maxRetries = 3;
     let lastError: Error | null = null;
-    let threadId: string | null = null;
+    let conversationId: string | null = null;
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
-        // 1. Crear thread nuevo (solo en primer intento o si falló antes de tenerlo)
-        if (!threadId) {
-          const thread = await openai.beta.threads.create();
-          threadId = thread.id;
-          logger.info(`Thread created: ${threadId} for ${userName}`);
+        // 1) Crear conversación si aún no existe
+        if (!conversationId) {
+          const conv = await (openai as any).conversations.create();
+          conversationId = conv.id;
+          logger.info(`Conversation created: ${conversationId} for ${userName}`);
         }
 
-        // 2. Agregar mensaje de sistema para inicializar (solo en primer intento)
-        if (attempt === 0) {
-          await openai.beta.threads.messages.create(threadId, {
-            role: 'user',
-            content: `Mi nombre es ${userName}. Comienza el diagnóstico.`
-          });
+        // 2) Verificar que conversationId existe antes de continuar
+        if (!conversationId) {
+          throw new Error('Conversation ID is null after creation');
         }
 
-        // 3. Ejecutar assistant con instrucciones iniciales
-        const run = await openai.beta.threads.runs.create(threadId, {
-          assistant_id: ASSISTANT_ID,
-          additional_instructions: buildDynamicInstructions({
-            userName,
-            turnCount: 1,
-            hasRealProblem: false
-          })
-        });
+        // 3) Crear respuesta con instrucciones base + dinámicas (turno 1) y el input del usuario
+        const instructions = `${CLARA_INSTRUCTIONS}\n\n${buildDynamicInstructions({
+          userName,
+          turnCount: 1,
+          hasRealProblem: false,
+        })}`;
 
-        // 4. Esperar respuesta
-        const completedRun = await this.waitForCompletion(threadId, run.id);
+        const response = await openai.responses.create({
+          model: MODELS.TEXT,
+          conversation: conversationId,
+          instructions,
+          input: [
+            {
+              type: 'message',
+              role: 'user',
+              content: [
+                { type: 'input_text', text: `Mi nombre es ${userName}. Comienza el diagnóstico.` },
+              ],
+            },
+          ],
+        } as any);
 
-        if (completedRun.status !== 'completed') {
-          logger.error('Run did not complete successfully', {
-            status: completedRun.status,
-            lastError: completedRun.last_error,
-            threadId,
-            runId: run.id,
-            attempt: attempt + 1
-          });
+        const messageText = this.extractTextFromResponse(response) ||
+          'Hola, soy Clara. ¿Qué te trae por aquí?';
 
-          if (attempt < maxRetries) {
-            logger.info(`Retrying startConversation... attempt ${attempt + 2}/${maxRetries + 1}`);
-            await new Promise(resolve => setTimeout(resolve, 2000 * (attempt + 1))); // Exponential backoff
-            continue;
-          }
-
-          throw new Error(`Run failed with status: ${completedRun.status}`);
-        }
-
-        // 5. Obtener mensaje de bienvenida
-        const messages = await openai.beta.threads.messages.list(threadId);
-        const firstMessage = messages.data[0]?.content[0];
-
-        const messageText = firstMessage && firstMessage.type === 'text'
-          ? firstMessage.text.value
-          : 'Hola, soy Clara. ¿Qué te trae por aquí?';
-
-        logger.info(`Conversation started successfully for ${userName}, thread: ${threadId}`);
+        logger.info(`Conversation started successfully for ${userName}, conversation: ${conversationId}`);
 
         return {
-          threadId: threadId,
-          welcomeMessage: messageText
+          conversationId: conversationId!,
+          welcomeMessage: messageText,
         };
 
       } catch (error) {
         lastError = error as Error;
         logger.error(`Error starting conversation (attempt ${attempt + 1}/${maxRetries + 1}):`, {
           error,
-          threadId,
-          userName
+          conversationId,
+          userName,
         });
 
         if (attempt < maxRetries) {
           logger.info(`Retrying startConversation... attempt ${attempt + 2}/${maxRetries + 1}`);
-          await new Promise(resolve => setTimeout(resolve, 2000 * (attempt + 1))); // Exponential backoff
+          await new Promise((resolve) => setTimeout(resolve, 2000 * (attempt + 1)));
           continue;
         }
       }
@@ -113,8 +121,8 @@ export class ConversationalAssistantService {
     // Si llegamos aquí, todos los reintentos fallaron
     logger.error('All retry attempts failed for startConversation', {
       lastError,
-      threadId,
-      userName
+      conversationId,
+      userName,
     });
     throw lastError || new Error('Failed to start conversation after all retries');
   }
@@ -123,7 +131,7 @@ export class ConversationalAssistantService {
    * Procesa un mensaje del usuario
    */
   async processMessage(
-    threadId: string,
+    conversationId: string,
     userMessage: string,
     context: {
       userName?: string;
@@ -144,99 +152,51 @@ export class ConversationalAssistantService {
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
-        // 1. Agregar mensaje del usuario al thread (solo en el primer intento)
-        if (attempt === 0) {
-          // Si hay imagen, convertirla a base64 y agregarla al mensaje
-          if (imageBuffer) {
-            const base64Image = imageBuffer.toString('base64');
+        // 1) Construir instrucciones (base + dinámicas)
+        const instructions = `${CLARA_INSTRUCTIONS}\n\n${buildDynamicInstructions(context)}`;
 
-            await openai.beta.threads.messages.create(threadId, {
+        // 2) Crear respuesta dentro de la conversación con el input del usuario (incluye imagen si aplica)
+        const content: any[] = [{ type: 'input_text', text: userMessage }];
+        if (imageBuffer) {
+          const base64Image = imageBuffer.toString('base64');
+          content.push({ type: 'input_image', image_url: `data:image/jpeg;base64,${base64Image}` });
+        }
+        const response = await openai.responses.create({
+          model: MODELS.TEXT,
+          conversation: conversationId,
+          instructions,
+          input: [
+            {
+              type: 'message',
               role: 'user',
-              content: [
-                {
-                  type: 'text',
-                  text: userMessage
-                },
-                {
-                  type: 'image_url',
-                  image_url: {
-                    url: `data:image/jpeg;base64,${base64Image}`
-                  }
-                }
-              ] as any
-            });
-          } else {
-            // Sin imagen, solo texto
-            await openai.beta.threads.messages.create(threadId, {
-              role: 'user',
-              content: userMessage
-            });
-          }
-        }
+              content,
+            },
+          ],
+        } as any);
 
-        // 2. Construir instrucciones dinámicas basadas en contexto
-        const additionalInstructions = buildDynamicInstructions(context);
+        const messageText = this.extractTextFromResponse(response);
 
-        // 3. Ejecutar run con instrucciones dinámicas
-        const run = await openai.beta.threads.runs.create(threadId, {
-          assistant_id: ASSISTANT_ID,
-          additional_instructions: additionalInstructions
-        });
-
-        // 4. Esperar completación
-        const completedRun = await this.waitForCompletion(threadId, run.id);
-
-        if (completedRun.status !== 'completed') {
-          logger.error('Run did not complete successfully', {
-            status: completedRun.status,
-            lastError: completedRun.last_error,
-            threadId,
-            runId: run.id,
-            attempt: attempt + 1
+        if (!messageText) {
+          logger.error('Invalid message format from Responses API', {
+            conversationId,
+            response,
           });
-
-          if (attempt < maxRetries) {
-            logger.info(`Retrying... attempt ${attempt + 2}/${maxRetries + 1}`);
-            await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1))); // Exponential backoff
-            continue;
-          }
-
-          throw new Error(`Run failed with status: ${completedRun.status}`);
+          throw new Error('Invalid response format from model');
         }
 
-        // 5. Obtener respuesta del assistant
-        const messages = await openai.beta.threads.messages.list(threadId, {
-          limit: 1,
-          order: 'desc'
-        });
-
-        const firstContent = messages.data[0]?.content[0];
-
-        if (!firstContent || firstContent.type !== 'text') {
-          logger.error('Invalid message format from assistant', {
-            threadId,
-            runId: run.id,
-            messageData: messages.data[0]
-          });
-          throw new Error('Invalid response format from assistant');
-        }
-
-        const messageText = firstContent.text.value;
-
-        // 6. Detectar si es momento de generar diagnóstico
+        // 4) Señales para diagnóstico y fin de conversación
         const isDiagnosisReady = this.shouldGenerateDiagnosis(
           messageText,
           context.turnCount,
           context.hasRealProblem
         );
 
-        // 7. Detectar si debe terminar conversación (usuario no tiene problema)
         const shouldEndConversation = this.shouldEndConversation(
           messageText,
           context.hasRealProblem
         );
 
-        // 8. Tracking de progreso (solo si hay sessionId)
+        // 5) Métricas de engagement
         if (context.sessionId) {
           if (context.turnCount === 5) {
             await this.trackConversationMetrics(context.sessionId, 'MILESTONE_5_QUESTIONS');
@@ -250,7 +210,7 @@ export class ConversationalAssistantService {
         return {
           message: messageText,
           isDiagnosisReady,
-          shouldEndConversation
+          shouldEndConversation,
         };
 
       } catch (error) {
@@ -259,7 +219,7 @@ export class ConversationalAssistantService {
 
         if (attempt < maxRetries) {
           logger.info(`Retrying... attempt ${attempt + 2}/${maxRetries + 1}`);
-          await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+          await new Promise((resolve) => setTimeout(resolve, 1000 * (attempt + 1)));
           continue;
         }
       }
@@ -301,39 +261,25 @@ export class ConversationalAssistantService {
   }
 
   /**
-   * Genera el diagnóstico final usando todo el thread
+   * Genera el diagnóstico final usando toda la conversación
    */
-  async generateDiagnosis(threadId: string, userName: string): Promise<string> {
+  async generateDiagnosis(conversationId: string, userName: string): Promise<string> {
     try {
-      // 1. Agregar instrucción para generar diagnóstico
-      await openai.beta.threads.messages.create(threadId, {
-        role: 'user',
-        content: 'Genera mi diagnóstico personalizado ahora.'
-      });
+      // 1) Crear respuesta con instrucciones de diagnóstico y un input explícito del usuario
+      const response = await openai.responses.create({
+        model: MODELS.TEXT,
+        conversation: conversationId,
+        instructions: `${CLARA_INSTRUCTIONS}\n\n${DIAGNOSIS_INSTRUCTIONS}`,
+        input: [
+          {
+            type: 'message',
+            role: 'user',
+            content: [{ type: 'input_text', text: 'Genera mi diagnóstico personalizado ahora.' }],
+          },
+        ],
+      } as any);
 
-      // 2. Ejecutar con instrucciones de diagnóstico
-      const run = await openai.beta.threads.runs.create(threadId, {
-        assistant_id: ASSISTANT_ID,
-        additional_instructions: DIAGNOSIS_INSTRUCTIONS
-      });
-
-      // 3. Esperar completación
-      const completedRun = await this.waitForCompletion(threadId, run.id);
-
-      if (completedRun.status !== 'completed') {
-        throw new Error('Diagnosis generation failed');
-      }
-
-      // 4. Obtener diagnóstico
-      const messages = await openai.beta.threads.messages.list(threadId, {
-        limit: 1,
-        order: 'desc'
-      });
-
-      const firstContent = messages.data[0]?.content[0];
-      const diagnosis = firstContent && firstContent.type === 'text'
-        ? firstContent.text.value
-        : 'No se pudo generar el diagnóstico.';
+      const diagnosis = this.extractTextFromResponse(response) || 'No se pudo generar el diagnóstico.';
 
       logger.info(`Diagnosis generated for ${userName}`);
 
@@ -343,42 +289,6 @@ export class ConversationalAssistantService {
       logger.error('Error generating diagnosis:', { error });
       throw error;
     }
-  }
-
-  /**
-   * Espera a que un run se complete
-   */
-  private async waitForCompletion(threadId: string, runId: string, maxAttempts = 30) {
-    let attempts = 0;
-
-    while (attempts < maxAttempts) {
-      const run = await openai.beta.threads.runs.retrieve(threadId, runId);
-
-      if (run.status === 'completed') {
-        return run;
-      }
-
-      if (run.status === 'failed') {
-        logger.error('Run failed:', {
-          threadId,
-          runId,
-          status: run.status,
-          last_error: run.last_error
-        });
-        throw new Error(`Run failed: ${run.last_error?.message || 'Unknown error'}`);
-      }
-
-      if (run.status === 'cancelled') {
-        logger.error('Run was cancelled:', { threadId, runId });
-        throw new Error('Run was cancelled');
-      }
-
-      // Esperar 1 segundo antes de verificar de nuevo
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      attempts++;
-    }
-
-    throw new Error('Run did not complete in time');
   }
 
   /**

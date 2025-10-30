@@ -1,7 +1,7 @@
 /**
  * Chat Controller - Versión Minimalista
  * 
- * Controller SIMPLE que orquesta la conversación usando Assistants API.
+ * Controller SIMPLE que orquesta la conversación usando Responses API.
  * ~100 líneas total. CERO lógica conversacional aquí.
  */
 
@@ -62,16 +62,16 @@ export class ChatController {
         return;
       }
 
-      // 1. Crear thread y obtener mensaje de bienvenida
-      const { threadId, welcomeMessage } = await conversationalAssistant.startConversation(
+      // 1. Crear conversación y obtener mensaje de bienvenida
+      const { conversationId, welcomeMessage } = await conversationalAssistant.startConversation(
         session.userName || 'Usuario'
       );
 
-      // 2. Guardar threadId en sesión
+      // 2. Guardar conversationId en sesión
       await prisma.session.update({
         where: { id: sessionId },
         data: {
-          flowState: { threadId } as any, // Guardamos el threadId en flowState
+          flowState: { conversationId } as any, // Guardamos el conversationId en flowState
           step: 'asking_questions',
         },
       });
@@ -100,7 +100,7 @@ export class ChatController {
       let errorMessage = 'Disculpa, estamos teniendo problemas técnicos. Por favor, intenta de nuevo en unos segundos.';
 
       if (error instanceof Error) {
-        if (error.message.includes('Run failed') || error.message.includes('server_error')) {
+        if (error.message.includes('Run failed') || error.message.includes('server_error') || error.message.includes('response')) {
           errorMessage = 'Estamos experimentando alta demanda. Por favor, intenta nuevamente en un momento.';
         } else if (error.message.includes('timeout') || error.message.includes('time')) {
           errorMessage = 'La solicitud tardó demasiado. Por favor, intenta de nuevo.';
@@ -202,14 +202,14 @@ export class ChatController {
         }
       }
 
-      // Obtener threadId
+      // Obtener conversationId
       const flowState = session.flowState as any;
-      const threadId = flowState?.threadId;
+      const conversationId = flowState?.conversationId;
 
-      if (!threadId) {
+      if (!conversationId) {
         res.status(400).json({
           success: false,
-          error: 'Thread no inicializado. Llamar a /initialize primero.',
+          error: 'Conversación no inicializada. Llamar a /initialize primero.',
         } as ApiResponse);
         return;
       }
@@ -255,7 +255,7 @@ export class ChatController {
 
       // Procesar mensaje (con o sin imagen)
       const response = await conversationalAssistant.processMessage(
-        threadId,
+        conversationId,
         message,
         context,
         imageBuffer
@@ -302,7 +302,7 @@ export class ChatController {
 
       if (response.isDiagnosisReady && hasRealProblem) {
         diagnosisContent = await conversationalAssistant.generateDiagnosis(
-          threadId,
+          conversationId,
           session.userName || 'Usuario'
         );
 
@@ -376,7 +376,7 @@ export class ChatController {
       console.error('Error sending message:', error);
 
       // Mensaje más amigable para el usuario
-      const errorMessage = error instanceof Error && error.message.includes('Run failed')
+      const errorMessage = error instanceof Error && (error.message.includes('Run failed') || error.message.includes('response'))
         ? 'Disculpa, tuve un pequeño problema procesando tu respuesta. ¿Podrías reformularla de otra manera?'
         : 'Error interno del servidor';
 
