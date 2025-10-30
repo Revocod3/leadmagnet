@@ -266,7 +266,7 @@ Después de analizar todo, identifiqué varios aspectos clave que explican tus s
 ✅ **Acceso inmediato** a Clara 24/7
 ✅ **Garantía** 30 días de satisfacción o te devolvemos tu dinero
 
-**[COMENZAR TRANSFORMACIÓN CON 30% OFF](https://objetivovientreplano.com/suscripcion/)**
+**[COMIENZA TRANSFORMACIÓN](https://objetivovientreplano.com/suscripcion/)**
 
 *+135 personas transformaron su digestión este mes*
 
@@ -277,7 +277,7 @@ Después de analizar todo, identifiqué varios aspectos clave que explican tus s
 ---
 
 **{Nombre}**, sé que has lidiado con esto durante [tiempo] y es frustrante.
-
+  
 Pero **tu caso tiene solución**.
 
 He visto cientos de casos similares transformarse. Con el método correcto y mi acompañamiento, vas a recuperar tu bienestar.

@@ -69,57 +69,11 @@ export const ChatMessage = ({
               animate={{ opacity: 1, scale: 1 }}
               className="space-y-4"
             >
-              {/* Header del diagnóstico */}
-              <div className="bg-gradient-to-r from-brand-green-500 to-brand-green-600 text-white rounded-xl p-4">
-                <h3 className="text-lg font-bold mb-2">
-                  🎯 Tu Diagnóstico Personalizado
-                </h3>
-                <p className="text-sm opacity-90">
-                  Basado en el análisis de tus {state.currentQuestionIndex} respuestas
-                </p>
-              </div>
-
               {/* Contenido del diagnóstico */}
               <div
                 className="prose prose-sm dark:prose-invert max-w-none space-y-4"
                 dangerouslySetInnerHTML={{ __html: enhanceDiagnosisHTML(message.content) }}
               />
-
-              {/* Urgency Box */}
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5 }}
-                className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4"
-              >
-                <div className="flex items-start gap-3">
-                  <span className="text-2xl">⏰</span>
-                  <div>
-                    <p className="text-sm font-semibold text-yellow-900 dark:text-yellow-100">
-                      Oferta por tiempo limitado
-                    </p>
-                    <p className="text-xs text-yellow-800 dark:text-yellow-200 mt-1">
-                      Tu descuento del 30% expira en 48 horas. No volverá a estar disponible.
-                    </p>
-                  </div>
-                </div>
-              </motion.div>
-
-              {/* Stats sociales */}
-              <div className="grid grid-cols-3 gap-2 text-center">
-                <div className="bg-neutral-100 dark:bg-neutral-800 rounded-lg p-3">
-                  <p className="text-2xl font-bold text-brand-green-600">+500</p>
-                  <p className="text-xs text-neutral-600 dark:text-neutral-400">Este mes</p>
-                </div>
-                <div className="bg-neutral-100 dark:bg-neutral-800 rounded-lg p-3">
-                  <p className="text-2xl font-bold text-brand-green-600">87%</p>
-                  <p className="text-xs text-neutral-600 dark:text-neutral-400">Satisfacción</p>
-                </div>
-                <div className="bg-neutral-100 dark:bg-neutral-800 rounded-lg p-3">
-                  <p className="text-2xl font-bold text-brand-green-600">24/7</p>
-                  <p className="text-xs text-neutral-600 dark:text-neutral-400">Soporte</p>
-                </div>
-              </div>
             </motion.div>
           ) : (
             /* Render normal messages with Markdown and typewriter effect */
@@ -152,19 +106,9 @@ export const ChatMessage = ({
               >
                 {/* Animated background effect */}
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent transform -skew-x-12 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000"></div>
-
-                <div className="flex items-center gap-3 relative z-10">
-                  <span className="text-2xl">🎁</span>
-                  <span>Comenzar Mi Transformación con 30% OFF</span>
+                <div className="relative z-10 flex items-center gap-3">
+                  <span>Transforma tu salud digestiva</span>
                   <span className="text-xl group-hover:translate-x-1 transition-transform">→</span>
-                </div>
-
-                <div className="flex items-center gap-4 text-sm font-normal opacity-90 relative z-10">
-                  <span>✅ Acceso inmediato</span>
-                  <span>•</span>
-                  <span>✅ Clara 24/7</span>
-                  <span>•</span>
-                  <span>⏰ Expira en 48h</span>
                 </div>
               </a>
 
