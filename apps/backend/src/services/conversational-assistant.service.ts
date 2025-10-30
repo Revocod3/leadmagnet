@@ -348,8 +348,8 @@ export class ConversationalAssistantService {
     // No generar diagnóstico si no hay problema real
     if (!hasRealProblem) return false;
 
-    // Si ya hay muchos turnos (16+), generar diagnóstico
-    if (turnCount >= 16) return true;
+    // Si ya hay muchos turnos (14+), generar diagnóstico
+    if (turnCount >= 14) return true;
 
     // Si el mensaje contiene señales de diagnóstico
     const diagnosisSignals = [
@@ -361,7 +361,12 @@ export class ConversationalAssistantService {
       'necesitas un enfoque',
       'diagnóstico de',
       'diagnóstico personalizado',
-      'conclusión integradora'
+      'conclusión integradora',
+      'preparar tu diagnóstico',
+      'ya tengo todo',
+      'dame un momento para preparar',
+      'listo para tu diagnóstico',
+      'generar tu diagnóstico'
     ];
 
     return diagnosisSignals.some(signal =>

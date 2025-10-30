@@ -137,11 +137,21 @@ export class WordPressSyncService {
       if (session.engagementScore) syncData.engagementScore = session.engagementScore;
       if (session.avgResponseLength) syncData.avgResponseLength = session.avgResponseLength;
 
+      // Extraer métricas adicionales de los mensajes (edad, emociones, estilo de vida)
+      const extractedMetrics = this.extractConversationMetrics(session.messages.map(m => m.content));
+      console.log('[WordPress Sync] 📊 Métricas extraídas:', extractedMetrics);
+
       // Agregar metadata solo si tiene valores
       const metadata: any = {};
       if (session.imageAnalysisText) metadata.imageAnalysisText = session.imageAnalysisText;
       if (session.discountCodes[0]?.code) metadata.discountCode = session.discountCodes[0].code;
       if (session.convertedToChat) metadata.convertedToChat = session.convertedToChat;
+
+      // Agregar métricas extraídas
+      if (extractedMetrics.age) metadata.age = extractedMetrics.age;
+      if (extractedMetrics.emotionalImpact) metadata.emotionalImpact = extractedMetrics.emotionalImpact;
+      if (extractedMetrics.lifestyleFactors) metadata.lifestyleFactors = extractedMetrics.lifestyleFactors;
+      if (extractedMetrics.stressLevel) metadata.stressLevel = extractedMetrics.stressLevel;
 
       if (Object.keys(metadata).length > 0) {
         syncData.metadata = metadata;
@@ -159,6 +169,89 @@ export class WordPressSyncService {
       console.error('[WordPress Sync] Error sincronizando diagnóstico:', error);
       // No lanzar error para no interrumpir el flujo principal
     }
+  }
+
+  /**
+   * Extrae métricas de edad, emociones y estilo de vida de la conversación
+   */
+  private extractConversationMetrics(messages: string[]): {
+    age?: string;
+    emotionalImpact?: string[];
+    lifestyleFactors?: string[];
+    stressLevel?: string;
+  } {
+    const allText = messages.join(' ').toLowerCase();
+    const metrics: any = {};
+
+    // Detectar edad
+    const agePatterns = [
+      /tengo (\d{2}) años/i,
+      /(\d{2}) años/i,
+      /edad.*?(\d{2})/i,
+      /cuarenta/i,
+      /cincuenta/i,
+      /treinta/i,
+      /veinte/i,
+      /menopausia/i,
+      /premenopausia/i,
+      /perimenopausia/i
+    ];
+
+    for (const pattern of agePatterns) {
+      const match = allText.match(pattern);
+      if (match) {
+        if (match[1]) {
+          metrics.age = match[1] + ' años';
+        } else if (allText.includes('cuarenta')) {
+          metrics.age = '40-49 años';
+        } else if (allText.includes('cincuenta')) {
+          metrics.age = '50-59 años';
+        } else if (allText.includes('treinta')) {
+          metrics.age = '30-39 años';
+        } else if (allText.includes('menopausia')) {
+          metrics.age = '45-55 años (menopausia)';
+        }
+        break;
+      }
+    }
+
+    // Detectar impacto emocional
+    const emotionalKeywords = [];
+    if (allText.match(/frustrad[oa]/i)) emotionalKeywords.push('frustración');
+    if (allText.match(/cansad[oa]|agotad[oa]/i)) emotionalKeywords.push('cansancio');
+    if (allText.match(/vergüenza|avergonzad[oa]/i)) emotionalKeywords.push('vergüenza');
+    if (allText.match(/ansiedad|ansios[oa]|nervi[oa]/i)) emotionalKeywords.push('ansiedad');
+    if (allText.match(/triste|deprimid[oa]/i)) emotionalKeywords.push('tristeza');
+    if (allText.match(/estresad[oa]|estrés/i)) emotionalKeywords.push('estrés');
+    if (allText.match(/limitad[oa]|no puedo|evito/i)) emotionalKeywords.push('limitación');
+
+    if (emotionalKeywords.length > 0) {
+      metrics.emotionalImpact = emotionalKeywords;
+    }
+
+    // Detectar factores de estilo de vida
+    const lifestyleFactors = [];
+    if (allText.match(/trabajo estresante|mucho trabajo|presión laboral/i)) lifestyleFactors.push('trabajo estresante');
+    if (allText.match(/sedentari[oa]|no hago ejercicio|poco ejercicio/i)) lifestyleFactors.push('sedentarismo');
+    if (allText.match(/duermo mal|insomnio|no descanso/i)) lifestyleFactors.push('mal sueño');
+    if (allText.match(/como rápido|poco tiempo para comer/i)) lifestyleFactors.push('come rápido');
+    if (allText.match(/vida activa|hago ejercicio|voy al gym/i)) lifestyleFactors.push('activo físicamente');
+    if (allText.match(/bebo poco agua|no tomo agua/i)) lifestyleFactors.push('poca hidratación');
+
+    if (lifestyleFactors.length > 0) {
+      metrics.lifestyleFactors = lifestyleFactors;
+    }
+
+    // Detectar nivel de estrés
+    if (allText.match(/muy estresad[oa]|mucho estrés|altísimo estrés/i)) {
+      metrics.stressLevel = 'alto';
+    } else if (allText.match(/estresad[oa]|estrés/i)) {
+      metrics.stressLevel = 'moderado';
+    } else if (allText.match(/relaja|tranquil[oa]|poco estrés/i)) {
+      metrics.stressLevel = 'bajo';
+    }
+
+    return metrics;
   }
 
   /**
