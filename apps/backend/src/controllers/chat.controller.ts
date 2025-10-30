@@ -95,9 +95,21 @@ export class ChatController {
 
     } catch (error) {
       console.error('Error initializing diagnostic:', error);
+
+      // Mensaje más amigable dependiendo del tipo de error
+      let errorMessage = 'Disculpa, estamos teniendo problemas técnicos. Por favor, intenta de nuevo en unos segundos.';
+
+      if (error instanceof Error) {
+        if (error.message.includes('Run failed') || error.message.includes('server_error')) {
+          errorMessage = 'Estamos experimentando alta demanda. Por favor, intenta nuevamente en un momento.';
+        } else if (error.message.includes('timeout') || error.message.includes('time')) {
+          errorMessage = 'La solicitud tardó demasiado. Por favor, intenta de nuevo.';
+        }
+      }
+
       res.status(500).json({
         success: false,
-        error: 'Error interno del servidor',
+        error: errorMessage,
       } as ApiResponse);
     }
   }

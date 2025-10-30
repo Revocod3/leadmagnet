@@ -27,52 +27,96 @@ export class ConversationalAssistantService {
     threadId: string;
     welcomeMessage: string;
   }> {
-    try {
-      // 1. Crear thread nuevo
-      const thread = await openai.beta.threads.create();
+    const maxRetries = 3;
+    let lastError: Error | null = null;
+    let threadId: string | null = null;
 
-      // 2. Agregar mensaje de sistema para inicializar
-      await openai.beta.threads.messages.create(thread.id, {
-        role: 'user',
-        content: `Mi nombre es ${userName}. Comienza el diagnóstico.`
-      });
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        // 1. Crear thread nuevo (solo en primer intento o si falló antes de tenerlo)
+        if (!threadId) {
+          const thread = await openai.beta.threads.create();
+          threadId = thread.id;
+          logger.info(`Thread created: ${threadId} for ${userName}`);
+        }
 
-      // 3. Ejecutar assistant con instrucciones iniciales
-      const run = await openai.beta.threads.runs.create(thread.id, {
-        assistant_id: ASSISTANT_ID,
-        additional_instructions: buildDynamicInstructions({
-          userName,
-          turnCount: 1,
-          hasRealProblem: false
-        })
-      });
+        // 2. Agregar mensaje de sistema para inicializar (solo en primer intento)
+        if (attempt === 0) {
+          await openai.beta.threads.messages.create(threadId, {
+            role: 'user',
+            content: `Mi nombre es ${userName}. Comienza el diagnóstico.`
+          });
+        }
 
-      // 4. Esperar respuesta
-      const completedRun = await this.waitForCompletion(thread.id, run.id);
+        // 3. Ejecutar assistant con instrucciones iniciales
+        const run = await openai.beta.threads.runs.create(threadId, {
+          assistant_id: ASSISTANT_ID,
+          additional_instructions: buildDynamicInstructions({
+            userName,
+            turnCount: 1,
+            hasRealProblem: false
+          })
+        });
 
-      if (completedRun.status !== 'completed') {
-        throw new Error('Run did not complete successfully');
+        // 4. Esperar respuesta
+        const completedRun = await this.waitForCompletion(threadId, run.id);
+
+        if (completedRun.status !== 'completed') {
+          logger.error('Run did not complete successfully', {
+            status: completedRun.status,
+            lastError: completedRun.last_error,
+            threadId,
+            runId: run.id,
+            attempt: attempt + 1
+          });
+
+          if (attempt < maxRetries) {
+            logger.info(`Retrying startConversation... attempt ${attempt + 2}/${maxRetries + 1}`);
+            await new Promise(resolve => setTimeout(resolve, 2000 * (attempt + 1))); // Exponential backoff
+            continue;
+          }
+
+          throw new Error(`Run failed with status: ${completedRun.status}`);
+        }
+
+        // 5. Obtener mensaje de bienvenida
+        const messages = await openai.beta.threads.messages.list(threadId);
+        const firstMessage = messages.data[0]?.content[0];
+
+        const messageText = firstMessage && firstMessage.type === 'text'
+          ? firstMessage.text.value
+          : 'Hola, soy Clara. ¿Qué te trae por aquí?';
+
+        logger.info(`Conversation started successfully for ${userName}, thread: ${threadId}`);
+
+        return {
+          threadId: threadId,
+          welcomeMessage: messageText
+        };
+
+      } catch (error) {
+        lastError = error as Error;
+        logger.error(`Error starting conversation (attempt ${attempt + 1}/${maxRetries + 1}):`, {
+          error,
+          threadId,
+          userName
+        });
+
+        if (attempt < maxRetries) {
+          logger.info(`Retrying startConversation... attempt ${attempt + 2}/${maxRetries + 1}`);
+          await new Promise(resolve => setTimeout(resolve, 2000 * (attempt + 1))); // Exponential backoff
+          continue;
+        }
       }
-
-      // 5. Obtener mensaje de bienvenida
-      const messages = await openai.beta.threads.messages.list(thread.id);
-      const firstMessage = messages.data[0]?.content[0];
-
-      const messageText = firstMessage && firstMessage.type === 'text'
-        ? firstMessage.text.value
-        : 'Hola, soy Clara. ¿Qué te trae por aquí?';
-
-      logger.info(`Conversation started for ${userName}, thread: ${thread.id}`);
-
-      return {
-        threadId: thread.id,
-        welcomeMessage: messageText
-      };
-
-    } catch (error) {
-      logger.error('Error starting conversation:', { error });
-      throw error;
     }
+
+    // Si llegamos aquí, todos los reintentos fallaron
+    logger.error('All retry attempts failed for startConversation', {
+      lastError,
+      threadId,
+      userName
+    });
+    throw lastError || new Error('Failed to start conversation after all retries');
   }
 
   /**
