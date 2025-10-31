@@ -477,32 +477,6 @@ export const DiagnosticPDFTemplate: React.FC<DiagnosticPDFTemplateProps> = ({
             {cleanedContent}
           </ReactMarkdown>
         </div>
-
-        {/* Next Steps Section */}
-        <div className="pdf-next-steps">
-          <h2 className="next-steps-title">
-            <span className="next-steps-icon">🎯</span>
-            {strings.nextSteps}
-          </h2>
-          <ul className="next-steps-list">
-            {strings.recommendations.map((item: string, index: number) => (
-              <li key={index} className="next-steps-item">
-                {item}
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Call to Action */}
-        <div className="cta-box">
-          <h3 className="cta-title">¿Listo para transformar tu salud digestiva?</h3>
-          <p className="cta-text">
-            Únete al Método Objetivo Vientre Plano y comienza tu transformación hoy mismo
-          </p>
-          <a href="https://objetivovientreplano.com/suscripcion" className="cta-button">
-            Comenzar Ahora
-          </a>
-        </div>
       </div>
 
       {/* Footer */}
