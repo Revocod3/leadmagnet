@@ -1,4 +1,5 @@
 import React from 'react';
+import ReactMarkdown from 'react-markdown';
 
 interface DiagnosticPDFTemplateProps {
   userName: string;
@@ -14,26 +15,34 @@ export const DiagnosticPDFTemplate: React.FC<DiagnosticPDFTemplateProps> = ({
   const content = {
     es: {
       title: 'Diagnóstico Personalizado',
+      subtitle: 'Método Objetivo Vientre Plano',
       for: 'Para',
       date: 'Fecha',
-      nextSteps: 'Próximos Pasos',
-      disclaimer: 'Objetivo Vientre Plano',
-      reminders: [
-        'Este diagnóstico es una guía inicial basada en la información que compartiste.',
-        'Los cambios reales requieren constancia, apoyo y un plan personalizado.',
-        'Si quieres resultados duraderos, considera trabajar con un especialista.',
+      professional: 'Clara - Especialista en Salud Digestiva',
+      nextSteps: 'Plan de Acción Recomendado',
+      copyright: '© Objetivo Vientre Plano',
+      website: 'objetivovientreplano.com',
+      recommendations: [
+        'Accede a nuestro chat avanzado con seguimiento personalizado 24/7',
+        'Plan alimentario adaptado a tus necesidades específicas',
+        'Programa completo de ejercicios y técnicas de relajación',
+        'Soporte continuo y resultados medibles en tu transformación',
       ],
     },
     en: {
       title: 'Personalized Diagnosis',
+      subtitle: 'Flat Belly Goal Method',
       for: 'For',
       date: 'Date',
-      nextSteps: 'Next Steps',
-      disclaimer: 'Flat Belly Goal',
-      reminders: [
-        'This diagnosis is an initial guide based on the information you shared.',
-        'Real changes require consistency, support, and a personalized plan.',
-        'If you want lasting results, consider working with a specialist.',
+      professional: 'Clara - Digestive Health Specialist',
+      nextSteps: 'Recommended Action Plan',
+      copyright: '© Flat Belly Goal',
+      website: 'objetivovientreplano.com',
+      recommendations: [
+        'Access our advanced chat with personalized 24/7 follow-up',
+        'Meal plan adapted to your specific needs',
+        'Complete exercise program and relaxation techniques',
+        'Continuous support and measurable results in your transformation',
       ],
     },
   };
@@ -46,110 +55,262 @@ export const DiagnosticPDFTemplate: React.FC<DiagnosticPDFTemplateProps> = ({
     day: 'numeric',
   });
 
-  // Convert markdown-style content to HTML
-  const formatContent = (text: string) => {
-    const lines = text.split('\n');
-    return lines.map((line, index) => {
-      const trimmedLine = line.trim();
-
-      if (trimmedLine === '') {
-        return <div key={index} style={{ height: '0.5rem' }} />;
-      }
-
-      // Check for bold text (markdown format **text**)
-      const boldMatch = trimmedLine.match(/^\*\*(.*?)\*\*$/);
-      if (boldMatch && boldMatch[1]) {
-        return (
-          <h3 key={index} className="section-title">
-            {boldMatch[1]}
-          </h3>
-        );
-      }
-
-      // Regular paragraph
-      return (
-        <p key={index} className="content-paragraph">
-          {trimmedLine}
-        </p>
-      );
-    });
+  // Process markdown content to clean it up
+  const processMarkdownContent = (text: string) => {
+    // Remove ### and replace with proper headers
+    let processed = text.replace(/^###\s+(.+)$/gm, '## $1');
+    // Clean up excessive line breaks
+    processed = processed.replace(/\n{3,}/g, '\n\n');
+    // Ensure proper spacing around headers
+    processed = processed.replace(/(\n|^)(#{1,3}\s+[^\n]+)(\n|$)/g, '\n\n$2\n\n');
+    return processed;
   };
+
+  const cleanedContent = processMarkdownContent(diagnosisContent);
 
   return (
     <div className="pdf-container">
       <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        
         .pdf-container {
           width: 210mm;
           min-height: 297mm;
           background: white;
-          padding: 20mm;
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
+          padding: 0;
+          margin: 0;
+          font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica', 'Arial', sans-serif;
           color: #2d2d2d;
           line-height: 1.6;
           position: relative;
+          display: flex;
+          flex-direction: column;
         }
 
+        /* Page break handling */
+        @media print {
+          .pdf-container {
+            page-break-after: always;
+          }
+          .avoid-page-break {
+            page-break-inside: avoid;
+          }
+        }
+
+        /* Header Section */
         .pdf-header {
-          border-bottom: 3px solid #95C11F;
-          padding-bottom: 1.5rem;
-          margin-bottom: 2rem;
+          background: linear-gradient(135deg, #99AB75 0%, #A0AD5E 50%, #A5B26C 100%);
+          padding: 2rem 2.5rem;
+          color: white;
+          margin: 0;
+          page-break-after: avoid;
+          page-break-inside: avoid;
+        }
+
+        .header-content {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 1.5rem;
+        }
+
+        .logo-section {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+        }
+
+        .logo-container {
+          width: 60px;
+          height: 60px;
+          background: white;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .logo-image {
+          width: 50px;
+          height: 50px;
+          border-radius: 50%;
+          object-fit: cover;
+        }
+
+        .brand-info {
+          display: flex;
+          flex-direction: column;
+        }
+
+        .brand-title {
+          font-size: 1.1rem;
+          font-weight: 700;
+          margin: 0;
+          letter-spacing: -0.01em;
+        }
+
+        .brand-subtitle {
+          font-size: 0.85rem;
+          opacity: 0.95;
+          margin: 0;
         }
 
         .pdf-title {
-          font-size: 2rem;
+          font-size: 2.2rem;
           font-weight: 700;
-          color: #222;
-          margin: 0 0 0.75rem 0;
+          margin: 0 0 0.5rem 0;
           letter-spacing: -0.02em;
         }
 
         .pdf-meta {
-          font-size: 0.9rem;
-          color: #666;
-          margin: 0;
+          display: flex;
+          gap: 2rem;
+          font-size: 0.95rem;
+          opacity: 0.95;
         }
 
-        .pdf-meta strong {
-          color: #444;
+        .pdf-meta-item {
+          display: flex;
+          gap: 0.5rem;
+        }
+
+        .pdf-meta-label {
           font-weight: 600;
         }
 
-        .pdf-content {
-          margin-bottom: 3rem;
+        /* Content Section */
+        .pdf-body {
+          flex: 1;
+          padding: 2.5rem;
+          page-break-before: avoid;
         }
 
-        .section-title {
-          font-size: 1.15rem;
+        .pdf-content {
+          margin-bottom: 2rem;
+          page-break-inside: auto;
+        }
+
+        /* Markdown Styles */
+        .markdown-content h1 {
+          font-size: 1.75rem;
           font-weight: 700;
           color: #222;
-          margin: 1.75rem 0 0.75rem 0;
-          line-height: 1.4;
+          margin: 2rem 0 1rem 0;
+          page-break-after: avoid;
+          border-bottom: 3px solid #95C11F;
+          padding-bottom: 0.5rem;
         }
 
-        .content-paragraph {
-          font-size: 1rem;
-          color: #444;
-          margin: 0 0 0.75rem 0;
-          line-height: 1.7;
-          text-align: justify;
-        }
-
-        .pdf-next-steps {
-          background: #f9faf8;
-          border-left: 4px solid #95C11F;
-          padding: 1.5rem;
-          margin: 2rem 0;
-          border-radius: 4px;
-        }
-
-        .next-steps-title {
-          font-size: 1.25rem;
+        .markdown-content h2 {
+          font-size: 1.35rem;
           font-weight: 700;
-          color: #95C11F;
-          margin: 0 0 1rem 0;
+          color: #333;
+          margin: 1.75rem 0 0.75rem 0;
+          page-break-after: avoid;
           display: flex;
           align-items: center;
           gap: 0.5rem;
+        }
+
+        .markdown-content h2::before {
+          content: '';
+          width: 4px;
+          height: 1.2em;
+          background: #95C11F;
+          border-radius: 2px;
+        }
+
+        .markdown-content h3 {
+          font-size: 1.15rem;
+          font-weight: 600;
+          color: #444;
+          margin: 1.5rem 0 0.75rem 0;
+          page-break-after: avoid;
+        }
+
+        .markdown-content p {
+          font-size: 1rem;
+          color: #444;
+          margin: 0 0 1rem 0;
+          line-height: 1.7;
+          text-align: justify;
+          hyphens: auto;
+        }
+
+        .markdown-content strong {
+          font-weight: 600;
+          color: #222;
+        }
+
+        .markdown-content em {
+          font-style: italic;
+          color: #555;
+        }
+
+        .markdown-content ul, .markdown-content ol {
+          margin: 0.75rem 0 0.75rem 1.5rem;
+          padding: 0;
+          page-break-inside: avoid;
+        }
+
+        .markdown-content li {
+          font-size: 1rem;
+          color: #444;
+          margin-bottom: 0.5rem;
+          line-height: 1.6;
+        }
+
+        .markdown-content ul li::marker {
+          color: #95C11F;
+        }
+
+        .markdown-content blockquote {
+          border-left: 4px solid #95C11F;
+          padding-left: 1rem;
+          margin: 1rem 0;
+          font-style: italic;
+          color: #555;
+          page-break-inside: avoid;
+        }
+
+        .markdown-content a {
+          color: #95C11F;
+          text-decoration: none;
+          font-weight: 500;
+          border-bottom: 1px solid #95C11F;
+        }
+
+        /* Next Steps Section */
+        .pdf-next-steps {
+          background: linear-gradient(to right, #f8faf6, #f3f7f0);
+          border-left: 4px solid #95C11F;
+          padding: 1.75rem;
+          margin: 2rem 0;
+          border-radius: 8px;
+          page-break-inside: avoid;
+        }
+
+        .next-steps-title {
+          font-size: 1.3rem;
+          font-weight: 700;
+          color: #222;
+          margin: 0 0 1rem 0;
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+        }
+
+        .next-steps-icon {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 32px;
+          height: 32px;
+          background: #95C11F;
+          color: white;
+          border-radius: 50%;
+          font-size: 1.1rem;
         }
 
         .next-steps-list {
@@ -161,74 +322,200 @@ export const DiagnosticPDFTemplate: React.FC<DiagnosticPDFTemplateProps> = ({
         .next-steps-item {
           font-size: 0.95rem;
           color: #555;
-          margin-bottom: 0.75rem;
-          padding-left: 1.5rem;
+          margin-bottom: 0.85rem;
+          padding-left: 2rem;
           position: relative;
           line-height: 1.6;
         }
 
         .next-steps-item:before {
-          content: '';
+          content: '✓';
           position: absolute;
           left: 0;
-          top: 0.5rem;
-          width: 8px;
-          height: 8px;
+          top: 0;
+          width: 20px;
+          height: 20px;
           background: #95C11F;
+          color: white;
           border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 0.75rem;
+          font-weight: bold;
         }
 
+        /* Footer */
         .pdf-footer {
-          position: absolute;
-          bottom: 15mm;
-          left: 20mm;
-          right: 20mm;
-          padding-top: 1rem;
-          border-top: 1px solid #e0e0e0;
-          font-size: 0.8rem;
-          color: #999;
-          text-align: center;
+          background: #f9f9f9;
+          border-top: 2px solid #e0e0e0;
+          padding: 1.5rem 2.5rem;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          font-size: 0.85rem;
+          color: #666;
+          page-break-inside: avoid;
+          margin-top: auto;
         }
 
-        .pdf-footer strong {
-          color: #95C11F;
+        .footer-left {
+          display: flex;
+          flex-direction: column;
+          gap: 0.25rem;
+        }
+
+        .footer-brand {
           font-weight: 600;
+          color: #95C11F;
         }
 
-        @media print {
-          .pdf-container {
-            width: 100%;
-            min-height: auto;
-            margin: 0;
-            padding: 0;
-          }
+        .footer-right {
+          text-align: right;
+        }
+
+        .footer-website {
+          color: #95C11F;
+          text-decoration: none;
+          font-weight: 500;
+        }
+
+        /* Call to Action Box */
+        .cta-box {
+          background: linear-gradient(135deg, #99AB75 0%, #A0AD5E 100%);
+          color: white;
+          padding: 1.5rem;
+          border-radius: 12px;
+          margin: 2rem 0;
+          text-align: center;
+          page-break-inside: avoid;
+        }
+
+        .cta-title {
+          font-size: 1.2rem;
+          font-weight: 700;
+          margin: 0 0 0.5rem 0;
+        }
+
+        .cta-text {
+          font-size: 0.95rem;
+          margin: 0 0 1rem 0;
+          opacity: 0.95;
+        }
+
+        .cta-button {
+          display: inline-block;
+          background: white;
+          color: #95C11F;
+          padding: 0.75rem 2rem;
+          border-radius: 8px;
+          text-decoration: none;
+          font-weight: 600;
+          font-size: 1rem;
         }
       `}</style>
 
+      {/* Header Section */}
       <div className="pdf-header">
+        <div className="header-content">
+          <div className="logo-section">
+            <div className="logo-container">
+              <img
+                src="/assets/images/favicon.webp"
+                alt="OVP"
+                className="logo-image"
+                onError={(e) => {
+                  // Fallback if image fails to load
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                  target.parentElement!.innerHTML = '<div style="font-size: 24px; font-weight: bold; color: #95C11F;">OVP</div>';
+                }}
+              />
+            </div>
+            <div className="brand-info">
+              <h3 className="brand-title">{strings.subtitle}</h3>
+              <p className="brand-subtitle">{strings.professional}</p>
+            </div>
+          </div>
+        </div>
         <h1 className="pdf-title">{strings.title}</h1>
-        <p className="pdf-meta">
-          <strong>{strings.for}:</strong> {userName} &nbsp;|&nbsp; <strong>{strings.date}:</strong> {date}
-        </p>
+        <div className="pdf-meta">
+          <div className="pdf-meta-item">
+            <span className="pdf-meta-label">{strings.for}:</span>
+            <span>{userName}</span>
+          </div>
+          <div className="pdf-meta-item">
+            <span className="pdf-meta-label">{strings.date}:</span>
+            <span>{date}</span>
+          </div>
+        </div>
       </div>
 
-      <div className="pdf-content">{formatContent(diagnosisContent)}</div>
+      {/* Body Section */}
+      <div className="pdf-body">
+        {/* Main Content with Markdown */}
+        <div className="pdf-content markdown-content">
+          <ReactMarkdown
+            components={{
+              h1: ({ children }) => <h1 className="avoid-page-break">{children}</h1>,
+              h2: ({ children }) => <h2 className="avoid-page-break">{children}</h2>,
+              h3: ({ children }) => <h3 className="avoid-page-break">{children}</h3>,
+              p: ({ children }) => <p>{children}</p>,
+              ul: ({ children }) => <ul className="avoid-page-break">{children}</ul>,
+              ol: ({ children }) => <ol className="avoid-page-break">{children}</ol>,
+              li: ({ children }) => <li>{children}</li>,
+              strong: ({ children }) => <strong>{children}</strong>,
+              em: ({ children }) => <em>{children}</em>,
+              blockquote: ({ children }) => <blockquote className="avoid-page-break">{children}</blockquote>,
+              a: ({ href, children }) => (
+                <a href={href} target="_blank" rel="noopener noreferrer">
+                  {children}
+                </a>
+              ),
+            }}
+          >
+            {cleanedContent}
+          </ReactMarkdown>
+        </div>
 
-      <div className="pdf-next-steps">
-        <h2 className="next-steps-title">
-          <span>🎯</span> {strings.nextSteps}
-        </h2>
-        <ul className="next-steps-list">
-          {strings.reminders.map((reminder, index) => (
-            <li key={index} className="next-steps-item">
-              {reminder}
-            </li>
-          ))}
-        </ul>
+        {/* Next Steps Section */}
+        <div className="pdf-next-steps">
+          <h2 className="next-steps-title">
+            <span className="next-steps-icon">🎯</span>
+            {strings.nextSteps}
+          </h2>
+          <ul className="next-steps-list">
+            {strings.recommendations.map((item: string, index: number) => (
+              <li key={index} className="next-steps-item">
+                {item}
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Call to Action */}
+        <div className="cta-box">
+          <h3 className="cta-title">¿Listo para transformar tu salud digestiva?</h3>
+          <p className="cta-text">
+            Únete al Método Objetivo Vientre Plano y comienza tu transformación hoy mismo
+          </p>
+          <a href="https://objetivovientreplano.com/suscripcion" className="cta-button">
+            Comenzar Ahora
+          </a>
+        </div>
       </div>
 
+      {/* Footer */}
       <div className="pdf-footer">
-        © <strong>{strings.disclaimer}</strong> • {new Date().getFullYear()}
+        <div className="footer-left">
+          <span className="footer-brand">{strings.copyright} • {new Date().getFullYear()}</span>
+          <span>Todos los derechos reservados</span>
+        </div>
+        <div className="footer-right">
+          <a href={`https://${strings.website}`} className="footer-website">
+            {strings.website}
+          </a>
+        </div>
       </div>
     </div>
   );
