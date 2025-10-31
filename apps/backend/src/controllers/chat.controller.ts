@@ -287,7 +287,7 @@ export class ChatController {
 
       // Detectar si Clara ofreció compartir imagen en su respuesta
       const offeredImageInResponse = /📷|cámara|foto|imagen.*abdomen|compartir.*foto|subir.*imagen/i.test(response.message);
-      
+
       // Actualizar flowState
       await prisma.session.update({
         where: { id: sessionId },

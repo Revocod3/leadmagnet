@@ -391,9 +391,9 @@ FASE: CIERRE Y VALIDACIÓN (turnos 14+)
       instructions += `
 📸 El usuario compartió una imagen. Ya debes haberla analizado. Integra observaciones visuales con síntomas mencionados.
 `;
-   } else if (!hasOfferedImage && hasRealProblem && (mainProblem?.toLowerCase().includes('hincha') || 
-                                                       mainProblem?.toLowerCase().includes('inflama') ||
-                                                       mainProblem?.toLowerCase().includes('disten'))) {
+   } else if (!hasOfferedImage && hasRealProblem && (mainProblem?.toLowerCase().includes('hincha') ||
+      mainProblem?.toLowerCase().includes('inflama') ||
+      mainProblem?.toLowerCase().includes('disten'))) {
       instructions += `
 📸 IMPORTANTE: El usuario mencionó hinchazón/inflamación pero NO has ofrecido la opción de imagen. 
 En tu próxima respuesta, invita naturalmente a compartir una foto del abdomen usando el ícono 📷.
