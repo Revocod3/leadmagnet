@@ -7,13 +7,11 @@
  * Este archivo es SOLO orquestación. NO contiene lógica conversacional.
  */
 
+import OpenAI from 'openai';
 import { openai, MODELS } from '../config/openai';
-import {
-  buildDynamicInstructions,
-  DIAGNOSIS_INSTRUCTIONS,
-  CLARA_INSTRUCTIONS,
-} from '../config/assistant-instructions-optimized';
+import { CLARA_INSTRUCTIONS, DIAGNOSIS_INSTRUCTIONS, buildDynamicInstructions } from '../config/assistant-instructions-optimized';
 import { logger } from '../utils/logger';
+import { convertDiagnosisToHTML } from '../utils/markdown-to-html';
 import { prisma } from '../config/database';
 
 export class ConversationalAssistantService {
@@ -279,11 +277,14 @@ export class ConversationalAssistantService {
         ],
       } as any);
 
-      const diagnosis = this.extractTextFromResponse(response) || 'No se pudo generar el diagnóstico.';
+      const diagnosisMarkdown = this.extractTextFromResponse(response) || 'No se pudo generar el diagnóstico.';
+
+      // 2) Convertir Markdown a HTML formateado
+      const diagnosisHTML = convertDiagnosisToHTML(diagnosisMarkdown);
 
       logger.info(`Diagnosis generated for ${userName}`);
 
-      return diagnosis;
+      return diagnosisHTML;
 
     } catch (error) {
       logger.error('Error generating diagnosis:', { error });

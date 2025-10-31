@@ -301,57 +301,87 @@ export class ChatController {
       let discountCode: { code: string; percentage: number } | null = null;
 
       if (response.isDiagnosisReady && hasRealProblem) {
-        diagnosisContent = await conversationalAssistant.generateDiagnosis(
-          conversationId,
-          session.userName || 'Usuario'
-        );
+        // PASO 1: Primero respondemos con un mensaje de "generando diagnóstico"
+        // sin esperar a que se genere el diagnóstico completo
+        const generatingMessage = session.language === 'es'
+          ? '¡Perfecto! Tengo toda la información que necesito. Déjame analizar tus respuestas y preparar un diagnóstico personalizado para ti...'
+          : 'Perfect! I have all the information I need. Let me analyze your responses and prepare a personalized diagnosis for you...';
 
-        // Guardar diagnóstico
-        if (!session.diagnosis) {
-          await prisma.diagnosis.create({
-            data: {
-              sessionId,
-              userId: session.userId || null,
-              content: diagnosisContent,
-              questionsAsked: turnCount + 1,
-            },
-          });
-        }
-
-        // Actualizar sesión
-        await prisma.session.update({
-          where: { id: sessionId },
+        // Responder inmediatamente para que el usuario vea el mensaje de "generando"
+        res.json({
+          success: true,
           data: {
-            step: 'diagnosis_ready',
-            completionTime: new Date(),
-            completedDiagnosis: true,
+            role: 'assistant',
+            content: generatingMessage,
+            metadata: {
+              type: 'generating_diagnosis',
+              step: 'generating_diagnosis',
+              turnCount: turnCount + 1,
+              shouldEndConversation: false,
+            },
           },
+        } as ApiResponse<ChatMessage>);
+
+        // PASO 2: Ahora generar el diagnóstico de forma asíncrona
+        // y guardarlo en la base de datos para que el frontend lo recoja
+        setImmediate(async () => {
+          try {
+            const diagnosisContent = await conversationalAssistant.generateDiagnosis(
+              conversationId,
+              session.userName || 'Usuario'
+            );
+
+            // Guardar diagnóstico
+            if (!session.diagnosis) {
+              await prisma.diagnosis.create({
+                data: {
+                  sessionId,
+                  userId: session.userId || null,
+                  content: diagnosisContent,
+                  questionsAsked: turnCount + 1,
+                },
+              });
+            }
+
+            // Actualizar sesión
+            await prisma.session.update({
+              where: { id: sessionId },
+              data: {
+                step: 'diagnosis_ready',
+                completionTime: new Date(),
+                completedDiagnosis: true,
+              },
+            });
+
+            // Sincronizar con WordPress
+            try {
+              await wordPressSyncService.syncDiagnosisCompletion(sessionId);
+            } catch (syncError) {
+              console.error('Error sincronizando con WordPress:', syncError);
+            }
+
+            // Generar código de descuento
+            try {
+              const discount = await discountService.createDiscountForSession(
+                sessionId,
+                'deep',
+                0
+              );
+              console.log(`✅ Descuento generado para sesión ${sessionId}: ${discount.code}`);
+            } catch (error) {
+              console.error('Error generating discount:', error);
+            }
+
+            console.log(`✅ Diagnóstico generado y guardado para sesión ${sessionId}`);
+          } catch (error) {
+            console.error('Error generando diagnóstico asíncrono:', error);
+          }
         });
 
-        // Sincronizar con WordPress
-        try {
-          await wordPressSyncService.syncDiagnosisCompletion(sessionId);
-        } catch (syncError) {
-          console.error('Error sincronizando con WordPress:', syncError);
-        }
-
-        // Generar código de descuento
-        try {
-          const discount = await discountService.createDiscountForSession(
-            sessionId,
-            'deep',
-            0
-          );
-          discountCode = {
-            code: discount.code,
-            percentage: discount.percentage,
-          };
-        } catch (error) {
-          console.error('Error generating discount:', error);
-        }
+        return; // Salir después de enviar la respuesta de "generando"
       }
 
-      // Responder
+      // Flujo normal: Responder con el mensaje del asistente
       const chatMessage: ChatMessage = {
         role: 'assistant',
         content: response.message,
@@ -362,11 +392,8 @@ export class ChatController {
         data: {
           ...chatMessage,
           metadata: {
-            type: response.isDiagnosisReady ? 'diagnosis_ready' : 'question',
+            type: 'question',
             turnCount: turnCount + 1,
-            diagnosisContent,
-            discountCode: discountCode?.code,
-            discountPercentage: discountCode?.percentage,
             shouldEndConversation: response.shouldEndConversation,
           },
         },
@@ -421,6 +448,70 @@ export class ChatController {
 
     } catch (error) {
       console.error('Error getting chat history:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Error interno del servidor',
+      } as ApiResponse);
+    }
+  }
+
+  /**
+   * Obtener diagnóstico si está listo
+   */
+  async getDiagnosis(req: Request, res: Response): Promise<void> {
+    try {
+      const { sessionId } = req.params;
+
+      if (!sessionId) {
+        res.status(400).json({
+          success: false,
+          error: 'Session ID is required',
+        } as ApiResponse);
+        return;
+      }
+
+      const session = await prisma.session.findUnique({
+        where: { id: sessionId },
+        include: { diagnosis: true },
+      });
+
+      if (!session) {
+        res.status(404).json({
+          success: false,
+          error: 'Session not found',
+        } as ApiResponse);
+        return;
+      }
+
+      if (!session.diagnosis) {
+        res.json({
+          success: true,
+          data: {
+            ready: false,
+            content: null,
+          },
+        } as ApiResponse);
+        return;
+      }
+
+      // Obtener código de descuento si existe
+      const discountCode = await prisma.discountCode.findFirst({
+        where: { sessionId },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      res.json({
+        success: true,
+        data: {
+          ready: true,
+          content: session.diagnosis.content,
+          discountCode: discountCode?.code,
+          discountPercentage: discountCode?.percentage,
+        },
+      } as ApiResponse);
+
+    } catch (error) {
+      console.error('Error getting diagnosis:', error);
       res.status(500).json({
         success: false,
         error: 'Error interno del servidor',

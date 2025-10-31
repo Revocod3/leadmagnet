@@ -10,6 +10,7 @@ import { CameraModal } from '../modals/CameraModal';
 import { ImageViewerModal } from '../modals/ImageViewerModal';
 import { ChatMessage } from './ChatMessage';
 import { TypingIndicator } from '../animations/TypingIndicator';
+import { DiagnosisGeneratingIndicator } from '../animations/DiagnosisGeneratingIndicator';
 
 // Progress Indicator Component
 const ProgressIndicator = ({ turnCount, hasRealProblem }: { turnCount: number; hasRealProblem: boolean }) => {
@@ -363,8 +364,19 @@ export const ChatContainer = () => {
                 ))}
               </AnimatePresence>
 
-              {/* Typing Indicator */}
-              {isProcessing && (
+              {/* Diagnosis Generating Indicator - Special state */}
+              {state.step === 'generating_diagnosis' && !isProcessing && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                >
+                  <DiagnosisGeneratingIndicator />
+                </motion.div>
+              )}
+
+              {/* Typing Indicator - Normal processing */}
+              {isProcessing && state.step !== 'generating_diagnosis' && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
