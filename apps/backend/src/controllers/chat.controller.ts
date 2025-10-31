@@ -235,11 +235,13 @@ export class ChatController {
         hasRealProblem?: boolean;
         sessionId?: string;
         hasImage?: boolean;
+        hasOfferedImage?: boolean;
       } = {
         turnCount: turnCount + 1,
         hasRealProblem,
         sessionId,
         hasImage: !!imageBuffer, // Indicar si hay imagen en este mensaje
+        hasOfferedImage: flowState?.hasOfferedImage || false,
       };
 
       if (session.userName) context.userName = session.userName;
@@ -283,6 +285,9 @@ export class ChatController {
         ? { postDiagnosisMessageCount: session.postDiagnosisMessageCount + 1 }
         : { messageCount: session.messageCount + 1 };
 
+      // Detectar si Clara ofreció compartir imagen en su respuesta
+      const offeredImageInResponse = /📷|cámara|foto|imagen.*abdomen|compartir.*foto|subir.*imagen/i.test(response.message);
+
       // Actualizar flowState
       await prisma.session.update({
         where: { id: sessionId },
@@ -291,6 +296,7 @@ export class ChatController {
           flowState: {
             ...flowState,
             hasRealProblem: response.shouldEndConversation ? false : hasRealProblem,
+            hasOfferedImage: flowState?.hasOfferedImage || offeredImageInResponse,
           } as any,
           currentQuestionIndex: turnCount + 1,
         },

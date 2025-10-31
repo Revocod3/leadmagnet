@@ -146,9 +146,9 @@ function MainFlow() {
               <motion.div
                 animate={{ scale: [1, 1.1, 1] }}
                 transition={{ duration: 1.5, repeat: Infinity }}
-                className="w-20 h-20"
+                className="w-24 h-24 rounded-full bg-white shadow-2xl flex items-center justify-center p-2 ring-4 ring-white/30"
               >
-                <img src="/assets/images/favicon.webp" alt="OVP" className="w-full h-full object-contain drop-shadow-2xl" />
+                <img src="/assets/images/favicon.webp" alt="OVP" className="w-full h-full object-cover rounded-full" />
               </motion.div>
             </motion.div>
           )

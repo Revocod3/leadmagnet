@@ -55,14 +55,70 @@ export const DiagnosticPDFTemplate: React.FC<DiagnosticPDFTemplateProps> = ({
     day: 'numeric',
   });
 
+  // Decode HTML entities
+  const decodeHtmlEntities = (text: string): string => {
+    const entities: Record<string, string> = {
+      '&nbsp;': ' ',
+      '&lt;': '<',
+      '&gt;': '>',
+      '&amp;': '&',
+      '&quot;': '"',
+      '&#39;': "'",
+      '&apos;': "'",
+      '&mdash;': '—',
+      '&ndash;': '–',
+      '&hellip;': '...',
+      '&ldquo;': '"',
+      '&rdquo;': '"',
+      '&lsquo;': "'",
+      '&rsquo;': "'",
+      '&bull;': '•',
+      '&deg;': '°',
+      '&copy;': '©',
+      '&reg;': '®',
+      '&trade;': '™',
+    };
+
+    let decoded = text;
+
+    // Replace common named entities
+    Object.keys(entities).forEach(entity => {
+      const replacement = entities[entity];
+      if (replacement !== undefined) {
+        const regex = new RegExp(entity, 'g');
+        decoded = decoded.replace(regex, replacement);
+      }
+    });
+
+    // Replace numeric entities (e.g., &#123; or &#x7B;)
+    decoded = decoded.replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(parseInt(dec, 10)));
+    decoded = decoded.replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+
+    return decoded;
+  };
+
+  // Remove HTML tags but preserve content
+  const stripHtmlTags = (text: string): string => {
+    return text.replace(/<[^>]+>/g, '');
+  };
+
   // Process markdown content to clean it up
   const processMarkdownContent = (text: string) => {
+    // First decode HTML entities
+    let processed = decodeHtmlEntities(text);
+
+    // Strip HTML tags (like <strong>, <em>, etc.)
+    processed = stripHtmlTags(processed);
+
     // Remove ### and replace with proper headers
-    let processed = text.replace(/^###\s+(.+)$/gm, '## $1');
+    processed = processed.replace(/^###\s+(.+)$/gm, '## $1');
+
     // Clean up excessive line breaks
     processed = processed.replace(/\n{3,}/g, '\n\n');
+
     // Ensure proper spacing around headers
     processed = processed.replace(/(\n|^)(#{1,3}\s+[^\n]+)(\n|$)/g, '\n\n$2\n\n');
+
     return processed;
   };
 
@@ -198,8 +254,12 @@ export const DiagnosticPDFTemplate: React.FC<DiagnosticPDFTemplateProps> = ({
           color: #222;
           margin: 2rem 0 1rem 0;
           page-break-after: avoid;
+          page-break-inside: avoid;
+          page-break-before: auto;
           border-bottom: 3px solid #95C11F;
           padding-bottom: 0.5rem;
+          orphans: 3;
+          widows: 3;
         }
 
         .markdown-content h2 {
@@ -208,9 +268,13 @@ export const DiagnosticPDFTemplate: React.FC<DiagnosticPDFTemplateProps> = ({
           color: #333;
           margin: 1.75rem 0 0.75rem 0;
           page-break-after: avoid;
+          page-break-inside: avoid;
+          page-break-before: auto;
           display: flex;
           align-items: center;
           gap: 0.5rem;
+          orphans: 3;
+          widows: 3;
         }
 
         .markdown-content h2::before {
@@ -227,6 +291,10 @@ export const DiagnosticPDFTemplate: React.FC<DiagnosticPDFTemplateProps> = ({
           color: #444;
           margin: 1.5rem 0 0.75rem 0;
           page-break-after: avoid;
+          page-break-inside: avoid;
+          page-break-before: auto;
+          orphans: 3;
+          widows: 3;
         }
 
         .markdown-content p {
@@ -236,6 +304,9 @@ export const DiagnosticPDFTemplate: React.FC<DiagnosticPDFTemplateProps> = ({
           line-height: 1.7;
           text-align: justify;
           hyphens: auto;
+          page-break-inside: avoid;
+          orphans: 3;
+          widows: 3;
         }
 
         .markdown-content strong {
@@ -252,6 +323,8 @@ export const DiagnosticPDFTemplate: React.FC<DiagnosticPDFTemplateProps> = ({
           margin: 0.75rem 0 0.75rem 1.5rem;
           padding: 0;
           page-break-inside: avoid;
+          orphans: 3;
+          widows: 3;
         }
 
         .markdown-content li {
@@ -259,6 +332,7 @@ export const DiagnosticPDFTemplate: React.FC<DiagnosticPDFTemplateProps> = ({
           color: #444;
           margin-bottom: 0.5rem;
           line-height: 1.6;
+          page-break-inside: avoid;
         }
 
         .markdown-content ul li::marker {
@@ -272,6 +346,8 @@ export const DiagnosticPDFTemplate: React.FC<DiagnosticPDFTemplateProps> = ({
           font-style: italic;
           color: #555;
           page-break-inside: avoid;
+          orphans: 3;
+          widows: 3;
         }
 
         .markdown-content a {

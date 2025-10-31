@@ -28,8 +28,8 @@ export const usePDFGenerator = () => {
         root.render(
           DiagnosticPDFTemplate({ userName, diagnosisContent, language })
         );
-        // Wait a bit longer for images and styles to load
-        setTimeout(resolve, 500);
+        // Wait longer for images, fonts, and styles to fully load
+        setTimeout(resolve, 1000);
       });
 
       // Get the rendered element
@@ -40,18 +40,23 @@ export const usePDFGenerator = () => {
 
       // Convert HTML to canvas with high quality settings
       const canvas = await html2canvas(element, {
-        scale: 2, // Higher quality
+        scale: 2.5, // Even higher quality for better text rendering
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
         windowWidth: 794, // A4 width in pixels at 96dpi
-        windowHeight: 1123, // A4 height in pixels at 96dpi
+        allowTaint: false,
+        imageTimeout: 15000,
+        removeContainer: false,
         onclone: (clonedDoc) => {
           // Ensure styles are applied to cloned document
           const clonedElement = clonedDoc.querySelector('.pdf-container') as HTMLElement;
           if (clonedElement) {
             clonedElement.style.width = '210mm';
             clonedElement.style.minHeight = '297mm';
+            // Force better rendering
+            clonedElement.style.transform = 'translateZ(0)';
+            clonedElement.style.backfaceVisibility = 'hidden';
           }
         }
       });
@@ -153,7 +158,7 @@ export const usePDFGenerator = () => {
         root.render(
           DiagnosticPDFTemplate({ userName, diagnosisContent, language })
         );
-        setTimeout(resolve, 500);
+        setTimeout(resolve, 1000);
       });
 
       const element = container.querySelector('.pdf-container') as HTMLElement;
@@ -162,12 +167,23 @@ export const usePDFGenerator = () => {
       }
 
       const canvas = await html2canvas(element, {
-        scale: 2,
+        scale: 2.5,
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
         windowWidth: 794,
-        windowHeight: 1123,
+        allowTaint: false,
+        imageTimeout: 15000,
+        removeContainer: false,
+        onclone: (clonedDoc) => {
+          const clonedElement = clonedDoc.querySelector('.pdf-container') as HTMLElement;
+          if (clonedElement) {
+            clonedElement.style.width = '210mm';
+            clonedElement.style.minHeight = '297mm';
+            clonedElement.style.transform = 'translateZ(0)';
+            clonedElement.style.backfaceVisibility = 'hidden';
+          }
+        }
       });
 
       const pdf = new jsPDF({

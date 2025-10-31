@@ -91,7 +91,7 @@ const ProgressIndicator = ({ turnCount, hasRealProblem }: { turnCount: number; h
 };
 
 export const ChatContainer = () => {
-  const { session } = useSessionStore();
+  const { session, imagesUploaded, incrementImagesUploaded } = useSessionStore();
   const [inputMessage, setInputMessage] = useState('');
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
@@ -100,6 +100,7 @@ export const ChatContainer = () => {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [isPlusMenuOpen, setIsPlusMenuOpen] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [showImageLimitMessage, setShowImageLimitMessage] = useState(false);
 
   const {
     messages,
@@ -186,6 +187,7 @@ export const ChatContainer = () => {
     if (!inputMessage.trim() || isProcessing) return;
 
     const messageToSend = inputMessage;
+    const hasImage = !!selectedImage;
     setInputMessage('');
 
     let imageFile: File | undefined;
@@ -207,8 +209,9 @@ export const ChatContainer = () => {
     // Send the message with optional image
     await processMessage(messageToSend, imageFile);
 
-    // Clear the image preview and uploading state after sending message
-    if (selectedImage) {
+    // Si se envió una imagen, incrementar contador y limpiar
+    if (hasImage && imageFile) {
+      incrementImagesUploaded();
       setSelectedImage(null);
       setIsUploadingImage(false);
     }
@@ -262,11 +265,25 @@ export const ChatContainer = () => {
   };
 
   const handleCameraCapture = async (imageDataUrl: string) => {
+    // Verificar límite de imágenes
+    if (imagesUploaded >= 1) {
+      setShowImageLimitMessage(true);
+      setTimeout(() => setShowImageLimitMessage(false), 5000);
+      return;
+    }
     setSelectedImage(imageDataUrl);
     // Image will be uploaded when user sends a message
   };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Verificar límite de imágenes
+    if (imagesUploaded >= 1) {
+      setShowImageLimitMessage(true);
+      setTimeout(() => setShowImageLimitMessage(false), 5000);
+      e.target.value = ''; // Reset input
+      return;
+    }
+
     const file = e.target.files?.[0];
     if (file && file.type.startsWith('image/')) {
       const reader = new FileReader();
@@ -277,6 +294,7 @@ export const ChatContainer = () => {
       };
       reader.readAsDataURL(file);
     }
+    e.target.value = ''; // Reset input
   };
 
   const handleImageClick = (imageUrl: string) => {
@@ -334,11 +352,17 @@ export const ChatContainer = () => {
             {messages.length === 0 && !isProcessing && (
               <div className="flex flex-col items-center justify-center min-h-[50vh] text-center px-4">
                 <motion.div
-                  animate={{ scale: [1, 1.1, 1] }}
-                  transition={{ duration: 1.5, repeat: Infinity }}
-                  className="w-20 h-20 mb-6 rounded-full"
+                  animate={{ scale: [1, 1.05, 1] }}
+                  transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                  className="mb-6"
                 >
-                  <img src="/assets/images/favicon.webp" alt="OVP" className="w-full h-full object-contain drop-shadow-2xl" />
+                  <div className="w-24 h-24 rounded-full overflow-hidden shadow-xl">
+                    <img
+                      src="/assets/images/favicon.webp"
+                      alt="OVP"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
                 </motion.div>
                 <h2 className="text-2xl font-bold text-foreground mb-2">
                   Preparando tu diagnóstico
@@ -394,34 +418,76 @@ export const ChatContainer = () => {
         {/* Input Area - ChatGPT Style */}
         <footer className="mobile-chat-footer bg-gradient-to-t from-neutral-50 to-neutral-50/80 dark:from-neutral-900 dark:to-neutral-900/70 pb-safe">
           <div className="max-w-3xl mx-auto px-4 py-4">
+            {/* Mensaje de límite de imágenes alcanzado */}
+            <AnimatePresence>
+              {showImageLimitMessage && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                  className="mb-3 p-4 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 rounded-xl border-2 border-purple-300 dark:border-purple-700 shadow-lg"
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="text-2xl flex-shrink-0">🔒</span>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-purple-900 dark:text-purple-200 mb-1">
+                        Límite de imágenes alcanzado
+                      </p>
+                      <p className="text-xs text-purple-700 dark:text-purple-300 mb-2">
+                        Ya has subido 1 imagen en esta sesión gratuita.
+                      </p>
+                      <a
+                        href="https://objetivovientreplano.com/suscripcion/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 text-xs font-semibold text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 transition-colors"
+                      >
+                        <span>✨ Desbloquea imágenes ilimitadas</span>
+                        <span>→</span>
+                      </a>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             {/* Selected Image Preview */}
             {selectedImage && (
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="mb-3 flex items-center gap-3 p-3 bg-white dark:bg-neutral-800 rounded-xl border border-neutral-300 dark:border-neutral-700 shadow-md"
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="mb-3 flex items-center gap-3 p-3 bg-gradient-to-r from-brand-green-50 to-green-100 dark:from-brand-green-900/20 dark:to-green-800/20 rounded-xl border-2 border-brand-green-300 dark:border-brand-green-700 shadow-md"
               >
-                <img
-                  src={selectedImage}
-                  alt="Preview"
-                  className="w-16 h-16 object-cover rounded-lg cursor-pointer hover:opacity-75 transition-opacity"
-                  onClick={() => handleImageClick(selectedImage)}
-                />
+                <div className="relative">
+                  <img
+                    src={selectedImage}
+                    alt="Preview"
+                    className="w-16 h-16 object-cover rounded-lg cursor-pointer hover:opacity-75 transition-opacity"
+                    onClick={() => handleImageClick(selectedImage)}
+                  />
+                  {isUploadingImage && (
+                    <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
+                      <div className="animate-spin text-white text-xl">⏳</div>
+                    </div>
+                  )}
+                </div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium text-neutral-900 dark:text-white">
-                    {isUploadingImage ? 'Subiendo imagen...' : 'Imagen lista'}
+                  <p className="text-sm font-semibold text-brand-green-900 dark:text-brand-green-200">
+                    {isUploadingImage ? 'Enviando imagen...' : '📷 Imagen lista para enviar'}
                   </p>
-                  <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                    {isUploadingImage ? 'Analizando...' : '✓ Analizada correctamente'}
+                  <p className="text-xs text-brand-green-700 dark:text-brand-green-300">
+                    {isUploadingImage ? 'Clara la está analizando...' : 'Escribe un mensaje y presiona enviar'}
                   </p>
                 </div>
-                <button
-                  onClick={() => setSelectedImage(null)}
-                  className="p-1.5 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors text-neutral-500 dark:text-neutral-400"
-                  disabled={isUploadingImage}
-                >
-                  ✕
-                </button>
+                {!isUploadingImage && (
+                  <button
+                    onClick={() => setSelectedImage(null)}
+                    className="p-1.5 rounded-lg hover:bg-brand-green-200 dark:hover:bg-brand-green-800 transition-colors text-brand-green-700 dark:text-brand-green-300"
+                  >
+                    ✕
+                  </button>
+                )}
               </motion.div>
             )}
 
