@@ -324,21 +324,112 @@
   }
 
   /* Diagnosis Message - Long Form Content */
-  .message-diagnosis {
-    @apply space-y-3;
-    @apply text-sm leading-relaxed;
+  .diagnosis-content {
+    @apply space-y-4;
+    @apply text-[15px] leading-relaxed;
   }
 
-  .message-diagnosis p {
-    @apply mb-2;
+  .diagnosis-content h1 {
+    @apply text-2xl font-bold text-foreground;
+    @apply mb-4 mt-6;
+    @apply border-b-2 border-brand-green-500 pb-2;
   }
 
-  .message-diagnosis h3 {
-    @apply font-semibold text-base mt-4 mb-2;
+  .diagnosis-content h2 {
+    @apply text-xl font-bold text-foreground;
+    @apply mb-3 mt-5;
+    @apply flex items-center gap-2;
   }
 
-  .message-diagnosis ul {
-    @apply list-disc list-inside space-y-1 ml-2;
+  .diagnosis-content h2::before {
+    content: '';
+    @apply w-1 h-5 bg-brand-green-500 rounded-sm inline-block;
+  }
+
+  .diagnosis-content h3 {
+    @apply text-lg font-semibold text-foreground;
+    @apply mb-2 mt-4;
+  }
+
+  .diagnosis-content h4 {
+    @apply text-base font-semibold text-secondary;
+    @apply mb-2 mt-3;
+  }
+
+  .diagnosis-content p {
+    @apply text-foreground mb-3;
+    @apply leading-relaxed;
+  }
+
+  .diagnosis-content strong {
+    @apply font-semibold text-foreground;
+  }
+
+  .diagnosis-content em {
+    @apply italic text-secondary;
+  }
+
+  .diagnosis-content ul {
+    @apply list-disc list-outside ml-6 space-y-2 mb-3;
+  }
+
+  .diagnosis-content ol {
+    @apply list-decimal list-outside ml-6 space-y-2 mb-3;
+  }
+
+  .diagnosis-content li {
+    @apply text-foreground leading-relaxed;
+    @apply pl-1;
+  }
+
+  .diagnosis-content li::marker {
+    @apply text-brand-green-500;
+  }
+
+  .diagnosis-content a {
+    @apply text-brand-green-600 dark:text-brand-green-400;
+    @apply underline decoration-1 underline-offset-2;
+    @apply hover:text-brand-green-700 dark:hover:text-brand-green-300;
+    @apply transition-colors;
+  }
+
+  .diagnosis-content blockquote {
+    @apply border-l-4 border-brand-green-500;
+    @apply pl-4 py-2 my-4;
+    @apply bg-brand-green-50 dark:bg-neutral-800;
+    @apply rounded-r-lg;
+    @apply italic text-secondary;
+  }
+
+  .diagnosis-content code {
+    @apply bg-neutral-100 dark:bg-neutral-800;
+    @apply px-1.5 py-0.5 rounded;
+    @apply text-sm font-mono;
+    @apply text-brand-green-700 dark:text-brand-green-300;
+  }
+
+  .diagnosis-content pre {
+    @apply bg-neutral-100 dark:bg-neutral-800;
+    @apply p-4 rounded-lg;
+    @apply overflow-x-auto;
+    @apply mb-4;
+  }
+
+  .diagnosis-content pre code {
+    @apply bg-transparent p-0;
+  }
+
+  .diagnosis-content hr {
+    @apply border-t border-border my-6;
+  }
+
+  /* Section spacing */
+  .diagnosis-content>*:first-child {
+    @apply mt-0;
+  }
+
+  .diagnosis-content>*:last-child {
+    @apply mb-0;
   }
 
   /* Loading States */
