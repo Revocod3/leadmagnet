@@ -78,19 +78,24 @@ export const ChatMessage = ({
 
           {/* Show 2 buttons when diagnosis is ready */}
           {message.type === 'diagnosis_ready' && state.diagnosisContent && onDownloadPDF && (
-            <div className="mt-8 flex flex-col gap-4">
+            <div className="mt-8 flex flex-col gap-3">
               {/* Primary CTA - Subscription Button */}
               <a
                 href="https://objetivovientreplano.com/suscripcion/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group w-full py-5 px-6 rounded-2xl bg-gradient-to-r from-brand-green-500 via-brand-green-600 to-brand-green-700 hover:from-brand-green-600 hover:via-brand-green-700 hover:to-brand-green-800 text-white font-bold text-lg flex flex-col items-center justify-center gap-3 transition-all shadow-2xl hover:shadow-3xl transform hover:-translate-y-1 hover:scale-[1.02] relative overflow-hidden"
+                className="group w-full py-4 sm:py-5 px-4 sm:px-6 rounded-2xl bg-gradient-to-r from-purple-600 via-purple-700 to-indigo-700 hover:from-purple-700 hover:via-purple-800 hover:to-indigo-800 text-white font-bold text-sm sm:text-base md:text-lg flex items-center justify-center gap-2 sm:gap-3 transition-all duration-300 shadow-2xl hover:shadow-purple-500/50 transform hover:-translate-y-1 hover:scale-[1.02] relative overflow-hidden"
               >
                 {/* Animated background effect */}
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent transform -skew-x-12 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000"></div>
-                <div className="relative z-10 flex items-center gap-3">
-                  <span>Transforma tu salud digestiva</span>
-                  <span className="text-xl group-hover:translate-x-1 transition-transform">→</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -skew-x-12 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000"></div>
+
+                <div className="relative z-10 flex items-center gap-2 sm:gap-3">
+                  <span className="hidden sm:inline">✨</span>
+                  <span className="text-center leading-tight">
+                    <span className="hidden sm:inline">Transforma tu salud digestiva</span>
+                    <span className="sm:hidden">Comenzar ahora</span>
+                  </span>
+                  <span className="text-lg sm:text-xl group-hover:translate-x-1 transition-transform">→</span>
                 </div>
               </a>
 
@@ -98,18 +103,20 @@ export const ChatMessage = ({
               <button
                 onClick={onDownloadPDF}
                 disabled={isGeneratingPDF}
-                className="w-full py-4 px-6 rounded-xl bg-white dark:bg-neutral-800 border-2 border-brand-green-500 hover:bg-brand-green-50 dark:hover:bg-neutral-700 text-brand-green-700 dark:text-brand-green-400 font-semibold text-base flex items-center justify-center gap-3 transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transform hover:-translate-y-0.5"
+                className="w-full py-3 sm:py-4 px-4 sm:px-6 rounded-xl bg-white dark:bg-neutral-800 border-2 border-brand-green-500 dark:border-brand-green-400 hover:bg-brand-green-50 dark:hover:bg-neutral-700 text-brand-green-700 dark:text-brand-green-400 font-semibold text-sm sm:text-base flex items-center justify-center gap-2 sm:gap-3 transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transform hover:-translate-y-0.5 active:scale-95"
               >
                 {isGeneratingPDF ? (
-                  <>
+                  <div className="flex items-center gap-2">
                     <span className="animate-spin">⏳</span>
-                    Generando tu diagnóstico en PDF...
-                  </>
+                    <span className="hidden xs:inline">Generando PDF...</span>
+                    <span className="xs:hidden">Generando...</span>
+                  </div>
                 ) : (
                   <>
-                    <Download className="w-5 h-5" />
-                    Descargar mi diagnóstico en PDF
-                    <span className="text-xs bg-brand-green-100 dark:bg-brand-green-900 px-2 py-0.5 rounded-full">Gratis</span>
+                    <Download className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+                    <span className="hidden sm:inline">Descargar mi diagnóstico en PDF</span>
+                    <span className="sm:hidden">Descargar PDF</span>
+                    <span className="hidden xs:inline text-xs bg-brand-green-100 dark:bg-brand-green-900 px-2 py-0.5 rounded-full ml-1">Gratis</span>
                   </>
                 )}
               </button>

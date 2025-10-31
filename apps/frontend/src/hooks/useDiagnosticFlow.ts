@@ -251,7 +251,7 @@ export const useDiagnosticFlow = () => {
 
         // Handle diagnosis generation - show special state
         if (isGeneratingDiagnosis) {
-          // First show a quick acknowledgment
+          // First show a quick acknowledgment - INMEDIATO
           setTimeout(() => {
             setMessages((prev) => [
               ...prev,
@@ -262,12 +262,12 @@ export const useDiagnosticFlow = () => {
                 timestamp: new Date().toISOString(),
               },
             ]);
-          }, 500);
+          }, 500); // Reducido de 500ms a 200ms
 
-          // Then show generating state
+          // Then show generating state - MÁS RÁPIDO
           setTimeout(() => {
             setState((prev) => ({ ...prev, step: 'generating_diagnosis' }));
-          }, 1200);
+          }, 500); // Reducido de 1200ms a 600ms
 
           // Finally, add the diagnosis after a realistic delay
           setTimeout(() => {
@@ -284,7 +284,7 @@ export const useDiagnosticFlow = () => {
               setState((prev) => ({ ...prev, step: 'diagnosis_ready' }));
             }
             setIsProcessing(false);
-          }, 8500); // Match the total duration of DiagnosisGeneratingIndicator
+          }, 6700); // Ajustado: 600ms + 6100ms de animación + 200ms buffer
 
           return; // Don't execute the normal flow
         }

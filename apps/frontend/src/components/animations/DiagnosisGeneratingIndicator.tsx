@@ -9,10 +9,10 @@ interface Step {
 }
 
 const GENERATION_STEPS: Step[] = [
-  { icon: Brain, text: 'Analizando tus respuestas...', duration: 2000 },
-  { icon: Sparkles, text: 'Identificando patrones clave...', duration: 2500 },
-  { icon: FileText, text: 'Generando tu diagnóstico personalizado...', duration: 3000 },
-  { icon: CheckCircle2, text: 'Finalizando...', duration: 1000 }
+  { icon: Brain, text: 'Analizando tus respuestas...', duration: 1500 },
+  { icon: Sparkles, text: 'Identificando patrones clave...', duration: 1800 },
+  { icon: FileText, text: 'Generando tu diagnóstico personalizado...', duration: 2000 },
+  { icon: CheckCircle2, text: 'Finalizando...', duration: 800 }
 ];
 
 export const DiagnosisGeneratingIndicator = () => {
@@ -20,13 +20,13 @@ export const DiagnosisGeneratingIndicator = () => {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    // Simulate progress
+    // Simulate progress - faster to reach 95%
     const progressInterval = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 95) return prev; // Cap at 95% until complete
-        return prev + 1;
+        return prev + 1.5; // Faster increment
       });
-    }, 100);
+    }, 80); // Faster updates
 
     // Step through generation phases
     let totalDuration = 0;
@@ -112,8 +112,8 @@ export const DiagnosisGeneratingIndicator = () => {
               <div
                 key={index}
                 className={`flex-1 h-1 rounded-full transition-all duration-500 ${index <= currentStep
-                    ? 'bg-brand-green-500'
-                    : 'bg-white/30 dark:bg-neutral-600/30'
+                  ? 'bg-brand-green-500'
+                  : 'bg-white/30 dark:bg-neutral-600/30'
                   }`}
               />
             ))}
