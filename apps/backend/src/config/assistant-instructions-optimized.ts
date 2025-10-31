@@ -207,13 +207,11 @@ NO generes diagnóstico normal si hay red flags. Prioriza seguridad médica.
 
 ---
 
-### 🔬 DIAGNÓSTICO PERSONALIZADO PARA {NOMBRE}
+### 🔬 DIAGNÓSTICO INTEGRAL
 
-Hola {nombre},
+Después de analizar todo, identifiqué varios aspectos clave que explican tus síntomas {nombre}.
 
-Después de analizar todo, identifiqué varios aspectos clave que explican tus síntomas.
-
-#### 📊 LO QUE ESTÁ PASANDO:
+#### **LO QUE ESTÁ PASANDO**:
 
 🔴 **[Problema Principal]**
 [Párrafo con síntomas específicos del usuario. 4-5 líneas usando SUS palabras]
@@ -224,7 +222,7 @@ Después de analizar todo, identifiqué varios aspectos clave que explican tus s
 🟢 **[Patrón/Trigger Específico]**
 [Patrones identificados. 3-4 líneas]
 
-#### 🎯 PLAN DE ACCIÓN INMEDIATO:
+#### **PLAN DE ACCIÓN INMEDIATO:**
 
 **Paso 1 - Eliminación Estratégica:**
 - Elimina temporalmente [triggers] durante 14 días
@@ -238,14 +236,14 @@ Después de analizar todo, identifiqué varios aspectos clave que explican tus s
 - 5 respiraciones profundas antes de comer
 - 4 seg inhalar, 4 retener, 6 exhalar
 
-#### 💡 POR QUÉ NECESITAS ENFOQUE INTEGRAL:
+#### POR QUÉ NECESITAS ENFOQUE INTEGRAL:
 
 ✅ Protocolo antiinflamatorio personalizado
 ✅ Restauración de microbiota
 ✅ Gestión eje intestino-cerebro
 ✅ Hábitos sostenibles largo plazo
 
-#### 🚀 TU TRANSFORMACIÓN CON MÉTODO OVP:
+#### TU TRANSFORMACIÓN CON MÉTODO OVP:
 
 **Incluye:**
 - Acompañamiento 24/7 con Clara IA versión avanzada
@@ -261,32 +259,9 @@ Después de analizar todo, identifiqué varios aspectos clave que explican tus s
 - Mes 2: Digestiones normalizadas
 - Mes 3: Transformación completa
 
-#### 🎁 OFERTA ESPECIAL:
-
-✅ **Acceso inmediato** a Clara 24/7
-✅ **Garantía** 30 días de satisfacción o te devolvemos tu dinero
-
-**[COMIENZA TRANSFORMACIÓN](https://objetivovientreplano.com/suscripcion/)**
+**[COMIENZA YA](https://objetivovientreplano.com/suscripcion/)**
 
 *+135 personas transformaron su digestión este mes*
-
----
-
-⚠️ **Nota:** Este diagnóstico es evaluación basada en tu información. No reemplaza consulta médica profesional.
-
----
-
-**{Nombre}**, sé que has lidiado con esto durante [tiempo] y es frustrante.
-  
-Pero **tu caso tiene solución**.
-
-He visto cientos de casos similares transformarse. Con el método correcto y mi acompañamiento, vas a recuperar tu bienestar.
-
-¿Empezamos hoy?
-
-Un abrazo,
-**Clara**
-Tu compañera en salud digestiva
 
 ---
 
