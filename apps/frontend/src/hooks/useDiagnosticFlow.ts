@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { diagnosticContent, type DiagnosticQuestion } from '../constants/diagnosticQuestions';
 import { useSessionStore } from '../stores/sessionStore';
 import { apiClient } from '../services/api';
@@ -8,6 +8,7 @@ export type FlowStep =
   | 'name_extracted'
   | 'greeting'
   | 'asking_questions'
+  | 'generating_diagnosis'
   | 'diagnosis_ready'
   | 'completed';
 
@@ -54,6 +55,48 @@ export const useDiagnosticFlow = () => {
   const [showWelcome, setShowWelcome] = useState(false);
   const [etymology, setEtymology] = useState<string>('');
   const [isInitialized, setIsInitialized] = useState(false);
+
+  // Poll for diagnosis when in generating state
+  useEffect(() => {
+    if (state.step !== 'generating_diagnosis') return;
+
+    const sessionStore = useSessionStore.getState();
+    const sessionId = sessionStore.session?.id;
+    if (!sessionId) return;
+
+    const pollInterval = setInterval(async () => {
+      try {
+        const diagnosisData = await apiClient.getConversationalDiagnosis(sessionId);
+
+        if (diagnosisData.ready && diagnosisData.content) {
+          // Diagnosis is ready! Add it to messages
+          clearInterval(pollInterval);
+
+          setMessages((prev) => [
+            ...prev,
+            {
+              role: 'assistant',
+              content: diagnosisData.content!,
+              type: 'diagnosis_ready',
+              timestamp: new Date().toISOString(),
+            },
+          ]);
+
+          setState((prev) => ({
+            ...prev,
+            step: 'diagnosis_ready',
+            diagnosisContent: diagnosisData.content,
+          }));
+
+          setIsProcessing(false);
+        }
+      } catch (error) {
+        console.error('Error polling for diagnosis:', error);
+      }
+    }, 2000); // Poll every 2 seconds
+
+    return () => clearInterval(pollInterval);
+  }, [state.step]);
 
   // Initialize chat: try to restore history; if empty, request welcome/init
   const initialize = useCallback(async () => {
@@ -176,6 +219,10 @@ export const useDiagnosticFlow = () => {
         // Extract metadata from response
         const metadata = response.metadata || {};
 
+        // Check if we're about to generate diagnosis
+        const isGeneratingDiagnosis = metadata.step === 'generating_diagnosis' ||
+          metadata.type === 'generating_diagnosis';
+
         // Update state based on backend response
         setState((prev) => {
           const newState: DiagnosticState = {
@@ -200,6 +247,46 @@ export const useDiagnosticFlow = () => {
           setShowWelcome(true);
           // Don't add message yet, will be added after welcome animation
           return;
+        }
+
+        // Handle diagnosis generation - show special state
+        if (isGeneratingDiagnosis) {
+          // First show a quick acknowledgment
+          setTimeout(() => {
+            setMessages((prev) => [
+              ...prev,
+              {
+                role: 'assistant',
+                content: response.content,
+                type: 'comment',
+                timestamp: new Date().toISOString(),
+              },
+            ]);
+          }, 500);
+
+          // Then show generating state
+          setTimeout(() => {
+            setState((prev) => ({ ...prev, step: 'generating_diagnosis' }));
+          }, 1200);
+
+          // Finally, add the diagnosis after a realistic delay
+          setTimeout(() => {
+            if (metadata.diagnosisContent) {
+              setMessages((prev) => [
+                ...prev,
+                {
+                  role: 'assistant',
+                  content: metadata.diagnosisContent,
+                  type: 'diagnosis_ready',
+                  timestamp: new Date().toISOString(),
+                },
+              ]);
+              setState((prev) => ({ ...prev, step: 'diagnosis_ready' }));
+            }
+            setIsProcessing(false);
+          }, 8500); // Match the total duration of DiagnosisGeneratingIndicator
+
+          return; // Don't execute the normal flow
         }
 
         // Add assistant message to UI with a small delay to simulate typing

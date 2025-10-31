@@ -117,6 +117,14 @@ class ApiClient {
     return response.data.data;
   }
 
+  async getConversationalDiagnosis(sessionId: string): Promise<{ ready: boolean; content: string | null; discountCode?: string; discountPercentage?: number }> {
+    const response = await this.client.get<ApiResponse<{ ready: boolean; content: string | null; discountCode?: string; discountPercentage?: number }>>(`/chat/${sessionId}/diagnosis`);
+    if (!response.data.success || !response.data.data) {
+      throw new Error(response.data.error || 'Error al obtener diagnóstico');
+    }
+    return response.data.data;
+  }
+
   // Quiz endpoints
   async submitQuizAnswer(data: SubmitQuizAnswerRequest): Promise<QuizAnswer> {
     const response = await this.client.post<ApiResponse<QuizAnswer>>('/quiz', data);

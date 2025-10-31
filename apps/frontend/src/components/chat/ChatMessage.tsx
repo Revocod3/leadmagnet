@@ -12,24 +12,6 @@ interface ChatMessageProps {
   isGeneratingPDF?: boolean;
 }
 
-// Helper function to enhance diagnosis HTML with better CTAs
-const enhanceDiagnosisHTML = (html: string): string => {
-  // Replace links with styled buttons
-  const enhancedHTML = html.replace(
-    /<a\s+href="([^"]+)"[^>]*>([^<]+)<\/a>/gi,
-    (_match, href, text) => {
-      // Check if it's the main CTA
-      if (text.includes('Comenzar') || text.includes('transformación') || text.includes('AHORA')) {
-        return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-brand-green-500 to-brand-green-600 hover:from-brand-green-600 hover:to-brand-green-700 text-white font-bold rounded-lg transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 no-underline my-3 text-center">${text} <span>→</span></a>`;
-      }
-      // Secondary links
-      return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 px-4 py-2 bg-brand-green-500 hover:bg-brand-green-600 text-white rounded-full text-sm font-medium transition-all shadow-sm hover:shadow-md transform hover:-translate-y-0.5 no-underline">${text} <span class="text-xs">→</span></a>`;
-    }
-  );
-
-  return enhancedHTML;
-};
-
 export const ChatMessage = ({
   message,
   state,
@@ -69,10 +51,10 @@ export const ChatMessage = ({
               animate={{ opacity: 1, scale: 1 }}
               className="space-y-4"
             >
-              {/* Contenido del diagnóstico */}
+              {/* Contenido del diagnóstico - Ya viene formateado en HTML desde el backend */}
               <div
-                className="prose prose-sm dark:prose-invert max-w-none space-y-4"
-                dangerouslySetInnerHTML={{ __html: enhanceDiagnosisHTML(message.content) }}
+                className="diagnosis-content space-y-4"
+                dangerouslySetInnerHTML={{ __html: message.content }}
               />
             </motion.div>
           ) : (
