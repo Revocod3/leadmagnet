@@ -26,22 +26,22 @@ export const ChatMessage = ({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
       transition={{ duration: 0.3 }}
-      className={`flex gap-4 ${isUser ? 'justify-end' : 'justify-start'}`}
+      className={`flex ${isUser ? 'justify-end' : 'justify-start relative'}`}
     >
-      {/* Avatar for assistant */}
+      {/* Avatar for assistant - subtle and minimal */}
       {!isUser && (
-        <div className="flex-shrink-0 w-8 h-8 rounded-full overflow-hidden shadow-sm ring-2 ring-brand-green-500/20 dark:ring-brand-green-400/30">
-          <img src="/assets/images/favicon.webp" alt="OVP" className="w-full h-full object-cover" />
+        <div className="absolute left-0 top-0 z-10 w-6 h-6 md:w-7 md:h-7 rounded-full overflow-hidden shadow-sm border border-neutral-200/50 dark:border-neutral-700/50 bg-white dark:bg-neutral-800">
+          <img src="/assets/images/favicon.webp" alt="OVP" className="w-full h-full object-cover opacity-90" />
         </div>
       )}
 
       {/* Message Content Wrapper */}
-      <div className={`flex flex-col ${isUser ? 'items-end max-w-[85%] sm:max-w-[75%]' : 'max-w-[85%] sm:max-w-[75%]'}`}>
+      <div className={`flex flex-col ${isUser ? 'items-end max-w-[88%] sm:max-w-[80%] md:max-w-[75%]' : 'max-w-[92%] sm:max-w-[85%] md:max-w-[80%] ml-2.5 md:ml-3'}`}>
         {/* Message Bubble */}
         <div
           className={`${isUser
-            ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 rounded-2xl px-5 py-3'
-            : 'bg-transparent text-foreground'
+            ? 'bg-brand-cream-100 dark:bg-neutral-700/60 text-neutral-900 dark:text-neutral-100 rounded-2xl px-4 py-2.5 md:px-5 md:py-3 shadow-sm border border-brand-cream-200/50 dark:border-neutral-600/40'
+            : 'bg-white/60 dark:bg-neutral-800/40 backdrop-blur-sm text-foreground rounded-2xl px-4 py-3 md:px-5 md:py-4 shadow-sm border border-neutral-200/40 dark:border-neutral-700/40'
             }`}
         >
           {/* Render diagnosis content with enhanced presentation */}
@@ -59,7 +59,7 @@ export const ChatMessage = ({
             </motion.div>
           ) : (
             /* Render normal messages with Markdown and typewriter effect */
-            <div className="text-[15px] leading-relaxed">
+            <div className="text-[16px] leading-relaxed">
               {!isUser ? (
                 /* Siempre usar TypewriterText para mensajes del asistente */
                 <TypewriterText
@@ -142,7 +142,7 @@ export const ChatMessage = ({
 
       {/* Avatar for user */}
       {isUser && (
-        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-semibold shadow-sm">
+        <div className="flex-shrink-0 w-7 h-7 md:w-8 md:h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs md:text-sm font-semibold shadow-sm">
           {state.userName?.charAt(0).toUpperCase() || 'U'}
         </div>
       )}

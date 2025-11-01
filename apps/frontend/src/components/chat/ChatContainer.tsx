@@ -355,11 +355,11 @@ export const ChatContainer = () => {
             <div className="flex items-center gap-3">
 
               <span className="text-sm font-medium text-foreground">
-                Diagnóstico {
-                  <span className="text-sm font-medium text-brand-green-500 animated-pulse-strong">
-                    En Línea
-                  </span>
-                }
+
+                <span className="text-sm font-medium text-brand-green-500 animated-pulse-strong">
+                  En Línea
+                </span>
+
               </span>
             </div>
 
@@ -367,12 +367,13 @@ export const ChatContainer = () => {
             <div className="flex items-center gap-1">
               <button
                 onClick={toggleDarkMode}
-                className="w-9 h-9 rounded-full hover:bg-surface transition-colors flex items-center justify-center border border-neutral-300 dark:border-neutral-700"
+                className="w-8 h-8 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-all flex items-center justify-center border border-neutral-200/50 dark:border-neutral-700/50 shadow-sm hover:shadow-md"
+                aria-label={isDarkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
               >
                 {isDarkMode ? (
-                  <Sun className="w-5 h-5 text-foreground" />
+                  <Sun className="w-4 h-4 text-neutral-600 dark:text-neutral-400" />
                 ) : (
-                  <Moon className="w-5 h-5 text-foreground" />
+                  <Moon className="w-4 h-4 text-neutral-600 dark:text-neutral-400" />
                 )}
               </button>
             </div>
@@ -413,7 +414,7 @@ export const ChatContainer = () => {
             )}
 
             {/* Messages */}
-            <div className="space-y-6">
+            <div className="space-y-3">
               <AnimatePresence mode="popLayout">
                 {messages.map((message, index) => (
                   <ChatMessage
@@ -590,7 +591,7 @@ export const ChatContainer = () => {
                   onKeyDown={handleKeyDown}
                   placeholder="Escribe tu mensaje..."
                   rows={1}
-                  className="flex-1 resize-none bg-transparent px-2 pb-[6px] text-neutral-900 dark:text-white border-none placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-0 focus:border-transparent focus-visible:outline-none text-[15px] max-h-[200px]"
+                  className="flex-1 resize-none bg-transparent px-2 pb-[6px] text-neutral-900 dark:text-white border-none placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-0 focus:border-transparent focus-visible:outline-none text-[16px] max-h-[200px]"
                   style={{ minHeight: '24px' }}
                 />
 

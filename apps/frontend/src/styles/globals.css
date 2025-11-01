@@ -325,8 +325,8 @@
 
   /* Diagnosis Message - Long Form Content */
   .diagnosis-content {
-    @apply space-y-4;
-    @apply text-[15px] leading-relaxed;
+    @apply space-y-3;
+    @apply text-[16px] leading-relaxed;
   }
 
   .diagnosis-content h1 {
@@ -357,7 +357,7 @@
   }
 
   .diagnosis-content p {
-    @apply text-foreground mb-3;
+    @apply text-foreground mb-2;
     @apply leading-relaxed;
   }
 
@@ -370,11 +370,11 @@
   }
 
   .diagnosis-content ul {
-    @apply list-disc list-outside ml-6 space-y-2 mb-3;
+    @apply list-disc list-outside ml-6 space-y-1 mb-2;
   }
 
   .diagnosis-content ol {
-    @apply list-decimal list-outside ml-6 space-y-2 mb-3;
+    @apply list-decimal list-outside ml-6 space-y-1 mb-2;
   }
 
   .diagnosis-content li {
@@ -481,19 +481,62 @@
     @apply border border-white/20 dark:border-neutral-800/50;
   }
 
-  /* Chat subtle lighting background */
+  /* Chat WhatsApp-style background with botanical pattern image */
   .bg-chat-lighting {
-    /* softer, barely-there radial glows using the brand color */
-    background-image:
-      radial-gradient(1500px 800px at -10% -20%, rgb(var(--color-brand-primary) / 0.02), transparent 65%),
-      radial-gradient(1400px 700px at 110% -15%, rgb(var(--color-brand-primary) / 0.015), transparent 65%);
-    background-repeat: no-repeat;
+    /* Base cream color with mood */
+    background-color: #F8F5E6;
+    /* Position for the pattern image overlay */
+    position: relative;
+  }
+
+  .bg-chat-lighting::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    /* Use the botanical pattern image */
+    background-image: url('/assets/images/chat-pattern.png');
+    background-size: 400px auto;
+    background-repeat: repeat;
+    background-position: center;
+    /* Increased opacity for more visibility */
+    opacity: 0.15;
+    /* Adjust colors with CSS filters */
+    filter:
+      sepia(0.25)
+      /* Add slight warm tone */
+      hue-rotate(-5deg)
+      /* Shift towards green */
+      saturate(0.8)
+      /* More saturation for visibility */
+      brightness(1.05);
+    /* Slightly brighter */
+    /* Ensure it stays behind content */
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Ensure child elements are above the background */
+  .bg-chat-lighting>* {
+    position: relative;
+    z-index: 1;
   }
 
   .dark .bg-chat-lighting {
-    background-image:
-      radial-gradient(1300px 650px at -12% -18%, rgb(var(--color-brand-primary) / 0.035), transparent 60%),
-      radial-gradient(1200px 600px at 112% -12%, rgb(255 255 255 / 0.02), transparent 60%);
+    /* Darker background for dark mode */
+    background-color: #1a1a1a;
+  }
+
+  .dark .bg-chat-lighting::before {
+    /* Same pattern but more visible in dark mode */
+    opacity: 0.20;
+    filter:
+      sepia(0.2) hue-rotate(-15deg) saturate(0.5) brightness(0.8)
+      /* Darker for dark mode */
+      invert(0.05);
+    /* Slight inversion for dark theme */
   }
 
   /* Divider */

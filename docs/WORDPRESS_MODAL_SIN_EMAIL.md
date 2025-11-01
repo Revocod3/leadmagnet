@@ -510,34 +510,88 @@ function ovp_add_lead_modal_name_only() {
                 // Mostrar estado de carga
                 showState('loading');
                 
-                // ⭐ REDIRIGIR DIRECTAMENTE AL CHAT CON SOLO EL NOMBRE
+                // ⭐ GUARDAR LEAD EN WORDPRESS Y REDIRIGIR CON leadId
                 try {
-                    // Mostrar éxito brevemente
-                    showState('success');
+                    const apiUrl = '<?php echo esc_url(rest_url('ovp/v1/leads')); ?>';
+                    console.log('📡 Guardando lead en WordPress:', apiUrl);
                     
-                    // ⭐ CONSTRUIR URL SIN EMAIL (DINÁMICO - FUNCIONA EN LOCAL Y PRODUCCIÓN)
-                    const isLocal = window.location.hostname === 'localhost' || 
-                                   window.location.hostname.includes('.local') ||
-                                   window.location.hostname.includes('127.0.0.1');
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            nombre: nombre,
+                            email: 'pendiente@temp.com' // Email temporal, se actualizará al final
+                        })
+                    });
                     
-                    const baseUrl = isLocal 
-                        ? 'http://localhost:5173/' 
-                        : 'https://chat.objetivovientreplano.com/';
+                    const data = await response.json();
+                    console.log('📥 Respuesta de WordPress:', data);
                     
-                    const diagnosticUrl = baseUrl + 
-                        '?nombre=' + encodeURIComponent(nombre);
-                    
-                    console.log('🔗 Redirigiendo a:', diagnosticUrl);
-                    
-                    // Redirigir después de mostrar éxito
-                    setTimeout(() => {
-                        window.location.href = diagnosticUrl;
-                    }, 1500);
+                    if (response.ok && data.success) {
+                        console.log('✅ Lead guardado con ID:', data.id);
+                        
+                        // Mostrar éxito
+                        showState('success');
+                        
+                        // ⭐ CONSTRUIR URL CON leadId (DINÁMICO - FUNCIONA EN LOCAL Y PRODUCCIÓN)
+                        const leadId = 'wp_' + data.id;
+                        
+                        const isLocal = window.location.hostname === 'localhost' || 
+                                       window.location.hostname.includes('.local') ||
+                                       window.location.hostname.includes('127.0.0.1');
+                        
+                        const baseUrl = isLocal 
+                            ? 'http://localhost:5173/' 
+                            : 'https://chat.objetivovientreplano.com/';
+                        
+                        const diagnosticUrl = baseUrl + 
+                            '?nombre=' + encodeURIComponent(nombre) +
+                            '&leadId=' + encodeURIComponent(leadId);
+                        
+                        console.log('🔗 URL de redirección:', diagnosticUrl);
+                        console.log('📍 Modo:', isLocal ? 'LOCAL' : 'PRODUCCIÓN');
+                        console.log('🏷️ Lead ID:', leadId);
+                        
+                        // Redirigir después de 1.5s
+                        setTimeout(() => {
+                            console.log('🚀 Redirigiendo a diagnóstico...');
+                            window.location.href = diagnosticUrl;
+                        }, 1500);
+                        
+                    } else if (data.code === 'email_exists' || data.existing) {
+                        // Si ya existe (por el email temporal), usar el ID existente
+                        console.log('⚠️ Lead ya existe, usando ID existente');
+                        showState('success');
+                        
+                        const leadId = 'wp_' + data.id;
+                        
+                        const isLocal = window.location.hostname === 'localhost' || 
+                                       window.location.hostname.includes('.local') ||
+                                       window.location.hostname.includes('127.0.0.1');
+                        
+                        const baseUrl = isLocal 
+                            ? 'http://localhost:5173/' 
+                            : 'https://chat.objetivovientreplano.com/';
+                        
+                        const diagnosticUrl = baseUrl + 
+                            '?nombre=' + encodeURIComponent(nombre) +
+                            '&leadId=' + encodeURIComponent(leadId);
+                        
+                        setTimeout(() => {
+                            window.location.href = diagnosticUrl;
+                        }, 1500);
+                    } else {
+                        console.error('❌ Error en respuesta de WordPress');
+                        showState('form');
+                        showError(data.message || 'Hubo un error. Intenta nuevamente.');
+                    }
                     
                 } catch (error) {
-                    console.error('❌ Error:', error);
+                    console.error('❌ Error de red:', error);
                     showState('form');
-                    showError('Hubo un error. Intenta nuevamente.');
+                    showError('Error de conexión. Verifica tu internet.');
                 }
             });
         }
@@ -556,18 +610,20 @@ function ovp_add_lead_modal_name_only() {
 - ❌ Ya no pide email en el modal inicial
 - El email se capturará cuando el usuario quiera descargar el PDF
 
-### 2. **URL de redirección**
+### 2. **URL de redirección actualizada**
 ```javascript
-// ANTES (con email):
+// AHORA (con nombre Y leadId):
 const diagnosticUrl = baseUrl + 
     '?nombre=' + encodeURIComponent(nombre) +
-    '&email=' + encodeURIComponent(email) +
-    '&leadId=' + encodeURIComponent(leadId);
-
-// AHORA (solo nombre):
-const diagnosticUrl = baseUrl + 
-    '?nombre=' + encodeURIComponent(nombre);
+    '&leadId=' + encodeURIComponent(leadId);  // ← AGREGADO leadId
 ```
+
+**Flujo actualizado:**
+1. Modal pide solo nombre
+2. Se guarda lead en WordPress con email temporal: `pendiente@temp.com`
+3. WordPress devuelve el ID del lead
+4. Se redirige al chat con `?nombre=Juan&leadId=wp_123`
+5. Al finalizar diagnóstico y pedir email, se actualiza el lead en WordPress con el email real
 
 ### 3. **Mensaje actualizado**
 ```html
