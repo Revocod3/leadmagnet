@@ -501,8 +501,9 @@
     background-size: 400px auto;
     background-repeat: repeat;
     background-position: center;
-    /* Increased opacity for more visibility */
-    opacity: 0.15;
+    /* Start with 0 opacity and animate in */
+    opacity: 0;
+    animation: fadeInPattern 0.8s ease-in-out 0.2s forwards;
     /* Adjust colors with CSS filters */
     filter:
       sepia(0.25)
@@ -518,6 +519,13 @@
     z-index: 0;
   }
 
+  /* Fade in animation for pattern */
+  @keyframes fadeInPattern {
+    to {
+      opacity: 0.15;
+    }
+  }
+
   /* Ensure child elements are above the background */
   .bg-chat-lighting>* {
     position: relative;
@@ -531,12 +539,21 @@
 
   .dark .bg-chat-lighting::before {
     /* Same pattern but more visible in dark mode */
-    opacity: 0.20;
+    /* Start at 0 and animate to final opacity */
+    opacity: 0;
+    animation: fadeInPatternDark 0.8s ease-in-out 0.2s forwards;
     filter:
       sepia(0.2) hue-rotate(-15deg) saturate(0.5) brightness(0.8)
       /* Darker for dark mode */
       invert(0.05);
     /* Slight inversion for dark theme */
+  }
+
+  /* Dark mode pattern fade in */
+  @keyframes fadeInPatternDark {
+    to {
+      opacity: 0.20;
+    }
   }
 
   /* Divider */
