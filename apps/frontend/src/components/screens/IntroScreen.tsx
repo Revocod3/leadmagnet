@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 
 interface IntroScreenProps {
-  onComplete: (name: string, email: string, leadId?: string) => void;
+  onComplete: (name: string, email?: string, leadId?: string) => void;
 }
 
 export const IntroScreen = ({ onComplete }: IntroScreenProps) => {
@@ -15,14 +15,14 @@ export const IntroScreen = ({ onComplete }: IntroScreenProps) => {
     const email = urlParams.get('email');
     const leadId = urlParams.get('leadId') || urlParams.get('lead_id');
 
-    // If both name and email are present, auto-complete
-    if (nombre && email) {
-      console.log('🔍 Parámetros URL detectados:', { nombre, email, leadId });
+    // If name is present, auto-complete (email is now optional)
+    if (nombre) {
+      console.log('🔍 Parámetros URL detectados:', { nombre, email: email || 'NO PROPORCIONADO', leadId });
       setIsLoading(true);
 
       // Small delay to show loading state
       setTimeout(() => {
-        onComplete(nombre, email, leadId || undefined);
+        onComplete(nombre, email || undefined, leadId || undefined);
       }, 500);
     }
   }, [onComplete]);

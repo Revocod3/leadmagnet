@@ -8,9 +8,11 @@ import { Moon, Sun, Mic, Plus, ArrowUp, Camera, Image } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CameraModal } from '../modals/CameraModal';
 import { ImageViewerModal } from '../modals/ImageViewerModal';
+import { EmailCaptureModal } from '../modals/EmailCaptureModal';
 import { ChatMessage } from './ChatMessage';
 import { TypingIndicator } from '../animations/TypingIndicator';
 import { DiagnosisGeneratingIndicator } from '../animations/DiagnosisGeneratingIndicator';
+import { apiClient } from '../../services/api';
 
 // Progress Indicator Component
 const ProgressIndicator = ({ turnCount, hasRealProblem }: { turnCount: number; hasRealProblem: boolean }) => {
@@ -101,6 +103,7 @@ export const ChatContainer = () => {
   const [isPlusMenuOpen, setIsPlusMenuOpen] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [showImageLimitMessage, setShowImageLimitMessage] = useState(false);
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
 
   const {
     messages,
@@ -216,6 +219,42 @@ export const ChatContainer = () => {
       setIsUploadingImage(false);
     }
   }; const handleDownloadPDF = async () => {
+    if (!state.diagnosisContent) return;
+
+    // Si ya tiene email guardado en la sesión, descargar directamente
+    if (session?.userEmail) {
+      await generatePDFDirectly();
+    } else {
+      // Si no tiene email, mostrar modal para capturarlo
+      setIsEmailModalOpen(true);
+    }
+  };
+
+  const handleEmailSubmit = async (email: string) => {
+    try {
+      // Actualizar la sesión con el email
+      if (session?.id) {
+        await apiClient.updateSession(session.id, { userEmail: email });
+
+        // Actualizar el store local
+        useSessionStore.getState().setSession({
+          ...session,
+          userEmail: email,
+        });
+      }
+
+      // Cerrar modal
+      setIsEmailModalOpen(false);
+
+      // Generar PDF
+      await generatePDFDirectly();
+    } catch (error) {
+      console.error('Error al guardar email:', error);
+      throw error; // Re-throw para que el modal muestre el error
+    }
+  };
+
+  const generatePDFDirectly = async () => {
     if (!state.diagnosisContent) return;
 
     setIsGeneratingPDF(true);
@@ -608,6 +647,13 @@ export const ChatContainer = () => {
         isOpen={!!imageViewerUrl}
         imageUrl={imageViewerUrl}
         onClose={() => setImageViewerUrl('')}
+      />
+
+      <EmailCaptureModal
+        isOpen={isEmailModalOpen}
+        onClose={() => setIsEmailModalOpen(false)}
+        onSubmit={handleEmailSubmit}
+        userName={state.userName}
       />
     </>
   );

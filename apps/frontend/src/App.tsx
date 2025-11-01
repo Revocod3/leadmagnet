@@ -48,13 +48,13 @@ function MainFlow() {
     const email = urlParams.get('email');
     const leadId = urlParams.get('leadId') || urlParams.get('lead_id');
 
-    // Si vienen params, SIEMPRE corremos intro (queremos animación cada vez que llegas con URL)
-    if (nombre && email) {
+    // Si viene nombre (email es opcional ahora), SIEMPRE corremos intro
+    if (nombre) {
       hasInitializedRef.current = true;
       // Limpiar cualquier sesión anterior antes de crear una nueva
       sessionStorage.removeItem('userData');
       localStorage.removeItem('ovp-session-storage');
-      handleIntroComplete(nombre, email, leadId || undefined);
+      handleIntroComplete(nombre, email ?? undefined, leadId ?? undefined);
       return;
     }
 
@@ -75,8 +75,8 @@ function MainFlow() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname]);
 
-  const handleIntroComplete = async (name: string, email: string, leadId?: string) => {
-    console.log('📝 handleIntroComplete llamado:', { name, email, leadId });
+  const handleIntroComplete = async (name: string, email?: string, leadId?: string) => {
+    console.log('📝 handleIntroComplete llamado:', { name, email: email || 'NO PROPORCIONADO', leadId });
 
     // Store user data in session storage
     sessionStorage.setItem('userData', JSON.stringify({ name, email, leadId }));
@@ -87,9 +87,13 @@ function MainFlow() {
     try {
       const sessionData: any = {
         userName: name,
-        userEmail: email,
         language: 'es' as const,
       };
+
+      // Email is now optional
+      if (email) {
+        sessionData.userEmail = email;
+      }
 
       if (leadId) {
         sessionData.wordpressLeadId = leadId;

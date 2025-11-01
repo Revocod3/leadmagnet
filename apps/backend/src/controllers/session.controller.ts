@@ -12,23 +12,30 @@ export class SessionController {
 
       console.log('📝 CREATE SESSION - Request body:', {
         userName,
-        userEmail,
+        userEmail: userEmail || '⚠️ NO PROPORCIONADO (OPCIONAL)',
         language,
         wordpressLeadId: wordpressLeadId || '❌ NO ENVIADO',
       });
 
-      // Validate input
-      if (userName) {
-        const nameValidation = validationService.validateName(userName);
-        if (!nameValidation.isValid) {
-          res.status(400).json({
-            success: false,
-            error: nameValidation.feedback,
-          } as ApiResponse);
-          return;
-        }
+      // Validate input - Name is required, email is optional
+      if (!userName) {
+        res.status(400).json({
+          success: false,
+          error: 'El nombre es requerido',
+        } as ApiResponse);
+        return;
       }
 
+      const nameValidation = validationService.validateName(userName);
+      if (!nameValidation.isValid) {
+        res.status(400).json({
+          success: false,
+          error: nameValidation.feedback,
+        } as ApiResponse);
+        return;
+      }
+
+      // Validate email only if provided
       if (userEmail) {
         const emailValidation = validationService.validateEmail(userEmail);
         if (!emailValidation.isValid) {
