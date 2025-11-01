@@ -54,31 +54,24 @@ jobs:
           echo "🔧 Updating backend .env if needed..."
           # Asegurar configuración correcta de producción
           sed -i 's/^PORT=.*/PORT=3003/' apps/backend/.env
-          sed -i 's|^CORS_ORIGIN=.*|CORS_ORIGIN=http://139.59.152.82:5173|' apps/backend/.env
+          sed -i 's|^CORS_ORIGIN=.*|CORS_ORIGIN=https://chat.objetivovientreplano.com|' apps/backend/.env
+          sed -i 's|^API_URL=.*|API_URL=https://chat.objetivovientreplano.com|' apps/backend/.env
           sed -i 's/^OPENAI_ASSISTANT_ID=$/OPENAI_ASSISTANT_ID=asst_pmSpGqn4zfnk1tEXICepkALE/' apps/backend/.env
-          
+
           echo "🔧 Updating frontend .env if needed..."
-          sed -i 's|^VITE_API_URL=.*|VITE_API_URL=http://139.59.152.82:3003|' apps/frontend/.env
+          sed -i 's|^VITE_API_URL=.*|VITE_API_URL=https://chat.objetivovientreplano.com|' apps/frontend/.env
           
           echo "🏗️ Building frontend..."
           cd apps/frontend && pnpm build && cd ../..
           
-          echo "🔄 Restarting services..."
-          # Solo reiniciar nuestras apps, no todas
-          cd apps/backend
-          pm2 restart leadmagnet-backend || pm2 start "pnpm dev" --name leadmagnet-backend
-          cd ../frontend
-          pm2 restart leadmagnet-frontend || pm2 start "pnpm dev --host" --name leadmagnet-frontend
-          cd ../..
-          
-          echo "💾 Saving PM2 configuration..."
-          pm2 save
-          
+          echo "🔄 Restarting backend..."
+          pm2 restart leadmagnet-backend
+
           echo "📊 Services status:"
           pm2 list | grep leadmagnet
 
     - name: ✅ Deployment complete
       run: |
         echo "🎉 Deployed successfully to production!"
-        echo "Frontend: http://${{ secrets.SERVER_HOST }}:5173"
-        echo "Backend: http://${{ secrets.SERVER_HOST }}:3003"
+        echo "Frontend: https://chat.objetivovientreplano.com"
+        echo "Backend API: https://chat.objetivovientreplano.com/api/health"
