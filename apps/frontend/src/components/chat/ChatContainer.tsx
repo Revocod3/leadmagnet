@@ -112,8 +112,8 @@ export const ChatContainer = () => {
     isProcessing,
     initialize,
     processMessage,
-  } = useDiagnosticFlow(); 
-  
+  } = useDiagnosticFlow();
+
   const { generatePDF } = usePDFGenerator();
   const { isListening, transcript, startListening, stopListening, isSupported: isSpeechSupported } = useSpeechToText();
 
