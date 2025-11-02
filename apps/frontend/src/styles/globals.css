@@ -617,15 +617,14 @@
     /* Modern browsers - dynamic viewport */
     height: 100dvh;
 
-    /* Estructura flex */
-    display: flex;
-    flex-direction: column;
-
     /* Prevenir overflow */
     overflow: hidden;
 
-    /* Position relative para que sticky funcione */
+    /* Position relative para contexto */
     position: relative;
+
+    /* Full width */
+    width: 100%;
   }
 
   /* iOS Safari - critical fix */
@@ -646,34 +645,15 @@
     }
   }
 
-  /* Header fijo en la parte superior */
-  .mobile-chat-header {
-    position: sticky;
-    top: 0;
-    flex-shrink: 0;
-    /* No se comprime */
-    z-index: 10;
-  }
-
-  /* Main content area - área con scroll */
+  /* Main content area - área con scroll que ocupa todo el espacio */
   .mobile-chat-main {
-    flex: 1 1 0%;
-    min-height: 0;
-    /* Critical para que flex child pueda hacer scroll */
+    height: 100%;
+    width: 100%;
     overflow-y: auto;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
-    /* Previene bounce en iOS */
-  }
-
-  /* Footer fijo en la parte inferior */
-  .mobile-chat-footer {
-    position: sticky;
-    bottom: 0;
-    flex-shrink: 0;
-    /* No se comprime */
-    z-index: 10;
+    position: relative;
   }
 
   /* Animated Gradient */
@@ -725,6 +705,25 @@
 
     50% {
       opacity: 0.6;
+    }
+  }
+
+  /* Online pulse effect with glow for "En Línea" text */
+  .online-pulse {
+    animation: online-glow 2s ease-in-out infinite;
+  }
+
+  @keyframes online-glow {
+
+    0%,
+    100% {
+      opacity: 1;
+      filter: brightness(1);
+    }
+
+    50% {
+      opacity: 0.85;
+      filter: brightness(1.2) drop-shadow(0 0 4px rgba(149, 193, 31, 0.6));
     }
   }
 

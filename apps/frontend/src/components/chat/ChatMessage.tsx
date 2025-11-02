@@ -49,27 +49,27 @@ export const ChatMessage = ({
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="space-y-4"
+              className="space-y-3 font-semibold leading-tight"
             >
               {/* Contenido del diagnóstico - Ya viene formateado en HTML desde el backend */}
               <div
-                className="diagnosis-content space-y-4"
+                className="diagnosis-content space-y-3 font-semibold leading-tight"
                 dangerouslySetInnerHTML={{ __html: message.content }}
               />
             </motion.div>
           ) : (
             /* Render normal messages with Markdown and typewriter effect */
-            <div className="text-[16px] leading-relaxed">
+            <div className="text-[16px] leading-tight font-semibold">
               {!isUser ? (
                 /* Siempre usar TypewriterText para mensajes del asistente */
                 <TypewriterText
                   text={message.content}
                   speed={20}
-                  className=""
+                  className="font-semibold"
                 />
               ) : (
                 /* Solo mensajes de usuario en texto plano */
-                <div className="whitespace-pre-wrap break-words">
+                <div className="whitespace-pre-wrap break-words font-semibold">
                   {message.content}
                 </div>
               )}
