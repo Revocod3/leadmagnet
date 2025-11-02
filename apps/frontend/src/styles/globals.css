@@ -617,15 +617,14 @@
     /* Modern browsers - dynamic viewport */
     height: 100dvh;
 
-    /* Estructura flex */
-    display: flex;
-    flex-direction: column;
-
     /* Prevenir overflow */
     overflow: hidden;
 
-    /* Position relative para que sticky funcione */
+    /* Position relative para contexto */
     position: relative;
+
+    /* Full width */
+    width: 100%;
   }
 
   /* iOS Safari - critical fix */
@@ -646,44 +645,15 @@
     }
   }
 
-  /* Header fijo en la parte superior */
-  .mobile-chat-header {
-    position: sticky;
-    top: 0;
-    flex-shrink: 0;
-    z-index: 10;
-    background: linear-gradient(to bottom, rgba(250, 248, 245, 0.15), rgba(250, 248, 245, 0.05), transparent);
-    pointer-events: none;
-  }
-
-  /* Dark mode gradient for header */
-  .dark .mobile-chat-header {
-    background: linear-gradient(to bottom, rgba(23, 23, 23, 0.20), rgba(23, 23, 23, 0.05), transparent);
-  }
-
-  /* Main content area - área con scroll */
+  /* Main content area - área con scroll que ocupa todo el espacio */
   .mobile-chat-main {
-    flex: 1 1 0%;
-    min-height: 0;
+    height: 100%;
+    width: 100%;
     overflow-y: auto;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
-  }
-
-  /* Footer fijo en la parte inferior */
-  .mobile-chat-footer {
-    position: sticky;
-    bottom: 0;
-    flex-shrink: 0;
-    z-index: 10;
-    background: linear-gradient(to top, rgba(250, 248, 245, 0.15), rgba(250, 248, 245, 0.05), transparent);
-    pointer-events: none;
-  }
-
-  /* Dark mode gradient for footer */
-  .dark .mobile-chat-footer {
-    background: linear-gradient(to top, rgba(23, 23, 23, 0.20), rgba(23, 23, 23, 0.05), transparent);
+    position: relative;
   }
 
   /* Animated Gradient */
