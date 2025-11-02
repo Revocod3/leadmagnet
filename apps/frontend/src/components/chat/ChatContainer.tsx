@@ -345,38 +345,34 @@ export const ChatContainer = () => {
   return (
     <>
       <div className={`mobile-chat-container ${isDarkMode ? 'dark' : ''} bg-neutral-50 dark:bg-neutral-900 bg-chat-lighting transition-colors duration-200`}>
-        {/* Header */}
-        <header className="mobile-chat-header backdrop-blur-xl bg-gradient-to-b from-white/80 to-white/60 dark:from-neutral-900/80 dark:to-neutral-900/60 border-b border-neutral-200/80 dark:border-neutral-800/70">
-          <div className="container-narrow py-3 flex items-center justify-between">
-            {/* Left spacer (back removed) */}
-            <div className="w-9" />
-
-            {/* Center: Title */}
-            <div className="flex items-center gap-3">
-
-              <span className="text-sm font-medium text-foreground">
-
-                <span className="text-sm font-medium text-brand-green-500 animated-pulse-strong">
+        {/* Floating Header Bubbles - ChatGPT Style */}
+        <header className="mobile-chat-header pb-2">
+          <div className="container-narrow py-3 flex items-center justify-between pointer-events-auto">
+            {/* Left: ChatOVP + "En Línea" Bubble */}
+            <div className="backdrop-blur-xl bg-white/90 dark:bg-neutral-800/90 rounded-full px-4 py-2 shadow-lg border border-neutral-200/50 dark:border-neutral-700/50">
+              <div className="flex flex-col items-start">
+                <span className="text-sm font-semibold text-neutral-900 dark:text-white">
+                  ChatOVP
+                </span>
+                <span className="text-[10px] font-medium text-brand-green-500 flex items-center gap-1.5 online-pulse">
+                  <span className="w-2 h-2 bg-brand-green-500 rounded-full online-pulse"></span>
                   En Línea
                 </span>
-
-              </span>
+              </div>
             </div>
 
-            {/* Right: Actions */}
-            <div className="flex items-center gap-1">
-              <button
-                onClick={toggleDarkMode}
-                className="w-8 h-8 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-all flex items-center justify-center border border-neutral-200/50 dark:border-neutral-700/50 shadow-sm hover:shadow-md"
-                aria-label={isDarkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
-              >
-                {isDarkMode ? (
-                  <Sun className="w-4 h-4 text-neutral-600 dark:text-neutral-400" />
-                ) : (
-                  <Moon className="w-4 h-4 text-neutral-600 dark:text-neutral-400" />
-                )}
-              </button>
-            </div>
+            {/* Right: Theme Toggle Bubble */}
+            <button
+              onClick={toggleDarkMode}
+              className="backdrop-blur-xl bg-white/90 dark:bg-neutral-800/90 rounded-full p-2.5 shadow-lg border border-neutral-200/50 dark:border-neutral-700/50 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-all"
+              aria-label={isDarkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+            >
+              {isDarkMode ? (
+                <Sun className="w-5 h-5 text-neutral-600 dark:text-neutral-300" />
+              ) : (
+                <Moon className="w-5 h-5 text-neutral-600 dark:text-neutral-300" />
+              )}
+            </button>
           </div>
         </header>
 
@@ -455,9 +451,9 @@ export const ChatContainer = () => {
           </div>
         </main>
 
-        {/* Input Area - ChatGPT Style */}
-        <footer className="mobile-chat-footer bg-gradient-to-t from-neutral-50 to-neutral-50/80 dark:from-neutral-900 dark:to-neutral-900/70 pb-safe">
-          <div className="max-w-3xl mx-auto px-4 py-4">
+        {/* Floating Input Area - ChatGPT Style */}
+        <footer className="mobile-chat-footer pb-safe pt-4">
+          <div className="max-w-3xl mx-auto px-4 py-4 pb-6 pointer-events-auto">
             {/* Mensaje de límite de imágenes alcanzado */}
             <AnimatePresence>
               {showImageLimitMessage && (
@@ -531,108 +527,105 @@ export const ChatContainer = () => {
               </motion.div>
             )}
 
-            {/* Input Container */}
-            <form onSubmit={handleSendMessage} className="relative rounded-[26px] border border-neutral-300 dark:border-neutral-700 shadow-md p-2 transition-all focus-within:border-neutral-400 dark:focus-within:border-neutral-600 focus-within:shadow-lg bg-gradient-to-b from-white to-white/95 dark:from-neutral-800 dark:to-neutral-800/90">
-              {/* File input (hidden) */}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleFileSelect}
-                className="hidden"
-              />
+            {/* File input (hidden) */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
 
-              <div className="flex items-end gap-2">
-                {/* Plus Button with React Dropdown Menu */}
-                <div ref={plusMenuRef} className="relative flex-shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => setIsPlusMenuOpen((v) => !v)}
-                    className="p-2 text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
-                    title="Más opciones"
-                  >
-                    <Plus className="w-5 h-5" />
-                  </button>
-                  {isPlusMenuOpen && (
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/3 mb-3 z-20">
-                      <div className="flex items-center gap-2 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-full shadow-xl p-1">
-                        <button
-                          type="button"
-                          className="p-2.5 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 transition-colors"
-                          title="Subir imagen"
-                          onClick={() => {
-                            fileInputRef.current?.click();
-                            setIsPlusMenuOpen(false);
-                          }}
-                        >
-                          <Image className="w-5 h-5 text-neutral-700 dark:text-neutral-300" />
-                        </button>
-                        <button
-                          type="button"
-                          className="p-2.5 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 transition-colors"
-                          title="Tomar foto"
-                          onClick={() => {
-                            setIsCameraOpen(true);
-                            setIsPlusMenuOpen(false);
-                          }}
-                        >
-                          <Camera className="w-5 h-5 text-neutral-700 dark:text-neutral-300" />
-                        </button>
-                      </div>
+            {/* Container para botón + y input */}
+            <div className="flex items-center gap-2">
+              {/* Plus Button - Separado e independiente, misma altura que input */}
+              <div ref={plusMenuRef} className="relative flex-shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setIsPlusMenuOpen((v) => !v)}
+                  className="h-[44px] w-[44px] flex items-center justify-center text-neutral-700 dark:text-neutral-300 rounded-full bg-white dark:bg-neutral-800 dark:border dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-all shadow-md"
+                  title="Más opciones"
+                >
+                  <Plus className="w-5 h-5" />
+                </button>
+                {isPlusMenuOpen && (
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 z-20">
+                    <div className="flex items-center gap-2 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-full shadow-xl p-1">
+                      <button
+                        type="button"
+                        className="p-2.5 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 transition-colors"
+                        title="Subir imagen"
+                        onClick={() => {
+                          fileInputRef.current?.click();
+                          setIsPlusMenuOpen(false);
+                        }}
+                      >
+                        <Image className="w-5 h-5 text-neutral-700 dark:text-neutral-300" />
+                      </button>
+                      <button
+                        type="button"
+                        className="p-2.5 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 transition-colors"
+                        title="Tomar foto"
+                        onClick={() => {
+                          setIsCameraOpen(true);
+                          setIsPlusMenuOpen(false);
+                        }}
+                      >
+                        <Camera className="w-5 h-5 text-neutral-700 dark:text-neutral-300" />
+                      </button>
                     </div>
-                  )}
-                </div>
-
-                {/* Textarea */}
-                <textarea
-                  ref={textareaRef}
-                  value={inputMessage}
-                  onChange={(e) => setInputMessage(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Escribe tu mensaje..."
-                  rows={1}
-                  className="flex-1 resize-none bg-transparent px-2 pb-[6px] text-neutral-900 dark:text-white border-none placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-0 focus:border-transparent focus-visible:outline-none text-[16px] max-h-[200px]"
-                  style={{ minHeight: '24px' }}
-                />
-
-                {/* Right Side Actions */}
-                <div className="flex items-center gap-1 flex-shrink-0">
-
-                  {/* Voice Button */}
-                  {isSpeechSupported && (
-                    <button
-                      type="button"
-                      onClick={handleVoiceInput}
-                      className={`p-2 rounded-full transition-colors ${isListening
-                        ? 'text-brand-green-600 bg-brand-green-50 dark:bg-brand-green-500/10'
-                        : 'text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-700'
-                        }`}
-                      title={isListening ? 'Detener grabación' : 'Escribir por voz'}
-                    >
-                      <Mic className="w-5 h-5" />
-                    </button>
-                  )}
-
-                  {/* Send Button - Green Circle like ChatGPT */}
-                  <button
-                    type="submit"
-                    disabled={!inputMessage.trim() || isProcessing}
-                    className={`p-2 rounded-full transition-all ${inputMessage.trim() && !isProcessing
-                      ? 'text-white bg-neutral-900 dark:bg-white dark:text-black hover:bg-neutral-700 dark:hover:bg-neutral-200'
-                      : 'text-neutral-400 bg-transparent cursor-not-allowed'
-                      }`}
-                    title="Enviar mensaje"
-                  >
-                    <ArrowUp className="w-5 h-5" />
-                  </button>
-                </div>
+                  </div>
+                )}
               </div>
-            </form>
 
-            {/* Footer Note */}
-            <p className="text-center text-[10px] text-tertiary mt-3">
-              ChatOVP puede cometer errores. Comprueba la información importante.
-            </p>
+              {/* Input Container - Separado del botón + */}
+              <form onSubmit={handleSendMessage} className="flex-1 relative rounded-[26px] shadow-md px-4 py-2 transition-all focus-within:shadow-lg bg-gradient-to-b from-white to-white/95 dark:from-neutral-800 dark:to-neutral-800/90 dark:border dark:border-neutral-700 min-h-[44px]">
+                <div className="flex items-center gap-2">
+                  {/* Textarea */}
+                  <textarea
+                    ref={textareaRef}
+                    value={inputMessage}
+                    onChange={(e) => setInputMessage(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Escribe tu mensaje..."
+                    rows={1}
+                    className="flex-1 resize-none bg-transparent text-neutral-900 dark:text-white border-none placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-0 focus:border-transparent focus-visible:outline-none text-[16px] max-h-[120px] py-1"
+                    style={{ minHeight: '24px' }}
+                  />
+
+                  {/* Right Side Actions */}
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    {/* Voice Button */}
+                    {isSpeechSupported && (
+                      <button
+                        type="button"
+                        onClick={handleVoiceInput}
+                        className={`p-2 rounded-full transition-colors ${isListening
+                          ? 'text-brand-green-600 bg-brand-green-50 dark:bg-brand-green-500/10'
+                          : 'text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-700'
+                          }`}
+                        title={isListening ? 'Detener grabación' : 'Escribir por voz'}
+                      >
+                        <Mic className="w-5 h-5" />
+                      </button>
+                    )}
+
+                    {/* Send Button - Green Circle like ChatGPT */}
+                    <button
+                      type="submit"
+                      disabled={!inputMessage.trim() || isProcessing}
+                      className={`p-2 rounded-full transition-all ${inputMessage.trim() && !isProcessing
+                        ? 'text-white bg-neutral-900 dark:bg-white dark:text-black hover:bg-neutral-700 dark:hover:bg-neutral-200'
+                        : 'text-neutral-400 bg-transparent cursor-not-allowed'
+                        }`}
+                      title="Enviar mensaje"
+                    >
+                      <ArrowUp className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
           </div>
         </footer >
       </div >

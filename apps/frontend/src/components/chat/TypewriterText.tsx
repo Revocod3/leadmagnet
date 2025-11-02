@@ -63,37 +63,37 @@ export const TypewriterText = ({
         <ReactMarkdown
           components={{
             p: ({ children }) => (
-              <p className="mb-3 last:mb-0 whitespace-pre-wrap break-words">
+              <p className="mb-2 last:mb-0 whitespace-pre-wrap break-words font-semibold leading-tight">
                 {children}
               </p>
             ),
             strong: ({ children }) => (
-              <strong className="font-semibold text-foreground">
+              <strong className="font-bold text-foreground">
                 {children}
               </strong>
             ),
             em: ({ children }) => (
-              <em className="italic">{children}</em>
+              <em className="italic font-semibold">{children}</em>
             ),
             ul: ({ children }) => (
-              <ul className="list-disc list-inside mb-3 space-y-1">
+              <ul className="list-disc list-inside mb-2 space-y-0.5 font-semibold leading-tight">
                 {children}
               </ul>
             ),
             ol: ({ children }) => (
-              <ol className="list-decimal list-inside mb-3 space-y-1">
+              <ol className="list-decimal list-inside mb-2 space-y-0.5 font-semibold leading-tight">
                 {children}
               </ol>
             ),
             li: ({ children }) => (
-              <li className="ml-2">{children}</li>
+              <li className="ml-2 font-semibold leading-tight">{children}</li>
             ),
             a: ({ href, children }) => (
               <a
                 href={href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 px-3 py-1 bg-brand-green-500 hover:bg-brand-green-600 text-white rounded-full text-sm font-medium transition-all shadow-sm hover:shadow-md transform hover:-translate-y-0.5 no-underline"
+                className="inline-flex items-center gap-1 px-3 py-1 bg-brand-green-500 hover:bg-brand-green-600 text-white rounded-full text-sm font-bold transition-all shadow-sm hover:shadow-md transform hover:-translate-y-0.5 no-underline"
               >
                 {children}
                 <span className="text-xs">→</span>
@@ -105,7 +105,7 @@ export const TypewriterText = ({
         </ReactMarkdown>
       ) : (
         // Durante el typing, mostrar texto plano con cursor
-        <span className="whitespace-pre-wrap break-words">
+        <span className="whitespace-pre-wrap break-words font-semibold leading-tight">
           {displayedText}
           <span className="inline-block w-[2px] h-4 ml-0.5 bg-current animate-pulse" />
         </span>
