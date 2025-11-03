@@ -213,7 +213,7 @@ export const ChatFooter = ({
                 onKeyDown={onKeyDown}
                 placeholder="Escribe tu mensaje..."
                 rows={1}
-                className="flex-1 px-4 resize-none bg-transparent text-neutral-900 dark:text-white border-none placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-0 focus:border-transparent focus-visible:outline-none text-[16px] max-h-[120px] py-1"
+                className="flex-1 pl-2 resize-none bg-transparent text-neutral-900 dark:text-white border-none placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-0 focus:border-transparent focus-visible:outline-none text-[16px] max-h-[120px] py-1"
                 style={{ minHeight: '24px' }}
               />
 
