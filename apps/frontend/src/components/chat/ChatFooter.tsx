@@ -213,7 +213,7 @@ export const ChatFooter = ({
                 onKeyDown={onKeyDown}
                 placeholder="Escribe tu mensaje..."
                 rows={1}
-                className="flex-1 resize-none bg-transparent text-neutral-900 dark:text-white border-none placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-0 focus:border-transparent focus-visible:outline-none text-[16px] max-h-[120px] py-1"
+                className="flex-1 px-4 resize-none bg-transparent text-neutral-900 dark:text-white border-none placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-0 focus:border-transparent focus-visible:outline-none text-[16px] max-h-[120px] py-1"
                 style={{ minHeight: '24px' }}
               />
 
@@ -225,8 +225,8 @@ export const ChatFooter = ({
                     type="button"
                     onClick={onVoiceInput}
                     className={`p-2 rounded-full transition-colors ${isListening
-                        ? 'text-brand-green-600 bg-brand-green-50 dark:bg-brand-green-500/10'
-                        : 'text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-700'
+                      ? 'text-brand-green-600 bg-brand-green-50 dark:bg-brand-green-500/10'
+                      : 'text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-700'
                       }`}
                     title={isListening ? 'Detener grabación' : 'Escribir por voz'}
                   >
@@ -239,8 +239,8 @@ export const ChatFooter = ({
                   type="submit"
                   disabled={!inputMessage.trim() || isProcessing}
                   className={`p-2 rounded-full transition-all ${inputMessage.trim() && !isProcessing
-                      ? 'text-white bg-neutral-900 dark:bg-white dark:text-black hover:bg-neutral-700 dark:hover:bg-neutral-200'
-                      : 'text-neutral-400 bg-transparent cursor-not-allowed'
+                    ? 'text-white bg-neutral-900 dark:bg-white dark:text-black hover:bg-neutral-700 dark:hover:bg-neutral-200'
+                    : 'text-neutral-400 bg-transparent cursor-not-allowed'
                     }`}
                   title="Enviar mensaje"
                 >

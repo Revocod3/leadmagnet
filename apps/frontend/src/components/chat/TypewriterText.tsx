@@ -75,6 +75,7 @@ export const TypewriterText = ({
             em: ({ children }) => (
               <em className="italic font-semibold">{children}</em>
             ),
+            br: () => null, // Eliminar todos los <br> para mantener compacto
             ul: ({ children }) => (
               <ul className="list-disc list-inside mb-2 space-y-0.5 font-semibold leading-tight">
                 {children}

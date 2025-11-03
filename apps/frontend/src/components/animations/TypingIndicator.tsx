@@ -9,11 +9,11 @@ export const TypingIndicator = () => {
       </div>
 
       {/* Typing animation */}
-      <div className="flex items-center gap-1.5 px-4 py-3 bg-neutral-100 dark:bg-neutral-800 rounded-2xl">
+      <div className="flex items-center gap-1.5 px-4 py-3 bg-brand-cream-100 dark:bg-brand-cream-200/20 rounded-2xl shadow-sm border border-brand-cream-200/50 dark:border-brand-cream-300/30">
         {[0, 1, 2].map((i) => (
           <motion.span
             key={i}
-            className="w-2 h-2 bg-neutral-500 dark:bg-neutral-400 rounded-full"
+            className="w-2 h-2 bg-brand-green-500 dark:bg-brand-green-400 rounded-full"
             animate={{
               y: [0, -8, 0],
               opacity: [0.4, 1, 0.4],

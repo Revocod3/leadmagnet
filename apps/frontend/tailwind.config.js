@@ -34,6 +34,11 @@ export default {
             600: '#C4AF8D',
             700: '#B39A70',
           },
+          whatsapp: {
+            DEFAULT: '#25D366',
+            light: '#DCF8C6',
+            dark: '#128C7E',
+          },
         },
         // Neutral System
         neutral: {

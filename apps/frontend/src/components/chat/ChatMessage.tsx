@@ -40,8 +40,8 @@ export const ChatMessage = ({
         {/* Message Bubble */}
         <div
           className={`${isUser
-            ? 'bg-brand-cream-100 dark:bg-neutral-700/60 text-neutral-900 dark:text-neutral-100 rounded-2xl px-4 py-2.5 md:px-5 md:py-3 shadow-sm border border-brand-cream-200/50 dark:border-neutral-600/40'
-            : 'bg-white/60 dark:bg-neutral-800/40 backdrop-blur-sm text-foreground rounded-2xl px-4 py-3 md:px-5 md:py-4 shadow-sm border border-neutral-200/40 dark:border-neutral-700/40'
+            ? 'bg-gradient-to-br from-brand-whatsapp to-brand-whatsapp-dark text-white rounded-2xl px-4 py-2.5 md:px-5 md:py-3 shadow-md hover:shadow-lg transition-shadow duration-200'
+            : 'bg-brand-cream-100 dark:bg-brand-cream-200/20 text-neutral-900 dark:text-neutral-100 rounded-2xl px-4 py-3 md:px-5 md:py-4 shadow-sm border border-brand-cream-200/50 dark:border-brand-cream-300/30'
             }`}
         >
           {/* Render diagnosis content with enhanced presentation */}
