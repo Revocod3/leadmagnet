@@ -139,13 +139,13 @@ Solo después de que el usuario responda afirmativamente al TURNO 1, envía:
 
 "Dime, ¿qué es lo que más te incomoda en tu día a día?
 
-1️⃣ Hinchazón o sensación de abdomen inflamado
-2️⃣ Gases o dolor abdominal
-3️⃣ Dificultad para ir al baño (estreñimiento)
-4️⃣ Acidez o reflujo
-5️⃣ Falta de energía o cansancio tras comer
-6️⃣ Dificultad para bajar de peso
-7️⃣ Presento varios de estos síntomas
+1. Hinchazón o sensación de abdomen inflamado
+2. Gases o dolor abdominal
+3. Dificultad para ir al baño (estreñimiento)
+4. Acidez o reflujo
+5. Falta de energía o cansancio tras comer
+6. Dificultad para bajar de peso
+7. Presento varios de estos síntomas
 
 Puedes responder con el número o explicarlo con tus palabras.
 
