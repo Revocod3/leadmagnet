@@ -77,7 +77,7 @@ export const ChatFooter = ({
       {/* Gradiente sutil de abajo hacia arriba */}
       <div className="absolute inset-0 bg-gradient-to-t from-neutral-50/95 via-neutral-50/60 to-transparent dark:from-neutral-900/95 dark:via-neutral-900/60 dark:to-transparent pointer-events-none" />
 
-      <div className="max-w-3xl mx-auto px-4 py-4 pb-6 pointer-events-auto relative z-10">
+      <div className="max-w-3xl mx-auto px-2 sm:px-4 py-4 pb-6 pointer-events-auto relative z-10">
         {/* Mensaje de límite de imágenes alcanzado */}
         <AnimatePresence>
           {showImageLimitMessage && (
@@ -161,7 +161,7 @@ export const ChatFooter = ({
         />
 
         {/* Container para botón + y input */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
           {/* Plus Button - Separado e independiente, misma altura que input */}
           <div ref={plusMenuRef} className="relative flex-shrink-0">
             <button
@@ -203,8 +203,8 @@ export const ChatFooter = ({
           </div>
 
           {/* Input Container - Separado del botón + */}
-          <form onSubmit={onSendMessage} className="flex-1 relative rounded-[26px] shadow-md px-4 py-2 transition-all focus-within:shadow-lg bg-gradient-to-b from-white to-white/95 dark:from-neutral-800 dark:to-neutral-800/90 dark:border dark:border-neutral-700 min-h-[44px]">
-            <div className="flex items-center gap-2">
+          <form onSubmit={onSendMessage} className="flex-1 relative rounded-[26px] shadow-md px-3 sm:px-4 py-2 transition-all focus-within:shadow-lg bg-gradient-to-b from-white to-white/95 dark:from-neutral-800 dark:to-neutral-800/90 dark:border dark:border-neutral-700 min-h-[44px]">
+            <div className="flex items-center gap-1 sm:gap-2">
               {/* Textarea */}
               <textarea
                 ref={textareaRef}
@@ -213,7 +213,7 @@ export const ChatFooter = ({
                 onKeyDown={onKeyDown}
                 placeholder="Escribe tu mensaje..."
                 rows={1}
-                className="flex-1 pl-2 resize-none bg-transparent text-neutral-900 dark:text-white border-none placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-0 focus:border-transparent focus-visible:outline-none text-[16px] max-h-[120px] py-1"
+                className="flex-1 pl-1 sm:pl-2 resize-none bg-transparent text-neutral-900 dark:text-white border-none placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-0 focus:border-transparent focus-visible:outline-none text-[16px] max-h-[120px] py-1"
                 style={{ minHeight: '24px' }}
               />
 

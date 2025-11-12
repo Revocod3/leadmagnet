@@ -1,6 +1,5 @@
 import {
   createLanguageDetectionMessages,
-  createNameExtractionMessages,
   createNameEtymologyMessages,
   createResponseValidationMessages,
   createContextualCommentMessages,
@@ -82,23 +81,6 @@ export const openaiService = {
     } catch (error) {
       console.error('Error al detectar idioma con OpenAI:', error);
       return 'es';
-    }
-  },
-
-  /**
-   * Extrae el nombre de una persona del texto
-   */
-  async extractUserName(text: string): Promise<string> {
-    try {
-      const messages = createNameExtractionMessages(text);
-      const name = await callOpenAI(messages, {
-        temperature: 0,
-        maxTokens: 10,
-      });
-      return name.trim() || 'Usuario';
-    } catch (error) {
-      console.error('Error al extraer el nombre con OpenAI:', error);
-      return 'Usuario';
     }
   },
 

@@ -5,7 +5,6 @@ import { apiClient } from '../services/api';
 
 export type FlowStep =
   | 'initial'
-  | 'name_extracted'
   | 'greeting'
   | 'asking_questions'
   | 'generating_diagnosis'
@@ -241,13 +240,8 @@ export const useDiagnosticFlow = () => {
           return newState;
         });
 
-        // Handle welcome animation
-        if (metadata.requiresWelcomeAnimation && metadata.etymology) {
-          setEtymology(metadata.etymology);
-          setShowWelcome(true);
-          // Don't add message yet, will be added after welcome animation
-          return;
-        }
+        // Note: Welcome animation is now handled in App.tsx during initial flow
+        // No longer needed here as it happens before chat initialization
 
         // Handle diagnosis generation - show special state
         if (isGeneratingDiagnosis) {

@@ -74,14 +74,49 @@ function MainFlow() {
 
     const userDataStr = sessionStorage.getItem('userData');
 
-    // Si no hay params pero tenemos userData guardado: asegurar sesión y NO mostrar animación
+    // Si no hay params pero tenemos userData guardado: recrear sesión y NO mostrar animación
     if (userDataStr) {
-      const parsed = JSON.parse(userDataStr);
-      setUserName(parsed.name);
-      setHasCompletedIntro(true);
-      setShowWelcome(false); // No mostrar animación cuando regresamos
-      hasInitializedRef.current = true;
-      return;
+      try {
+        const parsed = JSON.parse(userDataStr);
+        setUserName(parsed.name);
+        setHasCompletedIntro(true);
+        setShowWelcome(false); // No mostrar animación cuando regresamos
+        hasInitializedRef.current = true;
+
+        // CRÍTICO: Recrear sesión en backend si no existe o si expiró
+        // Esto previene crashes cuando el usuario regresa con una sesión vieja
+        const sessionData: any = {
+          userName: parsed.name,
+          language: 'es' as const,
+        };
+
+        if (parsed.email) {
+          sessionData.userEmail = parsed.email;
+        }
+
+        if (parsed.leadId) {
+          sessionData.wordpressLeadId = parsed.leadId;
+        }
+
+        console.log('🔄 Recreando sesión en backend para userData existente...', sessionData);
+        apiClient.createSession(sessionData)
+          .then(newSession => {
+            setSession(newSession);
+            console.log('✅ Sesión recreada:', newSession);
+          })
+          .catch(error => {
+            console.error('❌ Error recreando sesión:', error);
+            // Si falla, limpiar y redirigir a WordPress
+            sessionStorage.removeItem('userData');
+            localStorage.removeItem('ovp-session-storage');
+            window.location.href = 'https://objetivovientreplano.com/diagnostico-gratuito/';
+          });
+
+        return;
+      } catch (error) {
+        console.error('Error parsing userData:', error);
+        sessionStorage.removeItem('userData');
+      }
     }
 
     // No params y sin userData: redirigir a WP (primer ingreso inválido)
@@ -137,18 +172,18 @@ function MainFlow() {
         console.error('Error generating query response:', error);
         // Continue with default message
       }
-      return;
-    }
-
-    // Generate etymology for the welcome animation in background (solo para nombres)
-    try {
-      const etymologyText = await openaiService.generateNameEtymology(name, 'es');
-      if (etymologyText) {
-        setEtymology(etymologyText);
+      // NO hacer return aquí - dejar que se muestre el WelcomeAnimation
+    } else {
+      // Generate etymology for the welcome animation in background (solo para nombres reales)
+      try {
+        const etymologyText = await openaiService.generateNameEtymology(name, 'es');
+        if (etymologyText) {
+          setEtymology(etymologyText);
+        }
+      } catch (error) {
+        console.error('Error generating etymology:', error);
+        // Continue without etymology
       }
-    } catch (error) {
-      console.error('Error generating etymology:', error);
-      // Continue without etymology
     }
   };
 
@@ -163,9 +198,9 @@ function MainFlow() {
           userName ? (
             <WelcomeAnimation
               userName={userName}
-              etymology={etymology}
-              initialQuery={initialQuery}
-              queryResponse={queryResponse}
+              {...(etymology && { etymology })}
+              {...(initialQuery && { initialQuery })}
+              {...(queryResponse && { queryResponse })}
               onComplete={handleWelcomeComplete}
               language="es"
             />
