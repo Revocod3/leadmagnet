@@ -41,7 +41,7 @@ export const ChatMessage = ({
         <div
           className={`${isUser
             ? 'text-white rounded-2xl px-4 py-2.5 md:px-5 md:py-3 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.01] border border-white/20'
-            : 'bg-brand-cream-100 dark:bg-brand-cream-200/20 text-neutral-900 dark:text-neutral-100 rounded-2xl px-4 py-3 md:px-5 md:py-4 shadow-sm border border-brand-cream-200/50 dark:border-brand-cream-300/30'
+            : 'backdrop-blur-xl bg-white/90 dark:bg-white/10 text-neutral-900 dark:text-neutral-100 rounded-2xl px-4 py-3 md:px-5 md:py-4 shadow-lg border border-white/30 dark:border-white/20'
             }`}
           style={isUser ? {
             backgroundColor: '#9DAC67',
