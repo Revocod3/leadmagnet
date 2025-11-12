@@ -29,6 +29,7 @@ function MainFlow() {
   const [userName, setUserName] = useState('');
   const [etymology, setEtymology] = useState('');
   const [initialQuery, setInitialQuery] = useState<string | undefined>();
+  const [queryResponse, setQueryResponse] = useState<string | undefined>();
   const hasInitializedRef = useRef(false);
 
   // Auto-detect URL params and start flow
@@ -56,7 +57,8 @@ function MainFlow() {
       // Limpiar cualquier sesión anterior antes de crear una nueva
       sessionStorage.removeItem('userData');
       localStorage.removeItem('ovp-session-storage');
-      handleIntroComplete('Usuario', email ?? undefined, leadId ?? undefined, query);
+      // Usar nombre genérico cool en vez de "Usuario"
+      handleIntroComplete('Amigo', email ?? undefined, leadId ?? undefined, query);
       return;
     }
 
@@ -122,9 +124,19 @@ function MainFlow() {
       // Continue anyway, will show error later if needed
     }
 
-    // Si hay query inicial, NO generar etymology (nuevo flujo)
+    // Si hay query inicial, generar respuesta contextual en vez de etymology
     if (initialQuery) {
-      console.log('🔍 Query inicial detectada, saltando etymology:', initialQuery);
+      console.log('🔍 Query inicial detectada:', initialQuery);
+      try {
+        const contextualResponse = await openaiService.generateQueryResponse(initialQuery, 'es');
+        if (contextualResponse) {
+          setQueryResponse(contextualResponse);
+          console.log('✅ Respuesta contextual generada:', contextualResponse);
+        }
+      } catch (error) {
+        console.error('Error generating query response:', error);
+        // Continue with default message
+      }
       return;
     }
 
@@ -153,6 +165,7 @@ function MainFlow() {
               userName={userName}
               etymology={etymology}
               initialQuery={initialQuery}
+              queryResponse={queryResponse}
               onComplete={handleWelcomeComplete}
               language="es"
             />

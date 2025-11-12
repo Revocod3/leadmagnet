@@ -123,6 +123,38 @@ export const openaiService = {
   },
 
   /**
+   * Genera un mensaje empático y contextual basado en la query del usuario
+   */
+  async generateQueryResponse(query: string, language: string): Promise<string> {
+    if (!query) {
+      return language === 'es'
+        ? 'Entiendo tu preocupación. Voy a hacerte algunas preguntas para ayudarte mejor.'
+        : 'I understand your concern. I\'ll ask you some questions to help you better.';
+    }
+    try {
+      const systemPrompt = language === 'es'
+        ? 'Eres Clara, una asistente empática especializada en salud digestiva. Responde con UN mensaje corto (máximo 2 frases, 40 palabras) que muestre empatía sobre la preocupación del usuario. Sé cálida pero profesional.'
+        : 'You are Clara, an empathetic assistant specialized in digestive health. Respond with ONE short message (max 2 sentences, 40 words) showing empathy about the user\'s concern. Be warm but professional.';
+
+      const messages: ChatMessage[] = [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: `Usuario dice: "${query}". Responde con empatía y menciona que harás preguntas para ayudarle.` }
+      ];
+
+      const response = await callOpenAI(messages, {
+        temperature: 0.7,
+        maxTokens: 80,
+      });
+      return response.trim();
+    } catch (error) {
+      console.error('Error al generar respuesta contextual:', error);
+      return language === 'es'
+        ? 'Entiendo tu preocupación. Voy a hacerte algunas preguntas para darte un diagnóstico personalizado.'
+        : 'I understand your concern. I\'ll ask you some questions to give you a personalized diagnosis.';
+    }
+  },
+
+  /**
    * Valida si la respuesta del usuario es coherente y relevante para la pregunta
    */
   async validateResponse(
