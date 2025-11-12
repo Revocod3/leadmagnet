@@ -28,6 +28,7 @@ function MainFlow() {
   const [showWelcome, setShowWelcome] = useState(true); // Cambiar a true por defecto
   const [userName, setUserName] = useState('');
   const [etymology, setEtymology] = useState('');
+  const [initialQuery, setInitialQuery] = useState<string | undefined>();
   const hasInitializedRef = useRef(false);
 
   // Auto-detect URL params and start flow
@@ -45,8 +46,19 @@ function MainFlow() {
 
     const urlParams = new URLSearchParams(window.location.search);
     const nombre = urlParams.get('nombre');
+    const query = urlParams.get('query');
     const email = urlParams.get('email');
     const leadId = urlParams.get('leadId') || urlParams.get('lead_id');
+
+    // Si viene query (nuevo flujo híbrido), SIEMPRE corremos intro con query
+    if (query) {
+      hasInitializedRef.current = true;
+      // Limpiar cualquier sesión anterior antes de crear una nueva
+      sessionStorage.removeItem('userData');
+      localStorage.removeItem('ovp-session-storage');
+      handleIntroComplete('Usuario', email ?? undefined, leadId ?? undefined, query);
+      return;
+    }
 
     // Si viene nombre (email es opcional ahora), SIEMPRE corremos intro
     if (nombre) {
@@ -75,12 +87,13 @@ function MainFlow() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname]);
 
-  const handleIntroComplete = async (name: string, email?: string, leadId?: string) => {
-    console.log('📝 handleIntroComplete llamado:', { name, email: email || 'NO PROPORCIONADO', leadId });
+  const handleIntroComplete = async (name: string, email?: string, leadId?: string, initialQuery?: string) => {
+    console.log('📝 handleIntroComplete llamado:', { name, email: email || 'NO PROPORCIONADO', leadId, initialQuery });
 
     // Store user data in session storage
-    sessionStorage.setItem('userData', JSON.stringify({ name, email, leadId }));
+    sessionStorage.setItem('userData', JSON.stringify({ name, email, leadId, initialQuery }));
     setUserName(name);
+    setInitialQuery(initialQuery);
     setHasCompletedIntro(true);
 
     // Create backend session with user data
@@ -109,7 +122,13 @@ function MainFlow() {
       // Continue anyway, will show error later if needed
     }
 
-    // Generate etymology for the welcome animation in background
+    // Si hay query inicial, NO generar etymology (nuevo flujo)
+    if (initialQuery) {
+      console.log('🔍 Query inicial detectada, saltando etymology:', initialQuery);
+      return;
+    }
+
+    // Generate etymology for the welcome animation in background (solo para nombres)
     try {
       const etymologyText = await openaiService.generateNameEtymology(name, 'es');
       if (etymologyText) {
@@ -133,6 +152,7 @@ function MainFlow() {
             <WelcomeAnimation
               userName={userName}
               etymology={etymology}
+              initialQuery={initialQuery}
               onComplete={handleWelcomeComplete}
               language="es"
             />

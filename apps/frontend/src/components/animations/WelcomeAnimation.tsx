@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 interface WelcomeAnimationProps {
   userName: string;
   etymology?: string;
+  initialQuery?: string;
   onComplete: () => void;
   language?: 'es' | 'en';
 }
@@ -11,6 +12,7 @@ interface WelcomeAnimationProps {
 export const WelcomeAnimation = ({
   userName,
   etymology,
+  initialQuery,
   onComplete,
   language = 'es',
 }: WelcomeAnimationProps) => {
@@ -20,16 +22,25 @@ export const WelcomeAnimation = ({
   // Extraer solo el primer nombre
   const firstName = userName.trim().split(/\s+/)[0];
 
+  // Si hay initialQuery, usar mensajes contextuales
+  const isQueryFlow = !!initialQuery;
+
   const messages = {
     es: {
-      greeting: `¡Hola, ${firstName}!`,
-      subtitle: 'Preparando tu experiencia personalizada',
+      greeting: isQueryFlow ? '¡Hola!' : `¡Hola, ${firstName}!`,
+      subtitle: isQueryFlow
+        ? 'Vamos a ayudarte con tu consulta'
+        : 'Preparando tu experiencia personalizada',
       buttonText: 'Comenzar mi diagnóstico',
+      queryMessage: 'Entiendo que te preocupa esto. Voy a hacerte algunas preguntas para darte un diagnóstico personalizado.',
     },
     en: {
-      greeting: `Hello, ${firstName}!`,
-      subtitle: 'Preparing your personalized experience',
+      greeting: isQueryFlow ? 'Hello!' : `Hello, ${firstName}!`,
+      subtitle: isQueryFlow
+        ? "Let's help you with your query"
+        : 'Preparing your personalized experience',
       buttonText: 'Start my diagnosis',
+      queryMessage: 'I understand your concern. I\'ll ask you some questions to give you a personalized diagnosis.',
     },
   };
 
@@ -38,21 +49,21 @@ export const WelcomeAnimation = ({
   useEffect(() => {
     // Secuencia de animaciones
     const timers = [
-      // Mostrar etimología después del saludo
+      // Mostrar etimología o mensaje de query después del saludo
       setTimeout(() => {
-        if (etymology) {
+        if (etymology || initialQuery) {
           setShowEtymology(true);
         }
       }, 1200),
 
-      // Mostrar botón después de la etimología (o antes si no hay etimología)
+      // Mostrar botón después de la etimología/query (o antes si no hay ninguno)
       setTimeout(() => {
         setShowButton(true);
-      }, etymology ? 2800 : 1800),
+      }, (etymology || initialQuery) ? 2800 : 1800),
     ];
 
     return () => timers.forEach(timer => clearTimeout(timer));
-  }, [etymology]);
+  }, [etymology, initialQuery]);
 
   return (
     <motion.div
@@ -158,9 +169,9 @@ export const WelcomeAnimation = ({
           </div>
         </motion.div>
 
-        {/* Etymology Box con diseño mejorado */}
+        {/* Etymology Box o Query Message con diseño mejorado */}
         <AnimatePresence>
-          {showEtymology && etymology && (
+          {showEtymology && (etymology || initialQuery) && (
             <motion.div
               initial={{ opacity: 0, y: 30, scale: 0.9 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -187,11 +198,13 @@ export const WelcomeAnimation = ({
                   }}
                 >
                   <span className="text-[10px] font-semibold text-white tracking-wider uppercase drop-shadow-sm">
-                    {language === 'es' ? 'Sabías que...' : 'Did you know...'}
+                    {initialQuery
+                      ? (language === 'es' ? 'Tu consulta' : 'Your query')
+                      : (language === 'es' ? 'Sabías que...' : 'Did you know...')}
                   </span>
                 </div>
                 <p className="text-sm sm:text-base text-white/95 leading-relaxed pt-1 font-light">
-                  {etymology}
+                  {initialQuery ? content.queryMessage : etymology}
                 </p>
               </div>
             </motion.div>
