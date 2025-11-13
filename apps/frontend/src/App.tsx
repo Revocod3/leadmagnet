@@ -54,17 +54,51 @@ function MainFlow() {
     // Si viene query (nuevo flujo híbrido), SIEMPRE corremos intro con query
     if (query) {
       hasInitializedRef.current = true;
+      console.log('🔍 Detectado parámetro query:', query);
       // Limpiar cualquier sesión anterior antes de crear una nueva
       sessionStorage.removeItem('userData');
       localStorage.removeItem('ovp-session-storage');
-      // Usar nombre genérico cool en vez de "Usuario"
-      handleIntroComplete('Amigo', email ?? undefined, leadId ?? undefined, query);
+
+      // Extraer nombre inteligentemente del texto de la query
+      openaiService.extractUserName(query).then(extractedName => {
+        console.log('👤 Nombre extraído de query:', extractedName);
+        handleIntroComplete(extractedName, email ?? undefined, leadId ?? undefined, query);
+      }).catch(error => {
+        console.error('❌ Error extrayendo nombre:', error);
+        // Fallback a "Usuario" si falla la extracción
+        handleIntroComplete('Usuario', email ?? undefined, leadId ?? undefined, query);
+      });
       return;
     }
 
     // Si viene nombre (email es opcional ahora), SIEMPRE corremos intro
     if (nombre) {
       hasInitializedRef.current = true;
+      console.log('📝 Detectado parámetro nombre:', nombre);
+
+      // Detectar si el "nombre" parece ser una consulta (tiene más de 4 palabras o palabras clave)
+      const palabras = nombre.trim().split(/\s+/);
+      const palabrasClave = ['quiero', 'tengo', 'necesito', 'me duele', 'dolor', 'problema', 'consulta', 'ayuda'];
+      const esConsulta = palabras.length > 4 || palabrasClave.some(p => nombre.toLowerCase().includes(p));
+
+      if (esConsulta) {
+        console.log('⚠️ El parámetro "nombre" parece ser una consulta, convirtiéndolo a query');
+        // Limpiar cualquier sesión anterior antes de crear una nueva
+        sessionStorage.removeItem('userData');
+        localStorage.removeItem('ovp-session-storage');
+
+        // Extraer nombre inteligentemente del texto
+        openaiService.extractUserName(nombre).then(extractedName => {
+          console.log('👤 Nombre extraído de consulta:', extractedName);
+          handleIntroComplete(extractedName, email ?? undefined, leadId ?? undefined, nombre);
+        }).catch(error => {
+          console.error('❌ Error extrayendo nombre:', error);
+          // Fallback a "Usuario" si falla la extracción
+          handleIntroComplete('Usuario', email ?? undefined, leadId ?? undefined, nombre);
+        });
+        return;
+      }
+
       // Limpiar cualquier sesión anterior antes de crear una nueva
       sessionStorage.removeItem('userData');
       localStorage.removeItem('ovp-session-storage');
@@ -162,6 +196,8 @@ function MainFlow() {
     // Si hay query inicial, generar respuesta contextual en vez de etymology
     if (initialQuery) {
       console.log('🔍 Query inicial detectada:', initialQuery);
+      console.log('👤 Nombre usado:', name);
+      console.log('🎯 Flujo: QUERY (sin etimología)');
       try {
         const contextualResponse = await openaiService.generateQueryResponse(initialQuery, 'es');
         if (contextualResponse) {
@@ -169,19 +205,24 @@ function MainFlow() {
           console.log('✅ Respuesta contextual generada:', contextualResponse);
         }
       } catch (error) {
-        console.error('Error generating query response:', error);
+        console.error('❌ Error generating query response:', error);
         // Continue with default message
       }
       // NO hacer return aquí - dejar que se muestre el WelcomeAnimation
     } else {
       // Generate etymology for the welcome animation in background (solo para nombres reales)
+      console.log('👤 Nombre detectado:', name);
+      console.log('🎯 Flujo: NOMBRE (con etimología)');
       try {
         const etymologyText = await openaiService.generateNameEtymology(name, 'es');
         if (etymologyText) {
           setEtymology(etymologyText);
+          console.log('✅ Etimología generada:', etymologyText.substring(0, 50) + '...');
+        } else {
+          console.log('⏭️ No se generó etimología (nombre genérico o error)');
         }
       } catch (error) {
-        console.error('Error generating etymology:', error);
+        console.error('❌ Error generating etymology:', error);
         // Continue without etymology
       }
     }

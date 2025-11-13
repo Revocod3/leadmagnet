@@ -1,5 +1,6 @@
 import {
   createLanguageDetectionMessages,
+  createNameExtractionMessages,
   createNameEtymologyMessages,
   createResponseValidationMessages,
   createContextualCommentMessages,
@@ -85,10 +86,30 @@ export const openaiService = {
   },
 
   /**
+   * Extrae el nombre de una persona del texto
+   */
+  async extractUserName(text: string): Promise<string> {
+    try {
+      const messages = createNameExtractionMessages(text);
+      const name = await callOpenAI(messages, {
+        temperature: 0,
+        maxTokens: 10,
+      });
+      return name.trim() || 'Usuario';
+    } catch (error) {
+      console.error('Error al extraer el nombre con OpenAI:', error);
+      return 'Usuario';
+    }
+  },
+
+  /**
    * Genera un comentario sobre la etimología del nombre
    */
   async generateNameEtymology(name: string, language: string): Promise<string> {
-    if (!name || name.toLowerCase() === 'usuario') {
+    // Evitar generar etimología para nombres genéricos o placeholders
+    const genericNames = ['usuario', 'amigo', 'user', 'friend'];
+    if (!name || genericNames.includes(name.toLowerCase())) {
+      console.log('⏭️ Saltando etimología para nombre genérico:', name);
       return '';
     }
     try {
