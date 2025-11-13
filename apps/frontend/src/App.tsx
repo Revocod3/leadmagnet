@@ -58,8 +58,16 @@ function MainFlow() {
       // Limpiar cualquier sesión anterior antes de crear una nueva
       sessionStorage.removeItem('userData');
       localStorage.removeItem('ovp-session-storage');
-      // Usar nombre genérico cool en vez de "Usuario"
-      handleIntroComplete('Amigo', email ?? undefined, leadId ?? undefined, query);
+
+      // Extraer nombre inteligentemente del texto de la query
+      openaiService.extractUserName(query).then(extractedName => {
+        console.log('👤 Nombre extraído de query:', extractedName);
+        handleIntroComplete(extractedName, email ?? undefined, leadId ?? undefined, query);
+      }).catch(error => {
+        console.error('❌ Error extrayendo nombre:', error);
+        // Fallback a "Usuario" si falla la extracción
+        handleIntroComplete('Usuario', email ?? undefined, leadId ?? undefined, query);
+      });
       return;
     }
 
@@ -78,8 +86,16 @@ function MainFlow() {
         // Limpiar cualquier sesión anterior antes de crear una nueva
         sessionStorage.removeItem('userData');
         localStorage.removeItem('ovp-session-storage');
-        // Tratar como query en vez de nombre
-        handleIntroComplete('Amigo', email ?? undefined, leadId ?? undefined, nombre);
+
+        // Extraer nombre inteligentemente del texto
+        openaiService.extractUserName(nombre).then(extractedName => {
+          console.log('👤 Nombre extraído de consulta:', extractedName);
+          handleIntroComplete(extractedName, email ?? undefined, leadId ?? undefined, nombre);
+        }).catch(error => {
+          console.error('❌ Error extrayendo nombre:', error);
+          // Fallback a "Usuario" si falla la extracción
+          handleIntroComplete('Usuario', email ?? undefined, leadId ?? undefined, nombre);
+        });
         return;
       }
 

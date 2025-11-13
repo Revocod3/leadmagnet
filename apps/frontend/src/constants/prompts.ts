@@ -1,5 +1,6 @@
 export interface SystemPromptConfig {
   languageDetection: string;
+  nameExtraction: string;
   nameEtymology: (name: string, language: string) => string;
   responseValidation: (language: string) => string;
   contextualComment: (question: string, userAnswer: string, language: string) => string;
@@ -19,6 +20,8 @@ const languageMap: Record<string, string> = {
 
 export const systemPrompts: SystemPromptConfig = {
   languageDetection: `You are a language detection assistant. Your task is to identify the two-letter ISO 639-1 code of the user's text. Respond with ONLY the two-letter code (e.g., 'en', 'es', 'fr'). If the language is unclear or cannot be determined, default to 'es'.`,
+
+  nameExtraction: `You are an expert assistant at extracting a person's first name from a sentence. The user will provide a text which is their first response in a chat. Your task is to identify and extract ONLY the first name. Do not include greetings, locations, or any other words. If you cannot find a clear first name, respond with the exact word 'Usuario'. Do not add any explanation.`,
 
   nameEtymology: (name: string, language: string) => {
     const languageName = languageMap[language] || language;
@@ -107,6 +110,11 @@ export interface ChatMessage {
 
 export const createLanguageDetectionMessages = (text: string): ChatMessage[] => [
   { role: 'system', content: systemPrompts.languageDetection },
+  { role: 'user', content: text },
+];
+
+export const createNameExtractionMessages = (text: string): ChatMessage[] => [
+  { role: 'system', content: systemPrompts.nameExtraction },
   { role: 'user', content: text },
 ];
 
