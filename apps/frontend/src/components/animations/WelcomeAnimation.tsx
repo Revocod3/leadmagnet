@@ -2,24 +2,55 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface WelcomeAnimationProps {
-  userName: string;
+  userName?: string;  // Ahora opcional - puede venir vacío si hay query sin nombre
   etymology?: string;
   initialQuery?: string;
   queryResponse?: string;
   onComplete: () => void;
+  onNameCaptured?: (name: string) => void;  // Callback cuando se captura el nombre
   language?: 'es' | 'en';
 }
 
 export const WelcomeAnimation = ({
-  userName,
+  userName: initialUserName,
   etymology,
   initialQuery,
   queryResponse,
   onComplete,
+  onNameCaptured,
   language = 'es',
 }: WelcomeAnimationProps) => {
   const [showEtymology, setShowEtymology] = useState(false);
   const [showButton, setShowButton] = useState(false);
+  const [showNameInput, setShowNameInput] = useState(false);
+  const [userName, setUserName] = useState(initialUserName || '');
+  const [nameInputValue, setNameInputValue] = useState('');
+
+  // Determinar si necesitamos pedir el nombre (hay query pero no hay nombre)
+  const needsNameInput = !!initialQuery && !initialUserName;
+
+  // Mostrar input de nombre si es necesario
+  useEffect(() => {
+    if (needsNameInput) {
+      setShowNameInput(true);
+    }
+  }, [needsNameInput]);
+
+  // Manejar envío del nombre
+  const handleNameSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const name = nameInputValue.trim();
+
+    if (name.length < 2) return;
+
+    setUserName(name);
+    setShowNameInput(false);
+
+    // Notificar al padre que tenemos el nombre
+    if (onNameCaptured) {
+      onNameCaptured(name);
+    }
+  };
 
   // Extraer solo el primer nombre
   const firstName = userName.trim().split(/\s+/)[0];
@@ -97,7 +128,95 @@ export const WelcomeAnimation = ({
         />
       </div>
 
-      {/* Content */}
+      {/* Input de nombre minimalista - Se muestra ANTES de la animación si viene query sin nombre */}
+      <AnimatePresence>
+        {showNameInput && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.3 }}
+            className="relative text-center px-6 max-w-md z-10"
+          >
+            {/* Logo */}
+            <motion.div
+              initial={{ scale: 0, rotate: -180 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{
+                type: 'spring',
+                stiffness: 200,
+                damping: 15,
+              }}
+              className="inline-block mb-6"
+            >
+              <div className="w-20 h-20 rounded-full bg-white shadow-2xl flex items-center justify-center overflow-hidden border-4 border-white/30">
+                <img
+                  src="/assets/images/favicon.webp"
+                  alt="OVP"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            </motion.div>
+
+            {/* Mensaje */}
+            <motion.h2
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="text-2xl sm:text-3xl font-bold text-white mb-3"
+            >
+              {language === 'es' ? '¡Hola!' : 'Hello!'}
+            </motion.h2>
+
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="text-base text-white/90 mb-6 font-light"
+            >
+              {language === 'es'
+                ? 'Antes de comenzar, ¿cómo te llamas?'
+                : 'Before we start, what\'s your name?'}
+            </motion.p>
+
+            {/* Input Form */}
+            <motion.form
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              onSubmit={handleNameSubmit}
+              className="w-full"
+            >
+              <div className="relative">
+                <input
+                  type="text"
+                  value={nameInputValue}
+                  onChange={(e) => setNameInputValue(e.target.value)}
+                  placeholder={language === 'es' ? 'Tu nombre...' : 'Your name...'}
+                  autoFocus
+                  className="w-full px-6 py-4 bg-white/20 backdrop-blur-md border-2 border-white/40 rounded-full text-white placeholder-white/60 text-center text-lg font-light focus:outline-none focus:border-white/80 focus:bg-white/30 transition-all"
+                  style={{
+                    WebkitBackdropFilter: 'blur(12px)',
+                  }}
+                />
+              </div>
+
+              <motion.button
+                type="submit"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="mt-4 px-8 py-3 bg-white text-[#99AB75] rounded-full font-bold text-base shadow-xl hover:shadow-2xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={nameInputValue.trim().length < 2}
+              >
+                {language === 'es' ? 'Continuar →' : 'Continue →'}
+              </motion.button>
+            </motion.form>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Content - Solo se muestra cuando tenemos nombre */}
+      {!showNameInput && userName && (
       <div className="relative text-center px-6 max-w-2xl z-10">
         {/* Logo Circular con efecto de respiración */}
         <motion.div
@@ -268,6 +387,7 @@ export const WelcomeAnimation = ({
           )}
         </AnimatePresence>
       </div>
+      )}
     </motion.div>
   );
 };

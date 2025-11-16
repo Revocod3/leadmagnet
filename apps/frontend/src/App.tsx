@@ -51,23 +51,17 @@ function MainFlow() {
     const email = urlParams.get('email');
     const leadId = urlParams.get('leadId') || urlParams.get('lead_id');
 
-    // Si viene query (nuevo flujo híbrido), SIEMPRE corremos intro con query
+    // Si viene query (nuevo flujo: chips de snippet3), NO tiene nombre inicial
     if (query) {
       hasInitializedRef.current = true;
-      console.log('🔍 Detectado parámetro query:', query);
+      console.log('🔍 Detectado parámetro query (sin nombre):', query);
       // Limpiar cualquier sesión anterior antes de crear una nueva
       sessionStorage.removeItem('userData');
       localStorage.removeItem('ovp-session-storage');
 
-      // Extraer nombre inteligentemente del texto de la query
-      openaiService.extractUserName(query).then(extractedName => {
-        console.log('👤 Nombre extraído de query:', extractedName);
-        handleIntroComplete(extractedName, email ?? undefined, leadId ?? undefined, query);
-      }).catch(error => {
-        console.error('❌ Error extrayendo nombre:', error);
-        // Fallback a "Usuario" si falla la extracción
-        handleIntroComplete('Usuario', email ?? undefined, leadId ?? undefined, query);
-      });
+      // NO extraer nombre - dejar que el input lo capture
+      // Pasar undefined como nombre para activar el input en WelcomeAnimation
+      handleIntroComplete(undefined, email ?? undefined, leadId ?? undefined, query);
       return;
     }
 
@@ -158,45 +152,52 @@ function MainFlow() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname]);
 
-  const handleIntroComplete = async (name: string, email?: string, leadId?: string, initialQuery?: string) => {
-    console.log('📝 handleIntroComplete llamado:', { name, email: email || 'NO PROPORCIONADO', leadId, initialQuery });
+  const handleIntroComplete = async (name: string | undefined, email?: string, leadId?: string, initialQuery?: string) => {
+    console.log('📝 handleIntroComplete llamado:', { name: name || 'SIN NOMBRE (se pedirá)', email: email || 'NO PROPORCIONADO', leadId, initialQuery });
 
-    // Store user data in session storage
-    sessionStorage.setItem('userData', JSON.stringify({ name, email, leadId, initialQuery }));
-    setUserName(name);
+    // Store user data in session storage (nombre puede venir vacío si hay query)
+    if (name) {
+      sessionStorage.setItem('userData', JSON.stringify({ name, email, leadId, initialQuery }));
+      setUserName(name);
+    }
     setInitialQuery(initialQuery);
     setHasCompletedIntro(true);
 
-    // Create backend session with user data
-    try {
-      const sessionData: any = {
-        userName: name,
-        language: 'es' as const,
-      };
+    // Create backend session with user data (solo si tenemos nombre)
+    // Si no hay nombre, se creará después cuando el usuario lo ingrese
+    if (name) {
+      try {
+        const sessionData: any = {
+          userName: name,
+          language: 'es' as const,
+        };
 
-      // Email is now optional
-      if (email) {
-        sessionData.userEmail = email;
+        // Email is now optional
+        if (email) {
+          sessionData.userEmail = email;
+        }
+
+        if (leadId) {
+          sessionData.wordpressLeadId = leadId;
+          console.log('🏷️ WordPress Lead ID incluido:', leadId);
+        }
+
+        console.log('🔄 Creando sesión en backend...', sessionData);
+        const newSession = await apiClient.createSession(sessionData);
+        setSession(newSession);
+        console.log('✅ Sesión creada:', newSession);
+      } catch (error) {
+        console.error('❌ Error creating session:', error);
+        // Continue anyway, will show error later if needed
       }
-
-      if (leadId) {
-        sessionData.wordpressLeadId = leadId;
-        console.log('🏷️ WordPress Lead ID incluido:', leadId);
-      }
-
-      console.log('🔄 Creando sesión en backend...', sessionData);
-      const newSession = await apiClient.createSession(sessionData);
-      setSession(newSession);
-      console.log('✅ Sesión creada:', newSession);
-    } catch (error) {
-      console.error('❌ Error creating session:', error);
-      // Continue anyway, will show error later if needed
+    } else {
+      console.log('⏸️ Sesión NO creada - esperando nombre del usuario');
     }
 
     // Si hay query inicial, generar respuesta contextual en vez de etymology
     if (initialQuery) {
       console.log('🔍 Query inicial detectada:', initialQuery);
-      console.log('👤 Nombre usado:', name);
+      console.log('👤 Nombre usado:', name || 'SIN NOMBRE (se pedirá)');
       console.log('🎯 Flujo: QUERY (sin etimología)');
       try {
         const contextualResponse = await openaiService.generateQueryResponse(initialQuery, 'es');
@@ -209,7 +210,7 @@ function MainFlow() {
         // Continue with default message
       }
       // NO hacer return aquí - dejar que se muestre el WelcomeAnimation
-    } else {
+    } else if (name) {
       // Generate etymology for the welcome animation in background (solo para nombres reales)
       console.log('👤 Nombre detectado:', name);
       console.log('🎯 Flujo: NOMBRE (con etimología)');
@@ -232,17 +233,80 @@ function MainFlow() {
     setShowWelcome(false);
   };
 
+  const handleNameCaptured = async (name: string) => {
+    console.log('✅ Nombre capturado del input:', name);
+    setUserName(name);
+
+    // Actualizar sessionStorage con el nombre
+    const userDataStr = sessionStorage.getItem('userData');
+    let userData: any = {};
+
+    if (userDataStr) {
+      try {
+        userData = JSON.parse(userDataStr);
+      } catch (e) {
+        console.error('Error parsing userData:', e);
+      }
+    }
+
+    userData.name = name;
+    sessionStorage.setItem('userData', JSON.stringify(userData));
+
+    // Crear sesión en backend ahora que tenemos el nombre
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const leadId = urlParams.get('leadId') || urlParams.get('lead_id');
+      const email = urlParams.get('email');
+
+      const sessionData: any = {
+        userName: name,
+        language: 'es' as const,
+      };
+
+      if (email) {
+        sessionData.userEmail = email;
+      }
+
+      if (leadId) {
+        sessionData.wordpressLeadId = leadId;
+        console.log('🏷️ WordPress Lead ID incluido:', leadId);
+      }
+
+      console.log('🔄 Creando sesión en backend (nombre capturado)...', sessionData);
+      const newSession = await apiClient.createSession(sessionData);
+      setSession(newSession);
+      console.log('✅ Sesión creada:', newSession);
+    } catch (error) {
+      console.error('❌ Error creating session:', error);
+    }
+
+    // Generar etimología si no hay query
+    if (!initialQuery) {
+      try {
+        const etymologyText = await openaiService.generateNameEtymology(name, 'es');
+        if (etymologyText) {
+          setEtymology(etymologyText);
+          console.log('✅ Etimología generada:', etymologyText.substring(0, 50) + '...');
+        }
+      } catch (error) {
+        console.error('❌ Error generating etymology:', error);
+      }
+    }
+  };
+
   return (
     <>
       <AnimatePresence mode="wait">
         {showWelcome ? (
-          userName ? (
+          // Mostrar WelcomeAnimation siempre (manejará el input internamente si hace falta)
+          (userName || initialQuery) ? (
             <WelcomeAnimation
               userName={userName}
               {...(etymology && { etymology })}
               {...(initialQuery && { initialQuery })}
               {...(queryResponse && { queryResponse })}
               onComplete={handleWelcomeComplete}
+              onNameCaptured={handleNameCaptured}
               language="es"
             />
           ) : (
