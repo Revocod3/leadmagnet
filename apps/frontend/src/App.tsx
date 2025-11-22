@@ -252,12 +252,42 @@ function MainFlow() {
     userData.name = name;
     sessionStorage.setItem('userData', JSON.stringify(userData));
 
+    const urlParams = new URLSearchParams(window.location.search);
+    const leadId = urlParams.get('leadId') || urlParams.get('lead_id');
+    const email = urlParams.get('email');
+
+    // 🔄 Actualizar nombre en WordPress si tenemos leadId
+    if (leadId) {
+      try {
+        const wpLeadId = leadId.replace('wp_', ''); // Extraer solo el número
+        const WP_API_URL = 'https://objetivovientreplano.com/wp-json/ovp/v1/leads/' + wpLeadId;
+
+        console.log('📡 Actualizando nombre en WordPress:', { leadId: wpLeadId, nombre: name });
+
+        const response = await fetch(WP_API_URL, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            nombre: name
+          })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log('✅ Nombre actualizado en WordPress:', data);
+        } else {
+          console.error('❌ Error actualizando nombre en WP:', response.status);
+        }
+      } catch (error) {
+        console.error('❌ Error de red al actualizar WP:', error);
+        // No bloqueamos el flujo si falla la actualización
+      }
+    }
+
     // Crear sesión en backend ahora que tenemos el nombre
     try {
-      const urlParams = new URLSearchParams(window.location.search);
-      const leadId = urlParams.get('leadId') || urlParams.get('lead_id');
-      const email = urlParams.get('email');
-
       const sessionData: any = {
         userName: name,
         language: 'es' as const,

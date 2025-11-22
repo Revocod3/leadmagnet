@@ -43,13 +43,18 @@ export const WelcomeAnimation = ({
 
     if (name.length < 2) return;
 
-    setUserName(name);
+    // Primero ocultar el input con animación
     setShowNameInput(false);
 
-    // Notificar al padre que tenemos el nombre
-    if (onNameCaptured) {
-      onNameCaptured(name);
-    }
+    // Esperar a que termine la animación de salida antes de actualizar
+    setTimeout(() => {
+      setUserName(name);
+
+      // Notificar al padre que tenemos el nombre
+      if (onNameCaptured) {
+        onNameCaptured(name);
+      }
+    }, 400); // Duración de la animación exit
   };
 
   // Extraer solo el primer nombre
@@ -129,13 +134,16 @@ export const WelcomeAnimation = ({
       </div>
 
       {/* Input de nombre minimalista - Se muestra ANTES de la animación si viene query sin nombre */}
-      <AnimatePresence>
+      <AnimatePresence mode="wait">
         {showNameInput && (
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            transition={{ duration: 0.3 }}
+            exit={{ opacity: 0, scale: 0.95, y: -20 }}
+            transition={{
+              duration: 0.4,
+              ease: "easeInOut"
+            }}
             className="relative text-center px-6 max-w-md z-10"
           >
             {/* Logo */}
@@ -216,8 +224,18 @@ export const WelcomeAnimation = ({
       </AnimatePresence>
 
       {/* Content - Solo se muestra cuando tenemos nombre */}
+      <AnimatePresence>
       {!showNameInput && userName && (
-      <div className="relative text-center px-6 max-w-2xl z-10">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{
+          duration: 0.5,
+          ease: "easeOut",
+          delay: 0.2
+        }}
+        className="relative text-center px-6 max-w-2xl z-10"
+      >
         {/* Logo Circular con efecto de respiración */}
         <motion.div
           initial={{ scale: 0, opacity: 0, rotate: -180 }}
@@ -226,7 +244,7 @@ export const WelcomeAnimation = ({
             type: 'spring',
             stiffness: 200,
             damping: 15,
-            delay: 0.1,
+            delay: 0.3,
           }}
           className="inline-block mb-6"
         >
@@ -386,8 +404,9 @@ export const WelcomeAnimation = ({
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
+      </motion.div>
       )}
+      </AnimatePresence>
     </motion.div>
   );
 };
