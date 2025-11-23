@@ -94,7 +94,7 @@ const ProgressIndicator = ({ turnCount, hasRealProblem }: { turnCount: number; h
 };
 
 export const ChatContainer = () => {
-  const { session, imagesUploaded, incrementImagesUploaded } = useSessionStore();
+  const { session, language, setSession, imagesUploaded, incrementImagesUploaded } = useSessionStore();
   const [inputMessage, setInputMessage] = useState('');
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
