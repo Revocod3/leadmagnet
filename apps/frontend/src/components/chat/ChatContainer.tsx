@@ -4,6 +4,7 @@ import { useDiagnosticFlow } from '../../hooks/useDiagnosticFlow';
 import { useSpeechToText } from '../../hooks/useSpeechToText';
 import { usePDFGenerator } from '../../hooks/usePDFGenerator';
 import { useSessionStore } from '../../stores/sessionStore';
+import { useAuthStore } from '../../stores/authStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CameraModal } from '../modals/CameraModal';
 import { ImageViewerModal } from '../modals/ImageViewerModal';
@@ -95,6 +96,7 @@ const ProgressIndicator = ({ turnCount, hasRealProblem }: { turnCount: number; h
 
 export const ChatContainer = () => {
   const { session, language, setSession, imagesUploaded, incrementImagesUploaded } = useSessionStore();
+  const { user } = useAuthStore();
   const [inputMessage, setInputMessage] = useState('');
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
@@ -122,11 +124,11 @@ export const ChatContainer = () => {
   // Create session if it doesn't exist
   useEffect(() => {
     const createSessionIfNeeded = async () => {
-      if (!session?.id) {
+      if (!session?.id && user) {
         try {
-          console.log('📝 Creando nueva sesión...');
+          console.log('📝 Creando nueva sesión para:', user.name);
           const newSession = await apiClient.createSession({
-            userName: '', // Empty for now, will be filled during chat
+            userName: user.name || user.email.split('@')[0], // Use auth user name or email prefix
             language: language as 'es' | 'en',
           });
           setSession(newSession);
@@ -138,7 +140,7 @@ export const ChatContainer = () => {
     };
 
     createSessionIfNeeded();
-  }, [session?.id, language, setSession]);
+  }, [session?.id, user, language, setSession]);
 
   // Initialize only once when session is available
   useEffect(() => {
