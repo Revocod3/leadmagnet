@@ -20,6 +20,7 @@ export interface LoginData {
 export interface JWTPayload {
   userId: string;
   email: string;
+  name: string;
   role: string;
 }
 
@@ -160,6 +161,7 @@ export class AuthService {
     const payload: JWTPayload = {
       userId: user.id,
       email: user.email,
+      name: user.name,
       role: user.role,
     };
 
