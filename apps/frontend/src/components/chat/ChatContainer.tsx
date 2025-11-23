@@ -126,9 +126,10 @@ export const ChatContainer = () => {
     const createSessionIfNeeded = async () => {
       if (!session?.id && user) {
         try {
-          console.log('📝 Creando nueva sesión para:', user.name);
+          const userName = user.name || user.email.split('@')[0];
+          console.log('📝 Creando nueva sesión para:', userName);
           const newSession = await apiClient.createSession({
-            userName: user.name || user.email.split('@')[0], // Use auth user name or email prefix
+            userName,
             language: language as 'es' | 'en',
           });
           setSession(newSession);
