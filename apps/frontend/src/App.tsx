@@ -21,25 +21,13 @@ const queryClient = new QueryClient({
 
 function RootRedirect() {
   const { isAuthenticated, checkAuth } = useAuthStore();
-  const navigate = useNavigate();
-  const location = useLocation();
+  const isValid = checkAuth();
 
-  useEffect(() => {
-    // Check if token is still valid
-    const isValid = checkAuth();
-
-    if (location.pathname === '/') {
-      if (isAuthenticated && isValid) {
-        // Redirect to chat
-        navigate('/chat', { replace: true });
-      } else {
-        // Redirect to login
-        navigate('/login', { replace: true });
-      }
-    }
-  }, [isAuthenticated, checkAuth, navigate, location.pathname]);
-
-  return null;
+  if (isAuthenticated && isValid) {
+    return <Navigate to="/chat" replace />;
+  } else {
+    return <Navigate to="/login" replace />;
+  }
 }
 
 function App() {
@@ -47,8 +35,10 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <Router>
         <Layout>
-          <RootRedirect />
           <Routes>
+            {/* Root redirect */}
+            <Route path="/" element={<RootRedirect />} />
+
             {/* Public routes */}
             <Route path="/login" element={<LoginPage />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
@@ -63,8 +53,8 @@ function App() {
               }
             />
 
-            {/* Redirect all other routes to / */}
-            <Route path="*" element={<Navigate to="/" replace />} />
+            {/* Redirect all other routes to root */}
+            <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>
         </Layout>
       </Router>
