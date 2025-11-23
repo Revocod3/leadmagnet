@@ -13,6 +13,7 @@ import { validationMiddleware } from './middleware/validation.middleware';
 import { rateLimitMiddleware } from './middleware/rateLimit.middleware';
 import { authMiddleware } from './middleware/auth.middleware';
 import { logger } from './utils/logger';
+import passport from './config/passport';
 
 const app: Express = express();
 
@@ -38,6 +39,9 @@ app.use(compression());
 // Body parsing
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Initialize Passport
+app.use(passport.initialize());
 
 // Global middleware
 app.use(validationMiddleware);

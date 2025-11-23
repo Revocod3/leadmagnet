@@ -4,6 +4,7 @@ import chatRoutes from './chat.routes';
 import discountRoutes from './discount.routes';
 import { webhookRoutes } from './webhook.routes';
 import { ImageController, uploadMiddleware } from '../controllers/image.controller';
+import authRoutes from './auth.routes';
 
 const router: ExpressRouter = Router();
 const imageController = new ImageController();
@@ -14,6 +15,7 @@ router.get('/health', (req, res) => {
 });
 
 // API routes
+router.use('/auth', authRoutes);
 router.use('/sessions', sessionRoutes);
 router.use('/chat', chatRoutes);
 router.use('/discount', discountRoutes);
