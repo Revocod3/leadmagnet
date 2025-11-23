@@ -119,6 +119,27 @@ export const ChatContainer = () => {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Create session if it doesn't exist
+  useEffect(() => {
+    const createSessionIfNeeded = async () => {
+      if (!session?.id) {
+        try {
+          console.log('📝 Creando nueva sesión...');
+          const newSession = await apiClient.createSession({
+            userName: '', // Empty for now, will be filled during chat
+            language: language as 'es' | 'en',
+          });
+          setSession(newSession);
+          console.log('✅ Sesión creada:', newSession.id);
+        } catch (error) {
+          console.error('Error creating session:', error);
+        }
+      }
+    };
+
+    createSessionIfNeeded();
+  }, [session?.id, language, setSession]);
+
   // Initialize only once when session is available
   useEffect(() => {
     // Solo inicializar si:
