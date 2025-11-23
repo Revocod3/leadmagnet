@@ -33,7 +33,7 @@ class AuthService {
    */
   async register(data: RegisterData): Promise<AuthResponse> {
     try {
-      const response = await apiClient.post('/auth/register', data);
+      const response = await apiClient['client'].post('/auth/register', data);
       return response.data;
     } catch (error: any) {
       return {
@@ -48,7 +48,7 @@ class AuthService {
    */
   async login(data: LoginData): Promise<AuthResponse> {
     try {
-      const response = await apiClient.post('/auth/login', data);
+      const response = await apiClient['client'].post('/auth/login', data);
       return response.data;
     } catch (error: any) {
       return {
@@ -63,7 +63,7 @@ class AuthService {
    */
   async me(token: string): Promise<AuthResponse> {
     try {
-      const response = await apiClient.get('/auth/me', {
+      const response = await apiClient['client'].get('/auth/me', {
         headers: {
           Authorization: `Bearer ${token}`,
         },

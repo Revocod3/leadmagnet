@@ -38,7 +38,7 @@ export function LoginPage() {
 
       if (response.success && response.data) {
         // Save auth data
-        setAuth(response.data.token, response.data.user);
+        setAuth(response.data.token, response.data.user as any);
 
         // Redirect to chat
         navigate('/chat');

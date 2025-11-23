@@ -27,7 +27,7 @@ export function AuthCallback() {
         };
 
         // Save auth data
-        setAuth(token, user);
+        setAuth(token, user as any);
 
         // Redirect to chat
         navigate('/chat', { replace: true });
