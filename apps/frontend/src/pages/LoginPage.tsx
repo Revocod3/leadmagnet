@@ -61,16 +61,44 @@ export function LoginPage() {
   const authError = searchParams.get('error');
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row">
-      {/* LEFT SIDE - Branded Section con degradado */}
+    <div className="h-screen w-screen overflow-hidden flex flex-col lg:flex-row">
+      {/* MOBILE HEADER - Solo logo en móvil */}
+      <div className="lg:hidden bg-gradient-to-r from-[#A2AE5A] to-[#97AA79] py-6 px-4 flex items-center justify-center">
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ type: 'spring', stiffness: 200, damping: 15 }}
+        >
+          <motion.div
+            animate={{
+              boxShadow: [
+                '0 0 0 0 rgba(255, 255, 255, 0.4)',
+                '0 0 0 20px rgba(255, 255, 255, 0)',
+                '0 0 0 0 rgba(255, 255, 255, 0)',
+              ],
+            }}
+            transition={{
+              duration: 2,
+              repeat: Infinity,
+              repeatDelay: 0.5,
+            }}
+            className="w-14 h-14 rounded-full bg-white shadow-2xl flex items-center justify-center overflow-hidden border-4 border-white/30"
+          >
+            <img
+              src="/assets/images/favicon.webp"
+              alt="OVP"
+              className="w-full h-full object-cover"
+            />
+          </motion.div>
+        </motion.div>
+      </div>
+
+      {/* LEFT SIDE - Branded Section - Solo visible en desktop */}
       <motion.div
         initial={{ opacity: 0, x: -50 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.6 }}
-        className="relative lg:w-1/2 bg-gradient-to-br from-[#A2AE5A] via-[#97AA79] to-[#99AB75] overflow-hidden flex items-center justify-center p-8 lg:p-16"
-        style={{
-          minHeight: '300px',
-        }}
+        className="hidden lg:flex relative lg:w-1/2 bg-gradient-to-br from-[#A2AE5A] via-[#97AA79] to-[#99AB75] overflow-hidden items-center justify-center p-16"
       >
         {/* Efectos de fondo animados - círculos flotantes */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -128,7 +156,7 @@ export function LoginPage() {
                 repeat: Infinity,
                 repeatDelay: 0.5,
               }}
-              className="w-24 h-24 lg:w-32 lg:h-32 rounded-full bg-white shadow-2xl flex items-center justify-center overflow-hidden border-4 border-white/30"
+              className="w-32 h-32 rounded-full bg-white shadow-2xl flex items-center justify-center overflow-hidden border-4 border-white/30"
             >
               <img
                 src="/assets/images/favicon.webp"
@@ -143,7 +171,7 @@ export function LoginPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="text-3xl lg:text-4xl font-bold text-white mb-4 leading-tight tracking-tight"
+            className="text-4xl font-bold text-white mb-4 leading-tight tracking-tight"
           >
             Objetivo Vientre Plano
           </motion.h1>
@@ -154,7 +182,7 @@ export function LoginPage() {
             transition={{ delay: 0.5 }}
             className="space-y-4"
           >
-            <p className="text-base lg:text-lg text-white/95 leading-relaxed font-light">
+            <p className="text-lg text-white/95 leading-relaxed font-light">
               Conoce a Clara, nuestra experta en bienestar digestivo.
             </p>
 
@@ -188,56 +216,45 @@ export function LoginPage() {
         </div>
       </motion.div>
 
-      {/* RIGHT SIDE - Formulario blanco */}
+      {/* RIGHT SIDE - Formulario */}
       <motion.div
         initial={{ opacity: 0, x: 50 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.6, delay: 0.2 }}
-        className="flex-1 lg:w-1/2 bg-white flex items-center justify-center p-8 lg:p-16"
+        className="flex-1 lg:w-1/2 bg-white flex items-start lg:items-center justify-center p-4 lg:p-8 overflow-y-auto"
       >
-        <div className="w-full max-w-md">
-          {/* Logo pequeño en móvil - solo visible en mobile */}
-          <div className="lg:hidden text-center mb-8">
-            <div className="inline-block w-16 h-16 rounded-full bg-gradient-to-br from-[#A2AE5A] to-[#97AA79] shadow-lg flex items-center justify-center overflow-hidden mb-4">
-              <img
-                src="/assets/images/favicon.webp"
-                alt="OVP"
-                className="w-full h-full object-cover"
-              />
-            </div>
-          </div>
-
+        <div className="w-full max-w-md py-2">
           {/* Encabezado del formulario */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="mb-8"
+            className="mb-4"
           >
-            <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2">
-              {mode === 'login' ? '¡Bienvenido de nuevo!' : 'Crea tu cuenta'}
+            <h2 className="text-lg lg:text-3xl font-bold text-gray-900 mb-1">
+              {mode === 'login' ? '¡Bienvenido!' : 'Crea tu cuenta'}
             </h2>
-            <p className="text-gray-600 text-sm lg:text-base">
+            <p className="text-gray-600 text-xs lg:text-base">
               {mode === 'login'
-                ? 'Ingresa tus credenciales para continuar'
-                : 'Únete y comienza tu transformación hoy'}
+                ? 'Ingresa tus credenciales'
+                : 'Únete y comienza hoy'}
             </p>
           </motion.div>
 
           {/* Tabs */}
-          <div className="flex gap-2 mb-6 p-1 bg-gray-100 rounded-lg">
+          <div className="flex gap-2 mb-3 p-1 bg-gray-100 rounded-lg">
             <button
               onClick={() => setMode('login')}
-              className={`flex-1 py-2.5 px-4 rounded-md font-semibold text-sm transition-all ${mode === 'login'
+              className={`flex-1 py-2 px-3 rounded-md font-semibold text-xs lg:text-sm transition-all ${mode === 'login'
                 ? 'bg-white text-[#A2AE5A] shadow-sm'
                 : 'text-gray-600 hover:text-gray-900'
                 }`}
             >
-              Iniciar Sesión
+              Iniciar sesión
             </button>
             <button
               onClick={() => setMode('register')}
-              className={`flex-1 py-2.5 px-4 rounded-md font-semibold text-sm transition-all ${mode === 'register'
+              className={`flex-1 py-2 px-3 rounded-md font-semibold text-xs lg:text-sm transition-all ${mode === 'register'
                 ? 'bg-white text-[#A2AE5A] shadow-sm'
                 : 'text-gray-600 hover:text-gray-900'
                 }`}
@@ -253,10 +270,10 @@ export function LoginPage() {
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm flex items-start gap-2"
+                className="mb-2 p-2 bg-red-50 border border-red-200 rounded-lg text-red-600 text-xs flex items-start gap-2"
               >
                 <svg
-                  className="w-5 h-5 flex-shrink-0 mt-0.5"
+                  className="w-4 h-4 flex-shrink-0 mt-0.5"
                   fill="currentColor"
                   viewBox="0 0 20 20"
                 >
@@ -284,9 +301,9 @@ export function LoginPage() {
             onClick={handleGoogleLogin}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className="w-full mb-6 py-3 px-4 border-2 border-gray-300 rounded-lg flex items-center justify-center gap-3 hover:bg-gray-50 hover:border-gray-400 transition-all font-medium text-gray-700"
+            className="w-full mb-3 py-2.5 px-3 border-2 border-gray-300 rounded-lg flex items-center justify-center gap-2 hover:bg-gray-50 hover:border-gray-400 transition-all font-medium text-gray-700 text-xs lg:text-sm"
           >
-            <svg className="w-5 h-5" viewBox="0 0 24 24">
+            <svg className="w-4 h-4" viewBox="0 0 24 24">
               <path
                 fill="#4285F4"
                 d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -307,11 +324,11 @@ export function LoginPage() {
             <span>Continuar con Google</span>
           </motion.button>
 
-          <div className="relative mb-6">
+          <div className="relative mb-3">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-gray-300"></div>
             </div>
-            <div className="relative flex justify-center text-sm">
+            <div className="relative flex justify-center text-xs">
               <span className="px-2 bg-white text-gray-500 font-medium">O</span>
             </div>
           </div>
@@ -322,36 +339,29 @@ export function LoginPage() {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.6 }}
             onSubmit={handleSubmit}
-            className="space-y-4"
+            className="space-y-2.5"
           >
-            <AnimatePresence mode="wait">
-              {mode === 'register' && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Nombre Completo
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.name}
-                    onChange={(e) =>
-                      setFormData({ ...formData, name: e.target.value })
-                    }
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#A2AE5A] focus:border-transparent transition-all"
-                    placeholder="Tu nombre completo"
-                  />
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {/* Campo de nombre - siempre ocupa espacio pero invisible en login */}
+            <div className={`transition-opacity duration-200 ${mode === 'register' ? 'opacity-100' : 'opacity-0 h-0 overflow-hidden'}`}>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">
+                Nombre
+              </label>
+              <input
+                type="text"
+                required={mode === 'register'}
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#A2AE5A] focus:border-transparent transition-all text-sm"
+                placeholder="John Smith"
+                tabIndex={mode === 'register' ? 0 : -1}
+              />
+            </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Correo Electrónico
+              <label className="block text-xs font-semibold text-gray-700 mb-1">
+                Correo electrónico
               </label>
               <input
                 type="email"
@@ -360,13 +370,13 @@ export function LoginPage() {
                 onChange={(e) =>
                   setFormData({ ...formData, email: e.target.value })
                 }
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#A2AE5A] focus:border-transparent transition-all"
-                placeholder="tu@email.com"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#A2AE5A] focus:border-transparent transition-all text-sm"
+                placeholder="Ejemplo@email.com"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
+              <label className="block text-xs font-semibold text-gray-700 mb-1">
                 Contraseña
               </label>
               <input
@@ -376,7 +386,7 @@ export function LoginPage() {
                 onChange={(e) =>
                   setFormData({ ...formData, password: e.target.value })
                 }
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#A2AE5A] focus:border-transparent transition-all"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#A2AE5A] focus:border-transparent transition-all text-sm"
                 placeholder="Mínimo 6 caracteres"
                 minLength={6}
               />
@@ -387,12 +397,12 @@ export function LoginPage() {
               disabled={loading}
               whileHover={{ scale: loading ? 1 : 1.02 }}
               whileTap={{ scale: loading ? 1 : 0.98 }}
-              className="w-full bg-gradient-to-r from-[#A2AE5A] to-[#97AA79] text-white py-3.5 rounded-lg font-bold text-base hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 mt-6"
+              className="w-full bg-gradient-to-r from-[#A2AE5A] to-[#97AA79] text-white py-2.5 rounded-lg font-bold text-sm hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 mt-3"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
                   <svg
-                    className="animate-spin h-5 w-5"
+                    className="animate-spin h-4 w-4"
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
                     viewBox="0 0 24 24"
@@ -414,9 +424,9 @@ export function LoginPage() {
                   Cargando...
                 </span>
               ) : mode === 'login' ? (
-                'Iniciar Sesión'
+                'Ingresar'
               ) : (
-                'Crear Cuenta'
+                'Crear cuenta'
               )}
             </motion.button>
           </motion.form>
@@ -426,7 +436,7 @@ export function LoginPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.8 }}
-            className="mt-6 text-center text-xs text-gray-500 leading-relaxed"
+            className="mt-3 text-center text-[10px] lg:text-xs text-gray-500 leading-relaxed"
           >
             Al continuar, aceptas nuestros{' '}
             <a
