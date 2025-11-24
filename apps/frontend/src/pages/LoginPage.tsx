@@ -155,7 +155,7 @@ export function LoginPage() {
             className="space-y-4"
           >
             <p className="text-base lg:text-lg text-white/95 leading-relaxed font-light">
-              Descubre qué necesita tu cuerpo con nuestro diagnóstico personalizado
+              Conoce a Clara, nuestra experta en bienestar digestivo.
             </p>
 
             {/* Badge decorativo */}
@@ -179,41 +179,12 @@ export function LoginPage() {
                 />
               </svg>
               <span className="text-sm text-white font-semibold">
-                100% Personalizado con IA
+                Cambia tu vida aquí
               </span>
             </motion.div>
           </motion.div>
 
-          {/* Pasos - Mini versión */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.7 }}
-            className="mt-12 hidden lg:block"
-          >
-            <div className="flex items-center justify-center gap-3 text-white/90">
-              <div className="flex flex-col items-center gap-2">
-                <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm border-2 border-white/40 flex items-center justify-center font-bold text-sm">
-                  1
-                </div>
-                <span className="text-xs">Cuestionario</span>
-              </div>
-              <div className="w-8 h-[2px] bg-white/30" />
-              <div className="flex flex-col items-center gap-2">
-                <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm border-2 border-white/40 flex items-center justify-center font-bold text-sm">
-                  2
-                </div>
-                <span className="text-xs">Diagnóstico</span>
-              </div>
-              <div className="w-8 h-[2px] bg-white/30" />
-              <div className="flex flex-col items-center gap-2">
-                <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm border-2 border-white/40 flex items-center justify-center font-bold text-sm">
-                  3
-                </div>
-                <span className="text-xs">Transformación</span>
-              </div>
-            </div>
-          </motion.div>
+
         </div>
       </motion.div>
 
@@ -258,8 +229,8 @@ export function LoginPage() {
             <button
               onClick={() => setMode('login')}
               className={`flex-1 py-2.5 px-4 rounded-md font-semibold text-sm transition-all ${mode === 'login'
-                  ? 'bg-white text-[#A2AE5A] shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
+                ? 'bg-white text-[#A2AE5A] shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
                 }`}
             >
               Iniciar Sesión
@@ -267,8 +238,8 @@ export function LoginPage() {
             <button
               onClick={() => setMode('register')}
               className={`flex-1 py-2.5 px-4 rounded-md font-semibold text-sm transition-all ${mode === 'register'
-                  ? 'bg-white text-[#A2AE5A] shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
+                ? 'bg-white text-[#A2AE5A] shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
                 }`}
             >
               Registrarse
