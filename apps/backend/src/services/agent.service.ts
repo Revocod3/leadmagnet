@@ -479,50 +479,8 @@ Usa el tool save_style_analysis con estos valores y el sessionId: ${context.sess
         }
       }
 
-      // SAFETY NET: Forzar diagnóstico después de 18 turnos
-      // Esto previene conversaciones infinitas
-      const session = await prisma.sessions.findUnique({
-        where: { id: context.sessionId! },
-        select: { completedDiagnosis: true },
-      });
-
-      if (context.turnCount >= 18 && !session?.completedDiagnosis) {
-        logger.info(`[SAFETY NET] Forcing diagnosis at turn ${context.turnCount}`);
-
-        // Generar diagnóstico automáticamente
-        try {
-          const conversationHistory = await prisma.message.findMany({
-            where: { sessionId: context.sessionId! },
-            orderBy: { createdAt: 'asc' },
-          });
-
-          const historyText = conversationHistory
-            .map(m => `${m.role}: ${m.content}`)
-            .join('\n\n');
-
-          const diagnosisPrompt = `Basándote en toda esta conversación, genera el diagnóstico personalizado ahora:
-
-${historyText}
-
-Usuario: ${context.userName}
-Turnos de conversación: ${context.turnCount}
-
-Genera el diagnóstico usando el template y guárdalo con el tool save_diagnosis.`;
-
-          await run(this.diagnosisAgent, diagnosisPrompt);
-          logger.info('[SAFETY NET] Forced diagnosis completed');
-
-          // Retornar mensaje indicando que el diagnóstico está listo
-          return {
-            message: `Perfecto, ${context.userName}. Ya tengo todo lo necesario. Dame un momento para preparar tu diagnóstico personalizado... ✨`,
-            isDiagnosisReady: true,
-            shouldEndConversation: false,
-          };
-        } catch (error) {
-          logger.error('[SAFETY NET] Forced diagnosis failed:', { error });
-          // Continuar con el flujo normal si falla
-        }
-      }
+      // TODO: SAFETY NET - Implementar después de testing
+      // Forzar diagnóstico después de 18 turnos para prevenir conversaciones infinitas
 
       // Ejecutar Clara
       const result = await run(tempClara, messageWithContext);
