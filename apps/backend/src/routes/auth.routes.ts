@@ -1,9 +1,9 @@
-import { Router } from 'express';
+import { Router, type Router as ExpressRouter } from 'express';
 import { authController } from '../controllers/auth.controller';
 import { authenticateJWT } from '../middleware/jwt.middleware';
 import passport from '../config/passport';
 
-const router = Router();
+const router: ExpressRouter = Router();
 
 /**
  * POST /api/auth/register
