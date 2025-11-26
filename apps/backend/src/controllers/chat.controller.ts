@@ -89,9 +89,11 @@ export class ChatController {
       res.json({
         success: true,
         data: {
-          message: welcomeMessage,
+          role: 'assistant',
+          content: welcomeMessage,
+          metadata: { type: 'welcome' },
         },
-      } as ApiResponse);
+      } as ApiResponse<ChatMessage>);
 
     } catch (error) {
       console.error('Error initializing diagnostic:', error);
