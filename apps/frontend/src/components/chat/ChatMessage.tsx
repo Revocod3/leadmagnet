@@ -15,6 +15,7 @@ interface ChatMessageProps {
 export const ChatMessage = ({
   message,
   state,
+  isLatest,
   onDownloadPDF,
   isGeneratingPDF = false
 }: ChatMessageProps) => {
@@ -70,6 +71,7 @@ export const ChatMessage = ({
                   text={message.content}
                   speed={20}
                   className="font-semibold"
+                  shouldAnimate={isLatest}
                 />
               ) : (
                 /* Solo mensajes de usuario en texto plano */
