@@ -482,8 +482,37 @@ Usa el tool save_style_analysis con estos valores y el sessionId: ${context.sess
       // TODO: SAFETY NET - Implementar después de testing
       // Forzar diagnóstico después de 18 turnos para prevenir conversaciones infinitas
 
-      // Ejecutar Clara
-      const result = await run(tempClara, messageWithContext);
+      // Obtener historial de conversación desde la BD
+      let conversationHistory: { role: string; content: string }[] = [];
+      if (context.sessionId) {
+        const dbMessages = await prisma.message.findMany({
+          where: { sessionId: context.sessionId },
+          orderBy: { createdAt: 'asc' },
+        });
+        conversationHistory = dbMessages.map(m => ({
+          role: m.role,
+          content: m.content,
+        }));
+      }
+
+      // Construir prompt con historial completo
+      let fullPrompt = messageWithContext;
+      if (conversationHistory.length > 0) {
+        const historyText = conversationHistory
+          .map(m => `${m.role === 'user' ? 'Usuario' : 'Clara'}: ${m.content}`)
+          .join('\n\n');
+
+        fullPrompt = `HISTORIAL DE CONVERSACIÓN:
+${historyText}
+
+NUEVO MENSAJE DEL USUARIO:
+${messageWithContext}
+
+Responde considerando TODO el historial anterior. Mantén el contexto de la conversación.`;
+      }
+
+      // Ejecutar Clara con historial completo
+      const result = await run(tempClara, fullPrompt);
 
       const messageText = result.finalOutput || 'Lo siento, hubo un error. Por favor, intenta de nuevo.';
 
