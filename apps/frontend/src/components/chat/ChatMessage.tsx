@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Download } from 'lucide-react';
+import { Download, Star } from 'lucide-react';
 import { MessageActions } from './MessageActions';
 import { TypewriterText } from './TypewriterText';
 import type { FlowMessage, DiagnosticState } from '../../hooks/useDiagnosticFlow';
@@ -10,6 +10,7 @@ interface ChatMessageProps {
   isLatest: boolean;
   onDownloadPDF?: () => void;
   isGeneratingPDF?: boolean;
+  onRateExperience?: () => void;
 }
 
 export const ChatMessage = ({
@@ -17,7 +18,8 @@ export const ChatMessage = ({
   state,
   isLatest,
   onDownloadPDF,
-  isGeneratingPDF = false
+  isGeneratingPDF = false,
+  onRateExperience
 }: ChatMessageProps) => {
   const isUser = message.role === 'user';
 
@@ -126,6 +128,17 @@ export const ChatMessage = ({
                   </>
                 )}
               </button>
+
+              {/* Tertiary CTA - Rate Experience Button (only shown if callback provided) */}
+              {onRateExperience && (
+                <button
+                  onClick={onRateExperience}
+                  className="w-full py-2.5 sm:py-3 px-4 sm:px-6 rounded-xl bg-transparent border border-neutral-300 dark:border-neutral-600 hover:bg-neutral-50 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300 font-medium text-sm flex items-center justify-center gap-2 transition-all duration-200 transform hover:-translate-y-0.5 active:scale-95"
+                >
+                  <Star className="w-4 h-4 flex-shrink-0" />
+                  <span>Valorar mi experiencia</span>
+                </button>
+              )}
             </div>
           )}
 

@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { CameraModal } from '../modals/CameraModal';
 import { ImageViewerModal } from '../modals/ImageViewerModal';
 import { EmailCaptureModal } from '../modals/EmailCaptureModal';
+import { RatingModal } from '../modals/RatingModal';
 import { ChatMessage } from './ChatMessage';
 import { ChatHeader } from './ChatHeader';
 import { ChatFooter } from './ChatFooter';
@@ -107,6 +108,8 @@ export const ChatContainer = () => {
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [showImageLimitMessage, setShowImageLimitMessage] = useState(false);
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+  const [isRatingModalOpen, setIsRatingModalOpen] = useState(false);
+  const [hasRated, setHasRated] = useState(false);
 
   const {
     messages,
@@ -351,6 +354,41 @@ export const ChatContainer = () => {
     }
   };
 
+  const handleRatingSubmit = async (rating: number, comment: string) => {
+    if (!session?.id) return;
+
+    try {
+      // Determinar el tipo de flujo: 'free' o 'paid'
+      const flowType = user ? 'paid' : 'free';
+
+      await apiClient.createRating({
+        sessionId: session.id,
+        rating,
+        comment,
+        flowType,
+      });
+
+      setHasRated(true);
+      console.log('✅ Valoración enviada exitosamente');
+    } catch (error) {
+      console.error('❌ Error al enviar valoración:', error);
+      throw error;
+    }
+  };
+
+  // Mostrar modal de valoración cuando el diagnóstico esté listo (solo en flujo gratuito)
+  useEffect(() => {
+    if (state.step === 'diagnosis_ready' && !user && !hasRated && !isRatingModalOpen) {
+      // Esperar 2 segundos antes de mostrar el modal
+      const timer = setTimeout(() => {
+        setIsRatingModalOpen(true);
+      }, 2000);
+
+      return () => clearTimeout(timer);
+    }
+    return undefined;
+  }, [state.step, user, hasRated, isRatingModalOpen]);
+
   return (
     <>
       {/* Wrapper con dark mode */}
@@ -398,16 +436,20 @@ export const ChatContainer = () => {
               {/* Messages */}
               <div className="space-y-3">
                 <AnimatePresence mode="popLayout">
-                  {messages.map((message, index) => (
-                    <ChatMessage
-                      key={index}
-                      message={message}
-                      state={state}
-                      isLatest={index === messages.length - 1}
-                      onDownloadPDF={handleDownloadPDF}
-                      isGeneratingPDF={isGeneratingPDF}
-                    />
-                  ))}
+                  {messages.map((message, index) => {
+                    const rateHandler = user && !hasRated ? () => setIsRatingModalOpen(true) : undefined;
+                    return (
+                      <ChatMessage
+                        key={index}
+                        message={message}
+                        state={state}
+                        isLatest={index === messages.length - 1}
+                        onDownloadPDF={handleDownloadPDF}
+                        isGeneratingPDF={isGeneratingPDF}
+                        {...(rateHandler && { onRateExperience: rateHandler })}
+                      />
+                    );
+                  })}
                 </AnimatePresence>
 
                 {/* Diagnosis Generating Indicator - Special state */}
@@ -478,6 +520,12 @@ export const ChatContainer = () => {
         onClose={() => setIsEmailModalOpen(false)}
         onSubmit={handleEmailSubmit}
         userName={state.userName}
+      />
+
+      <RatingModal
+        isOpen={isRatingModalOpen}
+        onClose={() => setIsRatingModalOpen(false)}
+        onSubmit={handleRatingSubmit}
       />
     </>
   );

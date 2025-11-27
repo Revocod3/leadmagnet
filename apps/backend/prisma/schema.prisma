@@ -70,6 +70,7 @@ model Session {
   diagnosis             Diagnosis?
   discountCodes         DiscountCode[]
   conversationalMemory  ConversationalMemory?
+  chatRatings           ChatRating[]
 
   @@index([userId])
   @@index([expiresAt])
@@ -146,37 +147,51 @@ model DiscountCode {
 model ConversationalMemory {
   id               String   @id @default(cuid())
   sessionId        String   @unique
-  
+
   // Factual information extracted from conversation
   factualInfo      Json     @default("{}") // { demographics, health, lifestyle, goals }
-  
+
   // Emotional markers detected during conversation
   emotionalMarkers Json     @default("[]") // Array of { turn, emotion, intensity, trigger }
-  
+
   // Key moments in conversation
   keyMoments       Json     @default("[]") // Array of { turn, type, content, significance }
-  
+
   // User communication style
   userStyle        Json     @default("{}") // { formality, verbosity, emotionLevel }
-  
+
   // Current hypothesis about diagnosis
   currentHypothesis Json    @default("{}") // { primary, confidence, evidence, needsConfirmation }
-  
+
   // Conversation phase tracking
   conversationPhase String  @default("introduction") // introduction, exploration, deepening, conclusion
-  
+
   // Topic tracking
   topicsExplored   Json     @default("[]") // Array of explored topics
-  
+
   // Turn count
   turnCount        Int      @default(0)
-  
+
   // Timestamps
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
-  
+
   session          Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  
+
   @@index([sessionId])
   @@map("conversational_memory")
+}
+
+model ChatRating {
+  id          String    @id @default(cuid())
+  sessionId   String
+  rating      Int       // 1-5 stars
+  comment     String?   @db.Text
+  flowType    String    // "free" | "paid"
+  createdAt   DateTime  @default(now())
+
+  session     Session   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@map("chat_ratings")
 }

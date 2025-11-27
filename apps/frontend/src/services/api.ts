@@ -194,6 +194,19 @@ class ApiClient {
     return response.data.data;
   }
 
+  // Rating endpoints
+  async createRating(data: {
+    sessionId: string;
+    rating: number;
+    comment?: string;
+    flowType: 'free' | 'paid';
+  }): Promise<void> {
+    const response = await this.client.post<ApiResponse>('/ratings', data);
+    if (!response.data.success) {
+      throw new Error(response.data.error || 'Error al enviar valoración');
+    }
+  }
+
   // Health check
   async healthCheck(): Promise<{ status: string }> {
     const response = await this.client.get('/health');
