@@ -426,11 +426,11 @@ IMPORTANTE:
 
       // Construir instrucciones dinámicas (V2 simplificadas)
       const dynamicInstructions = buildDynamicInstructions({
-        userName: context.userName,
+        userName: context.userName || undefined,
         turnCount: context.turnCount,
-        hasRealProblem: context.hasRealProblem,
-        hasImage: context.hasImage,
-        userStyle,
+        hasRealProblem: context.hasRealProblem || undefined,
+        hasImage: context.hasImage || undefined,
+        userStyle: userStyle || undefined,
       });
 
       const fullInstructions = `${CLARA_INSTRUCTIONS}\n\n${dynamicInstructions}`;

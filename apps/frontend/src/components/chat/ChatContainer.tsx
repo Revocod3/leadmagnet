@@ -121,9 +121,20 @@ export const ChatContainer = () => {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Create session if it doesn't exist
+  // Create session if it doesn't exist OR if session doesn't belong to current user
   useEffect(() => {
     const createSessionIfNeeded = async () => {
+      // VALIDACIÓN CRÍTICA: Si hay usuario PRO autenticado
+      if (user) {
+        // Si hay sesión PERO no pertenece a este usuario → LIMPIAR
+        if (session?.id && session.userId !== user.id) {
+          console.log('⚠️ Sesión existente no pertenece al usuario actual, limpiando...');
+          console.log('   Session userId:', session.userId, '| Current user:', user.id);
+          setSession({ ...session, id: '', userId: undefined } as any); // Forzar limpieza
+          return; // Salir y dejar que el siguiente render cree la sesión correcta
+        }
+      }
+
       // Crear sesión si:
       // 1. No hay session.id O tiene un ID temporal (free_*)
       // 2. Y hay user (PRO) O hay userName (free)
@@ -137,13 +148,17 @@ export const ChatContainer = () => {
             ? (user.name || user.email.split('@')[0] || 'Usuario')
             : (session?.userName || 'Usuario');
 
-          console.log('📝 Creando nueva sesión para:', userName, user ? '(PRO)' : '(Free)');
+          console.log('📝 Solicitando sesión para:', userName, user ? `(PRO - userId: ${user.id})` : '(Free)');
+
+          // Para usuarios PRO, pasar userId - el backend buscará sesión existente
           const newSession = await apiClient.createSession({
             userName: userName,
             language: language as 'es' | 'en',
+            ...(user && { userId: user.id }), // Solo si es usuario PRO
           });
+
           setSession(newSession);
-          console.log('✅ Sesión creada:', newSession.id);
+          console.log('✅ Sesión obtenida/creada:', newSession.id);
         } catch (error) {
           console.error('Error creating session:', error);
         }
@@ -151,16 +166,19 @@ export const ChatContainer = () => {
     };
 
     createSessionIfNeeded();
-  }, [session?.id, session?.userName, user, language, setSession]);
+  }, [session?.id, session?.userId, session?.userName, user, language, setSession]);
 
   // Initialize only once when session is available
   useEffect(() => {
     // Solo inicializar si:
     // 1. No hay mensajes
     // 2. Hay una sesión activa
-    // 3. No estamos procesando
-    if (messages.length === 0 && session?.id && !isProcessing) {
-      console.log('🎬 Inicializando chat...');
+    // 3. El sessionId NO es temporal (ya fue reemplazado por uno real del backend)
+    // 4. No estamos procesando
+    const isRealSession = session?.id && !session.id.startsWith('free_');
+
+    if (messages.length === 0 && isRealSession && !isProcessing) {
+      console.log('🎬 Inicializando chat con sesión:', session.id);
       initialize();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -230,7 +248,7 @@ export const ChatContainer = () => {
         await apiClient.updateSession(session.id, { userEmail: email });
 
         // Actualizar el store local
-        useSessionStore.getState().setSession({
+        setSession({
           ...session,
           userEmail: email,
         });

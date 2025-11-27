@@ -72,8 +72,8 @@ class ApiClient {
   }
 
   // Chat endpoints
-  async initializeChat(sessionId: string, language: 'es' | 'en'): Promise<{ message: string; state: any }> {
-    const response = await this.client.post<ApiResponse<{ message: string; state: any }>>('/chat/init', {
+  async initializeChat(sessionId: string, language: 'es' | 'en'): Promise<ChatMessage> {
+    const response = await this.client.post<ApiResponse<ChatMessage>>('/chat/init', {
       sessionId,
       language,
     });

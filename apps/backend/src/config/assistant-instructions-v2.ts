@@ -350,15 +350,15 @@ Después de analizar todo, identifiqué varios aspectos clave que explican tus s
  * Versión simplificada para V2
  */
 export function buildDynamicInstructionsV2(context: {
-  userName?: string;
+  userName?: string | undefined;
   turnCount: number;
-  hasRealProblem?: boolean;
-  hasImage?: boolean;
+  hasRealProblem?: boolean | undefined;
+  hasImage?: boolean | undefined;
   userStyle?: {
     formality: number;
     verbosity: number;
     emotionLevel: number;
-  } | null;
+  } | null | undefined;
 }): string {
   const { userName, turnCount, hasRealProblem, hasImage, userStyle } = context;
 
