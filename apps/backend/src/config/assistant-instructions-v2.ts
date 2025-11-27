@@ -354,8 +354,13 @@ export function buildDynamicInstructionsV2(context: {
   turnCount: number;
   hasRealProblem?: boolean;
   hasImage?: boolean;
+  userStyle?: {
+    formality: number;
+    verbosity: number;
+    emotionLevel: number;
+  } | null;
 }): string {
-  const { userName, turnCount, hasRealProblem, hasImage } = context;
+  const { userName, turnCount, hasRealProblem, hasImage, userStyle } = context;
 
   let instructions = `
 CONTEXTO ACTUAL:
@@ -363,6 +368,19 @@ CONTEXTO ACTUAL:
 - Turno de conversación: ${turnCount}
 - Problema digestivo confirmado: ${hasRealProblem ? 'Sí' : 'Por determinar'}
 - Imagen compartida: ${hasImage ? 'Sí' : 'No'}
+`;
+
+  // Agregar análisis de estilo si está disponible
+  if (userStyle) {
+    instructions += `
+- 📊 ANÁLISIS DE ESTILO DEL USUARIO (usa esto para adaptar tu comunicación):
+  • Formalidad: ${userStyle.formality}/10 ${userStyle.formality >= 7 ? '(Formal - sé más profesional)' : userStyle.formality <= 3 ? '(Casual - sé más relajada y cercana)' : '(Neutral - balancea)'}
+  • Verbosidad: ${userStyle.verbosity}/10 ${userStyle.verbosity >= 7 ? '(Detallado - puede dar respuestas más largas)' : userStyle.verbosity <= 3 ? '(Conciso - sé breve y directa)' : '(Medio - adapta según el tema)'}
+  • Nivel Emocional: ${userStyle.emotionLevel}/10 ${userStyle.emotionLevel >= 7 ? '(Emotivo - valida emociones profundamente)' : userStyle.emotionLevel <= 3 ? '(Racional - sé más directa y práctica)' : '(Balanceado - adapta según la situación)'}
+`;
+  }
+
+  instructions += `
 `;
 
   // Guía sutil según fase

@@ -411,12 +411,26 @@ IMPORTANTE:
     shouldEndConversation?: boolean;
   }> {
     try {
+      // Obtener análisis de estilo si existe (después del turno 2)
+      let userStyle = null;
+      if (context.sessionId && context.turnCount >= 3) {
+        const memory = await prisma.conversationalMemory.findUnique({
+          where: { sessionId: context.sessionId },
+        });
+        userStyle = memory?.userStyle as { formality: number; verbosity: number; emotionLevel: number } | null;
+
+        if (userStyle) {
+          logger.info('[STYLE] Using user style analysis:', { userStyle, turnCount: context.turnCount });
+        }
+      }
+
       // Construir instrucciones dinámicas (V2 simplificadas)
       const dynamicInstructions = buildDynamicInstructions({
         userName: context.userName,
         turnCount: context.turnCount,
         hasRealProblem: context.hasRealProblem,
         hasImage: context.hasImage,
+        userStyle,
       });
 
       const fullInstructions = `${CLARA_INSTRUCTIONS}\n\n${dynamicInstructions}`;
