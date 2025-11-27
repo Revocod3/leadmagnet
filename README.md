@@ -4,6 +4,7 @@ Sistema de diagnóstico de bienestar digestivo con IA utilizando OpenAI GPT-4o y
 
 ## 📋 Tabla de Contenidos
 
+
 - [Características](#características)
 - [Stack Tecnológico](#stack-tecnológico)
 - [Requisitos Previos](#requisitos-previos)
