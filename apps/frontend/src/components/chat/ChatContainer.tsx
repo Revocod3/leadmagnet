@@ -124,10 +124,20 @@ export const ChatContainer = () => {
   // Create session if it doesn't exist
   useEffect(() => {
     const createSessionIfNeeded = async () => {
-      if (!session?.id && user) {
+      // Crear sesión si:
+      // 1. No hay session.id O tiene un ID temporal (free_*)
+      // 2. Y hay user (PRO) O hay userName (free)
+      const needsSession = (!session?.id || session.id.startsWith('free_')) &&
+                          (user || session?.userName);
+
+      if (needsSession) {
         try {
-          const userName = user.name || user.email.split('@')[0] || 'Usuario';
-          console.log('📝 Creando nueva sesión para:', userName);
+          // Determinar userName según el contexto
+          const userName = user
+            ? (user.name || user.email.split('@')[0] || 'Usuario')
+            : (session?.userName || 'Usuario');
+
+          console.log('📝 Creando nueva sesión para:', userName, user ? '(PRO)' : '(Free)');
           const newSession = await apiClient.createSession({
             userName: userName,
             language: language as 'es' | 'en',
@@ -141,7 +151,7 @@ export const ChatContainer = () => {
     };
 
     createSessionIfNeeded();
-  }, [session?.id, user, language, setSession]);
+  }, [session?.id, session?.userName, user, language, setSession]);
 
   // Initialize only once when session is available
   useEffect(() => {

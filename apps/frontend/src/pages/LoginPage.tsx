@@ -5,7 +5,6 @@ import { authService } from '../services/auth';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export function LoginPage() {
-  const [mode, setMode] = useState<'login' | 'register'>('login');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [searchParams] = useSearchParams();
@@ -14,7 +13,6 @@ export function LoginPage() {
 
   // Form state
   const [formData, setFormData] = useState({
-    name: '',
     email: '',
     password: '',
   });
@@ -25,28 +23,22 @@ export function LoginPage() {
     setLoading(true);
 
     try {
-      let response;
-
-      if (mode === 'register') {
-        response = await authService.register(formData);
-      } else {
-        response = await authService.login({
-          email: formData.email,
-          password: formData.password,
-        });
-      }
+      const response = await authService.login({
+        email: formData.email,
+        password: formData.password,
+      });
 
       if (response.success && response.data) {
         // Save auth data
         setAuth(response.data.token, response.data.user as any);
 
-        // Redirect to chat
+        // Redirect to Clara PRO
         navigate('/chat');
       } else {
-        setError(response.error || 'Authentication failed');
+        setError(response.error || 'Credenciales inválidas');
       }
     } catch (err) {
-      setError('An unexpected error occurred');
+      setError('Ocurrió un error inesperado');
     } finally {
       setLoading(false);
     }
@@ -229,39 +221,15 @@ export function LoginPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="mb-4"
+            className="mb-6"
           >
-            <h2 className="text-lg lg:text-3xl font-bold text-gray-900 mb-1">
-              {mode === 'login' ? '¡Bienvenido!' : 'Crea tu cuenta'}
+            <h2 className="text-lg lg:text-3xl font-bold text-gray-900 mb-2">
+              ¡Bienvenido a Clara PRO!
             </h2>
             <p className="text-gray-600 text-xs lg:text-base">
-              {mode === 'login'
-                ? 'Ingresa tus credenciales'
-                : 'Únete y comienza hoy'}
+              Ingresa tus credenciales para acceder
             </p>
           </motion.div>
-
-          {/* Tabs */}
-          <div className="flex gap-2 mb-3 p-1 bg-gray-100 rounded-lg">
-            <button
-              onClick={() => setMode('login')}
-              className={`flex-1 py-2 px-3 rounded-md font-semibold text-xs lg:text-sm transition-all ${mode === 'login'
-                ? 'bg-white text-[#A2AE5A] shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
-                }`}
-            >
-              Iniciar sesión
-            </button>
-            <button
-              onClick={() => setMode('register')}
-              className={`flex-1 py-2 px-3 rounded-md font-semibold text-xs lg:text-sm transition-all ${mode === 'register'
-                ? 'bg-white text-[#A2AE5A] shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
-                }`}
-            >
-              Registrarse
-            </button>
-          </div>
 
           {/* Error messages */}
           <AnimatePresence>
@@ -339,26 +307,8 @@ export function LoginPage() {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.6 }}
             onSubmit={handleSubmit}
-            className="space-y-2.5"
+            className="space-y-3"
           >
-            {/* Campo de nombre - siempre ocupa espacio pero invisible en login */}
-            <div className={`transition-opacity duration-200 ${mode === 'register' ? 'opacity-100' : 'opacity-0 h-0 overflow-hidden'}`}>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">
-                Nombre
-              </label>
-              <input
-                type="text"
-                required={mode === 'register'}
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#A2AE5A] focus:border-transparent transition-all text-sm"
-                placeholder="John Smith"
-                tabIndex={mode === 'register' ? 0 : -1}
-              />
-            </div>
-
             <div>
               <label className="block text-xs font-semibold text-gray-700 mb-1">
                 Correo electrónico
@@ -371,7 +321,7 @@ export function LoginPage() {
                   setFormData({ ...formData, email: e.target.value })
                 }
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#A2AE5A] focus:border-transparent transition-all text-sm"
-                placeholder="Ejemplo@email.com"
+                placeholder="tu@email.com"
               />
             </div>
 
@@ -387,7 +337,7 @@ export function LoginPage() {
                   setFormData({ ...formData, password: e.target.value })
                 }
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#A2AE5A] focus:border-transparent transition-all text-sm"
-                placeholder="Mínimo 6 caracteres"
+                placeholder="Tu contraseña"
                 minLength={6}
               />
             </div>
@@ -397,7 +347,7 @@ export function LoginPage() {
               disabled={loading}
               whileHover={{ scale: loading ? 1 : 1.02 }}
               whileTap={{ scale: loading ? 1 : 0.98 }}
-              className="w-full bg-gradient-to-r from-[#A2AE5A] to-[#97AA79] text-white py-2.5 rounded-lg font-bold text-sm hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 mt-3"
+              className="w-full bg-gradient-to-r from-[#A2AE5A] to-[#97AA79] text-white py-2.5 rounded-lg font-bold text-sm hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 mt-4"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
@@ -423,13 +373,31 @@ export function LoginPage() {
                   </svg>
                   Cargando...
                 </span>
-              ) : mode === 'login' ? (
-                'Ingresar'
               ) : (
-                'Crear cuenta'
+                'Iniciar Sesión'
               )}
             </motion.button>
           </motion.form>
+
+          {/* Link a Registro Externo */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.8 }}
+            className="mt-6 text-center"
+          >
+            <p className="text-sm text-gray-600 mb-2">
+              ¿No tienes cuenta todavía?
+            </p>
+            <a
+              href="https://objetivovientreplano.com/suscripcion/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block w-full py-2.5 px-4 border-2 border-[#A2AE5A] text-[#A2AE5A] rounded-lg font-semibold text-sm hover:bg-[#A2AE5A] hover:text-white transition-all"
+            >
+              Suscríbete a Clara PRO →
+            </a>
+          </motion.div>
 
           {/* Footer */}
           <motion.p
