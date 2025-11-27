@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '../ui/Button';
+import { useTranslation } from 'react-i18next';
 
 interface RatingModalProps {
   isOpen: boolean;
@@ -9,6 +10,7 @@ interface RatingModalProps {
 }
 
 export const RatingModal = ({ isOpen, onClose, onSubmit }: RatingModalProps) => {
+  const { t } = useTranslation();
   const [rating, setRating] = useState<number>(0);
   const [hoveredRating, setHoveredRating] = useState<number>(0);
   const [comment, setComment] = useState('');
@@ -63,10 +65,10 @@ export const RatingModal = ({ isOpen, onClose, onSubmit }: RatingModalProps) => 
             {/* Header */}
             <div className="text-center mb-6">
               <h2 className="text-2xl font-bold text-neutral-900 dark:text-white mb-2">
-                ¿Cómo fue tu experiencia?
+                {t('rating.title')}
               </h2>
               <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                Tu opinión nos ayuda a mejorar
+                {t('rating.subtitle')}
               </p>
             </div>
 
@@ -104,11 +106,7 @@ export const RatingModal = ({ isOpen, onClose, onSubmit }: RatingModalProps) => 
                 animate={{ opacity: 1, y: 0 }}
                 className="text-center text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-4"
               >
-                {rating === 1 && 'Muy insatisfecho'}
-                {rating === 2 && 'Insatisfecho'}
-                {rating === 3 && 'Neutral'}
-                {rating === 4 && 'Satisfecho'}
-                {rating === 5 && '¡Excelente!'}
+                {t(`rating.ratings.${rating}`)}
               </motion.p>
             )}
 
@@ -118,13 +116,13 @@ export const RatingModal = ({ isOpen, onClose, onSubmit }: RatingModalProps) => 
                 htmlFor="comment"
                 className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2"
               >
-                Comentario (opcional)
+                {t('rating.comment')}
               </label>
               <textarea
                 id="comment"
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
-                placeholder="¿Qué te gustó o qué podríamos mejorar?"
+                placeholder={t('rating.commentPlaceholder')}
                 disabled={isSubmitting}
                 className="w-full px-4 py-3 border border-neutral-300 dark:border-neutral-600 rounded-xl
                          bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white
@@ -147,7 +145,7 @@ export const RatingModal = ({ isOpen, onClose, onSubmit }: RatingModalProps) => 
                 className="flex-1 bg-neutral-200 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300
                          hover:bg-neutral-300 dark:hover:bg-neutral-600 transition-colors"
               >
-                Cancelar
+                {t('rating.cancel')}
               </Button>
               <Button
                 onClick={handleSubmit}
@@ -155,7 +153,7 @@ export const RatingModal = ({ isOpen, onClose, onSubmit }: RatingModalProps) => 
                 className="flex-1 bg-brand-green-600 hover:bg-brand-green-700 text-white
                          disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                {isSubmitting ? 'Enviando...' : 'Enviar'}
+                {isSubmitting ? t('rating.submitting') : t('rating.submit')}
               </Button>
             </div>
           </motion.div>

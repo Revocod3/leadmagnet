@@ -1,0 +1,110 @@
+{
+  "welcome": {
+    "greeting": "Hallo!",
+    "intro": "Ich bin Clara, deine Beraterin für Verdauungsgesundheit",
+    "namePrompt": "Wie heißt du?",
+    "namePlaceholder": "Gib deinen Namen ein...",
+    "continue": "Fortfahren",
+    "loading": "Bereite dein Diagnose vor...",
+    "pleaseWait": "Einen Moment bitte..."
+  },
+  "chat": {
+    "inputPlaceholder": "Schreibe deine Nachricht...",
+    "inputPlaceholderDisabled": "Warte auf Antwort...",
+    "sending": "Wird gesendet...",
+    "send": "Senden",
+    "voiceInput": "Sprachinput",
+    "attachImage": "Bild anhängen",
+    "camera": "Kamera",
+    "gallery": "Galerie",
+    "typing": "Clara schreibt",
+    "generatingDiagnosis": "Generiere deine personalisierte Diagnose...",
+    "analyzing": "Analysiere deine Antworten",
+    "almostReady": "Fast fertig"
+  },
+  "diagnosis": {
+    "ready": "Deine Diagnose ist bereit",
+    "downloadPDF": "Lade meine Diagnose als PDF herunter",
+    "downloadingPDF": "PDF wird erstellt...",
+    "generating": "Wird generiert...",
+    "free": "Kostenlos",
+    "subscribe": "Transformiere deine Verdauungsgesundheit",
+    "subscribeShort": "Jetzt starten",
+    "rateExperience": "Bewerte meine Erfahrung"
+  },
+  "rating": {
+    "title": "Wie war deine Erfahrung?",
+    "subtitle": "Deine Meinung hilft uns, uns zu verbessern",
+    "comment": "Kommentar (optional)",
+    "commentPlaceholder": "Was hat dir gefallen oder was könnten wir verbessern?",
+    "cancel": "Abbrechen",
+    "submit": "Absenden",
+    "submitting": "Wird gesendet...",
+    "ratings": {
+      "1": "Sehr unzufrieden",
+      "2": "Unzufrieden",
+      "3": "Neutral",
+      "4": "Zufrieden",
+      "5": "Ausgezeichnet!"
+    }
+  },
+  "email": {
+    "title": "Gib deine E-Mail-Adresse ein",
+    "subtitle": "Um dir das PDF deiner Diagnose zu senden",
+    "placeholder": "deine@email.com",
+    "invalidEmail": "Ungültige E-Mail",
+    "cancel": "Abbrechen",
+    "submit": "Fortfahren",
+    "submitting": "Wird gespeichert..."
+  },
+  "camera": {
+    "title": "Foto aufnehmen",
+    "capture": "Aufnehmen",
+    "retake": "Erneut aufnehmen",
+    "use": "Foto verwenden",
+    "cancel": "Abbrechen",
+    "permissionDenied": "Kamerazugriff verweigert",
+    "enableCamera": "Bitte aktiviere den Kamerazugriff"
+  },
+  "imageUpload": {
+    "uploading": "Bild wird hochgeladen...",
+    "limitReached": "Bildlimit erreicht",
+    "limitMessage": "Du kannst nur 1 Bild im kostenlosen Fluss teilen",
+    "selectImage": "Bild auswählen",
+    "removeImage": "Bild entfernen"
+  },
+  "progress": {
+    "yourDiagnosis": "Deine Diagnose",
+    "completed": "abgeschlossen",
+    "identifying": "Identifiziere dein Problem...",
+    "analyzing": "Analysiere Muster...",
+    "preparing": "Bereite Diagnose vor...",
+    "almostReady": "Fast fertig!",
+    "discount15": "15% Rabatt freigeschaltet",
+    "discount30": "30% Rabatt garantiert",
+    "diagnosticValue": "Diagnose bewertet mit 30€"
+  },
+  "errors": {
+    "generic": "Es ist ein Fehler aufgetreten. Bitte versuche es erneut.",
+    "connection": "Verbindungsfehler. Überprüfe dein Internet.",
+    "sessionExpired": "Deine Sitzung ist abgelaufen",
+    "tryAgain": "Erneut versuchen"
+  },
+  "buttons": {
+    "continue": "Fortfahren",
+    "cancel": "Abbrechen",
+    "close": "Schließen",
+    "accept": "Akzeptieren",
+    "reject": "Ablehnen",
+    "yes": "Ja",
+    "no": "Nein",
+    "back": "Zurück",
+    "next": "Weiter",
+    "finish": "Abschließen",
+    "send": "Senden"
+  },
+  "header": {
+    "backToHome": "Zurück zur Startseite",
+    "toggleDarkMode": "Dunkelmodus umschalten"
+  }
+}

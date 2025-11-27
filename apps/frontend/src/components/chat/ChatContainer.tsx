@@ -6,6 +6,7 @@ import { usePDFGenerator } from '../../hooks/usePDFGenerator';
 import { useSessionStore } from '../../stores/sessionStore';
 import { useAuthStore } from '../../stores/authStore';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { CameraModal } from '../modals/CameraModal';
 import { ImageViewerModal } from '../modals/ImageViewerModal';
 import { EmailCaptureModal } from '../modals/EmailCaptureModal';
@@ -98,6 +99,7 @@ const ProgressIndicator = ({ turnCount, hasRealProblem }: { turnCount: number; h
 export const ChatContainer = () => {
   const { session, language, setSession, imagesUploaded, incrementImagesUploaded } = useSessionStore();
   const { user } = useAuthStore();
+  const { i18n } = useTranslation();
   const [inputMessage, setInputMessage] = useState('');
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
@@ -191,6 +193,18 @@ export const ChatContainer = () => {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }, [messages]);
+
+  // Sincronizar idioma de i18next con sessionStore
+  useEffect(() => {
+    const detectedLang = i18n.language.split('-')[0] as 'es' | 'en' | 'fr' | 'de' | 'it' | 'pt';
+    const supportedLangs = ['es', 'en', 'fr', 'de', 'it', 'pt'];
+    const finalLang = supportedLangs.includes(detectedLang) ? detectedLang : 'es';
+
+    if (language !== finalLang) {
+      console.log('🌍 Idioma detectado automáticamente:', finalLang);
+      useSessionStore.getState().setLanguage(finalLang as any);
+    }
+  }, [i18n.language, language]);
 
   // Handle speech-to-text transcript
   useEffect(() => {

@@ -1,0 +1,110 @@
+{
+  "welcome": {
+    "greeting": "Ciao!",
+    "intro": "Sono Clara, la tua consulente per la salute digestiva",
+    "namePrompt": "Come ti chiami?",
+    "namePlaceholder": "Scrivi il tuo nome...",
+    "continue": "Continua",
+    "loading": "Preparando la tua diagnosi...",
+    "pleaseWait": "Un momento per favore..."
+  },
+  "chat": {
+    "inputPlaceholder": "Scrivi il tuo messaggio...",
+    "inputPlaceholderDisabled": "In attesa di risposta...",
+    "sending": "Invio in corso...",
+    "send": "Invia",
+    "voiceInput": "Input vocale",
+    "attachImage": "Allega immagine",
+    "camera": "Fotocamera",
+    "gallery": "Galleria",
+    "typing": "Clara sta scrivendo",
+    "generatingDiagnosis": "Generando la tua diagnosi personalizzata...",
+    "analyzing": "Analizzando le tue risposte",
+    "almostReady": "Quasi pronto"
+  },
+  "diagnosis": {
+    "ready": "La tua diagnosi è pronta",
+    "downloadPDF": "Scarica la mia diagnosi in PDF",
+    "downloadingPDF": "Generando PDF...",
+    "generating": "Generando...",
+    "free": "Gratuito",
+    "subscribe": "Trasforma la tua salute digestiva",
+    "subscribeShort": "Inizia ora",
+    "rateExperience": "Valuta la mia esperienza"
+  },
+  "rating": {
+    "title": "Com'è stata la tua esperienza?",
+    "subtitle": "La tua opinione ci aiuta a migliorare",
+    "comment": "Commento (opzionale)",
+    "commentPlaceholder": "Cosa ti è piaciuto o cosa potremmo migliorare?",
+    "cancel": "Annulla",
+    "submit": "Invia",
+    "submitting": "Invio in corso...",
+    "ratings": {
+      "1": "Molto insoddisfatto",
+      "2": "Insoddisfatto",
+      "3": "Neutro",
+      "4": "Soddisfatto",
+      "5": "Eccellente!"
+    }
+  },
+  "email": {
+    "title": "Inserisci la tua email",
+    "subtitle": "Per inviarti il PDF della tua diagnosi",
+    "placeholder": "tu@email.com",
+    "invalidEmail": "Email non valida",
+    "cancel": "Annulla",
+    "submit": "Continua",
+    "submitting": "Salvataggio in corso..."
+  },
+  "camera": {
+    "title": "Scatta foto",
+    "capture": "Cattura",
+    "retake": "Riprendi",
+    "use": "Usa foto",
+    "cancel": "Annulla",
+    "permissionDenied": "Permesso della fotocamera negato",
+    "enableCamera": "Per favore, abilita l'accesso alla fotocamera"
+  },
+  "imageUpload": {
+    "uploading": "Caricamento immagine...",
+    "limitReached": "Limite di immagini raggiunto",
+    "limitMessage": "Puoi condividere solo 1 immagine nel flusso gratuito",
+    "selectImage": "Seleziona immagine",
+    "removeImage": "Rimuovi immagine"
+  },
+  "progress": {
+    "yourDiagnosis": "La tua diagnosi",
+    "completed": "completato",
+    "identifying": "Identificando il tuo problema...",
+    "analyzing": "Analizzando i modelli...",
+    "preparing": "Preparando la diagnosi...",
+    "almostReady": "Quasi pronto!",
+    "discount15": "Sconto del 15% sbloccato",
+    "discount30": "Sconto del 30% garantito",
+    "diagnosticValue": "Diagnosi valutata 30€"
+  },
+  "errors": {
+    "generic": "Si è verificato un errore. Per favore, riprova.",
+    "connection": "Errore di connessione. Controlla la tua connessione internet.",
+    "sessionExpired": "La tua sessione è scaduta",
+    "tryAgain": "Riprova"
+  },
+  "buttons": {
+    "continue": "Continua",
+    "cancel": "Annulla",
+    "close": "Chiudi",
+    "accept": "Accetta",
+    "reject": "Rifiuta",
+    "yes": "Sì",
+    "no": "No",
+    "back": "Indietro",
+    "next": "Successivo",
+    "finish": "Termina",
+    "send": "Invia"
+  },
+  "header": {
+    "backToHome": "Torna all'inizio",
+    "toggleDarkMode": "Cambia modalità scura"
+  }
+}
