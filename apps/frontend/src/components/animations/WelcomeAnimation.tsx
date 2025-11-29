@@ -27,6 +27,8 @@ export const WelcomeAnimation = ({
   const [showNameInput, setShowNameInput] = useState(false);
   const [userName, setUserName] = useState(initialUserName || '');
   const [nameInputValue, setNameInputValue] = useState('');
+  const [progress, setProgress] = useState(0);
+  const [showProgressBar, setShowProgressBar] = useState(false);
 
   // Determinar si necesitamos pedir el nombre
   // 1. Si alwaysAskName=true y no hay nombre → pedir nombre
@@ -89,6 +91,8 @@ export const WelcomeAnimation = ({
   const content = messages[language];
 
   useEffect(() => {
+    if (!userName) return;
+
     // Secuencia de animaciones
     const timers = [
       // Mostrar etimología o mensaje de query después del saludo
@@ -98,14 +102,39 @@ export const WelcomeAnimation = ({
         }
       }, 1200),
 
-      // Mostrar botón después de la etimología/query (o antes si no hay ninguno)
+      // Mostrar barra de progreso
       setTimeout(() => {
-        setShowButton(true);
+        setShowProgressBar(true);
       }, (etymology || (initialQuery && queryResponse)) ? 2800 : 1800),
     ];
 
     return () => timers.forEach(timer => clearTimeout(timer));
-  }, [etymology, initialQuery, queryResponse]);
+  }, [etymology, initialQuery, queryResponse, userName]);
+
+  // Barra de progreso automática de 7-8 segundos
+  useEffect(() => {
+    if (!showProgressBar) return;
+
+    const duration = 7500; // 7.5 segundos
+    const intervalTime = 50; // Actualizar cada 50ms
+    const steps = duration / intervalTime;
+    let currentStep = 0;
+
+    const interval = setInterval(() => {
+      currentStep++;
+      setProgress((currentStep / steps) * 100);
+
+      if (currentStep >= steps) {
+        clearInterval(interval);
+        // Llamar a onComplete automáticamente cuando termine
+        setTimeout(() => {
+          onComplete();
+        }, 300);
+      }
+    }, intervalTime);
+
+    return () => clearInterval(interval);
+  }, [showProgressBar, onComplete]);
 
   return (
     <motion.div
@@ -354,9 +383,9 @@ export const WelcomeAnimation = ({
           )}
         </AnimatePresence>
 
-        {/* Botón mejorado */}
+        {/* Barra de progreso */}
         <AnimatePresence>
-          {showButton && (
+          {showProgressBar && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -366,45 +395,39 @@ export const WelcomeAnimation = ({
                 stiffness: 200,
                 damping: 15
               }}
+              className="w-full max-w-md mx-auto"
             >
-              <motion.button
-                onClick={onComplete}
-                whileHover={{ scale: 1.05, boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}
-                whileTap={{ scale: 0.98 }}
-                className="group relative px-10 py-3.5 bg-white text-[#99AB75] rounded-full font-bold text-base shadow-xl overflow-hidden transition-all duration-300 hover:shadow-2xl"
+              {/* Texto sobre la barra */}
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-white/90 text-sm font-light mb-3 text-center"
               >
-                <span className="relative z-10 flex items-center gap-2.5">
-                  {content.buttonText}
-                  <motion.span
-                    animate={{ x: [0, 5, 0] }}
-                    transition={{ duration: 1.5, repeat: Infinity }}
-                  >
-                    →
-                  </motion.span>
-                </span>
+                {language === 'es' ? 'Preparando tu experiencia...' : 'Preparing your experience...'}
+              </motion.p>
+
+              {/* Barra de progreso */}
+              <div className="relative w-full h-2 bg-white/20 rounded-full overflow-hidden backdrop-blur-sm">
                 <motion.div
-                  initial={{ x: '-100%' }}
-                  whileHover={{ x: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="absolute inset-0 bg-gradient-to-r from-[#99AB75] to-[#A0AD5E] -z-0"
+                  className="absolute inset-y-0 left-0 bg-white rounded-full shadow-lg"
+                  style={{
+                    width: `${progress}%`,
+                  }}
+                  transition={{
+                    duration: 0.1,
+                    ease: 'linear',
+                  }}
                 />
-                <motion.div
-                  initial={{ x: '-100%' }}
-                  whileHover={{ x: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="absolute inset-0 flex items-center justify-center text-white font-bold z-10 opacity-0 group-hover:opacity-100"
-                >
-                  <span className="flex items-center gap-2.5">
-                    {content.buttonText}
-                    <motion.span
-                      animate={{ x: [0, 5, 0] }}
-                      transition={{ duration: 1.5, repeat: Infinity }}
-                    >
-                      →
-                    </motion.span>
-                  </span>
-                </motion.div>
-              </motion.button>
+              </div>
+
+              {/* Porcentaje */}
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-white/70 text-xs font-light mt-2 text-center"
+              >
+                {Math.round(progress)}%
+              </motion.p>
             </motion.div>
           )}
         </AnimatePresence>

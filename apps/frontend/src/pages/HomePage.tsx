@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ChatContainer } from '../components/chat/ChatContainer';
 import { WelcomeModal } from '../components/modals/WelcomeModal';
+import { WelcomeAnimation } from '../components/animations/WelcomeAnimation';
 import { useSessionStore } from '../stores/sessionStore';
 
 /**
@@ -9,6 +10,8 @@ import { useSessionStore } from '../stores/sessionStore';
  */
 export const HomePage = () => {
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+  const [showWelcomeAnimation, setShowWelcomeAnimation] = useState(false);
+  const [capturedUserName, setCapturedUserName] = useState<string>('');
   const { setSession } = useSessionStore();
 
   useEffect(() => {
@@ -21,13 +24,23 @@ export const HomePage = () => {
     }
   }, []);
 
-  const handleCloseModal = () => {
+  const handleCloseModal = (userName?: string) => {
     setShowWelcomeModal(false);
 
-    // Iniciar sesión gratuita anónima cuando cierra el modal
+    if (userName) {
+      setCapturedUserName(userName);
+      // Mostrar la animación de bienvenida
+      setShowWelcomeAnimation(true);
+    }
+  };
+
+  const handleAnimationComplete = () => {
+    setShowWelcomeAnimation(false);
+
+    // Iniciar sesión gratuita con el nombre proporcionado
     setSession({
       id: `free_${Date.now()}`, // ID temporal para flujo gratuito
-      userName: 'Usuario', // Nombre por defecto para flujo gratuito
+      userName: capturedUserName || 'Usuario',
       language: 'es',
       startTime: new Date().toISOString(),
     });
@@ -43,6 +56,16 @@ export const HomePage = () => {
         isOpen={showWelcomeModal}
         onClose={handleCloseModal}
       />
+
+      {/* Welcome Animation - Aparece después del modal */}
+      {showWelcomeAnimation && (
+        <WelcomeAnimation
+          userName={capturedUserName}
+          etymology={`El significado de tu nombre es único y especial, ${capturedUserName.split(' ')[0]}. Juntos descubriremos tu camino hacia la transformación.`}
+          onComplete={handleAnimationComplete}
+          language="es"
+        />
+      )}
     </div>
   );
 };
