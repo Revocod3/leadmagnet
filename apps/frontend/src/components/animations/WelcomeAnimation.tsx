@@ -23,7 +23,6 @@ export const WelcomeAnimation = ({
   alwaysAskName = false,
 }: WelcomeAnimationProps) => {
   const [showEtymology, setShowEtymology] = useState(false);
-  const [showButton, setShowButton] = useState(false);
   const [showNameInput, setShowNameInput] = useState(false);
   const [userName, setUserName] = useState(initialUserName || '');
   const [nameInputValue, setNameInputValue] = useState('');
