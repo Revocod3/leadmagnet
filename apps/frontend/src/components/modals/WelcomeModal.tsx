@@ -69,15 +69,15 @@ export const WelcomeModal = ({ isOpen, onClose }: WelcomeModalProps) => {
                 }}
               >
                 {/* Checkmark icon with subtle background - centered */}
-                <div className="flex justify-center pt-8 pb-4">
+                <div className="flex justify-center pt-6 pb-3">
                   <div
-                    className="w-16 h-16 rounded-full flex items-center justify-center"
+                    className="w-12 h-12 rounded-full flex items-center justify-center"
                     style={{
                       background: 'rgba(153, 171, 117, 0.1)',
                     }}
                   >
                     <svg
-                      className="w-8 h-8 text-[#99AB75]"
+                      className="w-6 h-6 text-[#99AB75]"
                       fill="none"
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -91,12 +91,12 @@ export const WelcomeModal = ({ isOpen, onClose }: WelcomeModalProps) => {
                 </div>
 
                 {/* Content */}
-                <div className="px-8 pb-8 text-center">
+                <div className="px-6 pb-6 text-center">
                   <motion.h2
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1, duration: 0.4 }}
-                    className="text-3xl font-bold text-gray-900 mb-3"
+                    className="text-2xl font-bold text-gray-900 mb-2"
                   >
                     ¡Comienza tu transformación!
                   </motion.h2>
@@ -105,10 +105,9 @@ export const WelcomeModal = ({ isOpen, onClose }: WelcomeModalProps) => {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2, duration: 0.4 }}
-                    className="text-base text-gray-600 mb-6 leading-relaxed px-2"
+                    className="text-sm text-gray-600 mb-4 leading-relaxed"
                   >
                     Ingresa tu nombre para acceder a tu diagnóstico gratuito
-                    personalizado
                   </motion.p>
 
                   {/* Input de nombre */}
@@ -116,7 +115,7 @@ export const WelcomeModal = ({ isOpen, onClose }: WelcomeModalProps) => {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3, duration: 0.4 }}
-                    className="mb-6"
+                    className="mb-4"
                   >
                     <input
                       type="text"
@@ -127,14 +126,14 @@ export const WelcomeModal = ({ isOpen, onClose }: WelcomeModalProps) => {
                       }}
                       onKeyPress={handleKeyPress}
                       placeholder="Tu nombre"
-                      className="w-full px-5 py-4 rounded-2xl border-2 border-gray-200 focus:border-[#99AB75] focus:outline-none transition-all text-gray-900 placeholder-gray-400 text-base"
+                      className="w-full px-4 py-3 rounded-2xl border-2 border-gray-200 focus:border-[#99AB75] focus:outline-none transition-all text-gray-900 placeholder-gray-400 text-base"
                       autoFocus
                     />
                     {error && (
                       <motion.p
                         initial={{ opacity: 0, y: -5 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="text-red-500 text-sm mt-2 text-left px-2"
+                        className="text-red-500 text-sm mt-2 text-left px-1"
                       >
                         {error}
                       </motion.p>
@@ -150,14 +149,14 @@ export const WelcomeModal = ({ isOpen, onClose }: WelcomeModalProps) => {
                     whileTap={{ scale: 0.98 }}
                     onClick={handleContinueDiagnostic}
                     disabled={!userName.trim()}
-                    className="w-full py-4 rounded-2xl font-semibold text-white text-base shadow-lg hover:shadow-xl transition-all mb-4 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full py-3 rounded-2xl font-semibold text-white text-sm shadow-lg hover:shadow-xl transition-all mb-3 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{
                       background: 'linear-gradient(135deg, #99AB75 0%, #A0AD5E 100%)',
                     }}
                   >
-                    Comenzar mi diagnóstico gratuito
+                    Comenzar diagnóstico
                     <svg
-                      className="w-5 h-5"
+                      className="w-4 h-4"
                       fill="none"
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -190,7 +189,7 @@ export const WelcomeModal = ({ isOpen, onClose }: WelcomeModalProps) => {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.6, duration: 0.4 }}
-                    className="mt-8 pt-6 border-t border-gray-200/50 flex items-center justify-center gap-1 text-xs text-gray-500"
+                    className="mt-4 pt-4 border-t border-gray-200/50 flex items-center justify-center gap-1 text-xs text-gray-500"
                   >
                     <svg
                       className="w-4 h-4 text-[#99AB75]"
