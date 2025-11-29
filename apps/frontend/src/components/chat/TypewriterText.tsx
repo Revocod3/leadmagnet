@@ -6,17 +6,19 @@ interface TypewriterTextProps {
   speed?: number;
   onComplete?: () => void;
   className?: string;
+  shouldAnimate?: boolean; // Si es false, mostrar texto completo inmediatamente
 }
 
 export const TypewriterText = ({
   text,
   speed = 30,
   onComplete,
-  className = ''
+  className = '',
+  shouldAnimate = true // Por defecto anima
 }: TypewriterTextProps) => {
-  const [displayedText, setDisplayedText] = useState('');
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isComplete, setIsComplete] = useState(false);
+  const [displayedText, setDisplayedText] = useState(shouldAnimate ? '' : text);
+  const [currentIndex, setCurrentIndex] = useState(shouldAnimate ? 0 : text.length);
+  const [isComplete, setIsComplete] = useState(!shouldAnimate); // Si no anima, ya está completo
   const initialTextRef = useRef(text);
   const animationStarted = useRef(false);
 
@@ -33,6 +35,17 @@ export const TypewriterText = ({
   }, [text]);
 
   useEffect(() => {
+    // Si no debe animar, saltar todo
+    if (!shouldAnimate) {
+      if (!isComplete) {
+        setIsComplete(true);
+        if (onComplete) {
+          onComplete();
+        }
+      }
+      return;
+    }
+
     if (!animationStarted.current && currentIndex === 0) {
       animationStarted.current = true;
       console.log('▶️ TypewriterText: Iniciando animación');
@@ -54,7 +67,7 @@ export const TypewriterText = ({
     }
 
     return undefined;
-  }, [currentIndex, text, speed, onComplete, isComplete]);
+  }, [currentIndex, text, speed, onComplete, isComplete, shouldAnimate]);
 
   return (
     <div className={className}>

@@ -6,9 +6,11 @@ import { usePDFGenerator } from '../../hooks/usePDFGenerator';
 import { useSessionStore } from '../../stores/sessionStore';
 import { useAuthStore } from '../../stores/authStore';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { CameraModal } from '../modals/CameraModal';
 import { ImageViewerModal } from '../modals/ImageViewerModal';
 import { EmailCaptureModal } from '../modals/EmailCaptureModal';
+import { RatingModal } from '../modals/RatingModal';
 import { ChatMessage } from './ChatMessage';
 import { ChatHeader } from './ChatHeader';
 import { ChatFooter } from './ChatFooter';
@@ -97,6 +99,7 @@ const ProgressIndicator = ({ turnCount, hasRealProblem }: { turnCount: number; h
 export const ChatContainer = () => {
   const { session, language, setSession, imagesUploaded, incrementImagesUploaded } = useSessionStore();
   const { user } = useAuthStore();
+  const { i18n } = useTranslation();
   const [inputMessage, setInputMessage] = useState('');
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
@@ -107,6 +110,8 @@ export const ChatContainer = () => {
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [showImageLimitMessage, setShowImageLimitMessage] = useState(false);
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+  const [isRatingModalOpen, setIsRatingModalOpen] = useState(false);
+  const [hasRated, setHasRated] = useState(false);
 
   const {
     messages,
@@ -121,19 +126,44 @@ export const ChatContainer = () => {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Create session if it doesn't exist
+  // Create session if it doesn't exist OR if session doesn't belong to current user
   useEffect(() => {
     const createSessionIfNeeded = async () => {
-      if (!session?.id && user) {
+      // VALIDACIÓN CRÍTICA: Si hay usuario PRO autenticado
+      if (user) {
+        // Si hay sesión PERO no pertenece a este usuario → LIMPIAR
+        if (session?.id && session.userId !== user.id) {
+          console.log('⚠️ Sesión existente no pertenece al usuario actual, limpiando...');
+          console.log('   Session userId:', session.userId, '| Current user:', user.id);
+          setSession({ ...session, id: '', userId: undefined } as any); // Forzar limpieza
+          return; // Salir y dejar que el siguiente render cree la sesión correcta
+        }
+      }
+
+      // Crear sesión si:
+      // 1. No hay session.id O tiene un ID temporal (free_*)
+      // 2. Y hay user (PRO) O hay userName (free)
+      const needsSession = (!session?.id || session.id.startsWith('free_')) &&
+                          (user || session?.userName);
+
+      if (needsSession) {
         try {
-          const userName = user.name || user.email.split('@')[0] || 'Usuario';
-          console.log('📝 Creando nueva sesión para:', userName);
+          // Determinar userName según el contexto
+          const userName = user
+            ? (user.name || user.email.split('@')[0] || 'Usuario')
+            : (session?.userName || 'Usuario');
+
+          console.log('📝 Solicitando sesión para:', userName, user ? `(PRO - userId: ${user.id})` : '(Free)');
+
+          // Para usuarios PRO, pasar userId - el backend buscará sesión existente
           const newSession = await apiClient.createSession({
             userName: userName,
             language: language as 'es' | 'en',
+            ...(user && { userId: user.id }), // Solo si es usuario PRO
           });
+
           setSession(newSession);
-          console.log('✅ Sesión creada:', newSession.id);
+          console.log('✅ Sesión obtenida/creada:', newSession.id);
         } catch (error) {
           console.error('Error creating session:', error);
         }
@@ -141,16 +171,19 @@ export const ChatContainer = () => {
     };
 
     createSessionIfNeeded();
-  }, [session?.id, user, language, setSession]);
+  }, [session?.id, session?.userId, session?.userName, user, language, setSession]);
 
   // Initialize only once when session is available
   useEffect(() => {
     // Solo inicializar si:
     // 1. No hay mensajes
     // 2. Hay una sesión activa
-    // 3. No estamos procesando
-    if (messages.length === 0 && session?.id && !isProcessing) {
-      console.log('🎬 Inicializando chat...');
+    // 3. El sessionId NO es temporal (ya fue reemplazado por uno real del backend)
+    // 4. No estamos procesando
+    const isRealSession = session?.id && !session.id.startsWith('free_');
+
+    if (messages.length === 0 && isRealSession && !isProcessing) {
+      console.log('🎬 Inicializando chat con sesión:', session.id);
       initialize();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -160,6 +193,18 @@ export const ChatContainer = () => {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }, [messages]);
+
+  // Sincronizar idioma de i18next con sessionStore
+  useEffect(() => {
+    const detectedLang = i18n.language.split('-')[0] as 'es' | 'en' | 'fr' | 'de' | 'it' | 'pt';
+    const supportedLangs = ['es', 'en', 'fr', 'de', 'it', 'pt'];
+    const finalLang = supportedLangs.includes(detectedLang) ? detectedLang : 'es';
+
+    if (language !== finalLang) {
+      console.log('🌍 Idioma detectado automáticamente:', finalLang);
+      useSessionStore.getState().setLanguage(finalLang as any);
+    }
+  }, [i18n.language, language]);
 
   // Handle speech-to-text transcript
   useEffect(() => {
@@ -220,7 +265,7 @@ export const ChatContainer = () => {
         await apiClient.updateSession(session.id, { userEmail: email });
 
         // Actualizar el store local
-        useSessionStore.getState().setSession({
+        setSession({
           ...session,
           userEmail: email,
         });
@@ -323,6 +368,41 @@ export const ChatContainer = () => {
     }
   };
 
+  const handleRatingSubmit = async (rating: number, comment: string) => {
+    if (!session?.id) return;
+
+    try {
+      // Determinar el tipo de flujo: 'free' o 'paid'
+      const flowType = user ? 'paid' : 'free';
+
+      await apiClient.createRating({
+        sessionId: session.id,
+        rating,
+        comment,
+        flowType,
+      });
+
+      setHasRated(true);
+      console.log('✅ Valoración enviada exitosamente');
+    } catch (error) {
+      console.error('❌ Error al enviar valoración:', error);
+      throw error;
+    }
+  };
+
+  // Mostrar modal de valoración cuando el diagnóstico esté listo (solo en flujo gratuito)
+  useEffect(() => {
+    if (state.step === 'diagnosis_ready' && !user && !hasRated && !isRatingModalOpen) {
+      // Esperar 2 segundos antes de mostrar el modal
+      const timer = setTimeout(() => {
+        setIsRatingModalOpen(true);
+      }, 2000);
+
+      return () => clearTimeout(timer);
+    }
+    return undefined;
+  }, [state.step, user, hasRated, isRatingModalOpen]);
+
   return (
     <>
       {/* Wrapper con dark mode */}
@@ -370,16 +450,20 @@ export const ChatContainer = () => {
               {/* Messages */}
               <div className="space-y-3">
                 <AnimatePresence mode="popLayout">
-                  {messages.map((message, index) => (
-                    <ChatMessage
-                      key={index}
-                      message={message}
-                      state={state}
-                      isLatest={index === messages.length - 1}
-                      onDownloadPDF={handleDownloadPDF}
-                      isGeneratingPDF={isGeneratingPDF}
-                    />
-                  ))}
+                  {messages.map((message, index) => {
+                    const rateHandler = user && !hasRated ? () => setIsRatingModalOpen(true) : undefined;
+                    return (
+                      <ChatMessage
+                        key={index}
+                        message={message}
+                        state={state}
+                        isLatest={index === messages.length - 1}
+                        onDownloadPDF={handleDownloadPDF}
+                        isGeneratingPDF={isGeneratingPDF}
+                        {...(rateHandler && { onRateExperience: rateHandler })}
+                      />
+                    );
+                  })}
                 </AnimatePresence>
 
                 {/* Diagnosis Generating Indicator - Special state */}
@@ -450,6 +534,12 @@ export const ChatContainer = () => {
         onClose={() => setIsEmailModalOpen(false)}
         onSubmit={handleEmailSubmit}
         userName={state.userName}
+      />
+
+      <RatingModal
+        isOpen={isRatingModalOpen}
+        onClose={() => setIsRatingModalOpen(false)}
+        onSubmit={handleRatingSubmit}
       />
     </>
   );

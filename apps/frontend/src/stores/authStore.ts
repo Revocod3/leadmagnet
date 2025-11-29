@@ -46,8 +46,10 @@ export const useAuthStore = create<AuthStore>()(
           user: null,
           isAuthenticated: false,
         });
-        // Clear from localStorage
+        // Clear auth from localStorage
         localStorage.removeItem('ovp-auth-storage');
+        // Clear session storage (backend manejará la creación de nueva sesión)
+        localStorage.removeItem('ovp-session-storage');
       },
 
       updateUser: (updates: Partial<User>) => {

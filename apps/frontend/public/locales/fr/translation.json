@@ -1,0 +1,110 @@
+{
+  "welcome": {
+    "greeting": "Bonjour !",
+    "intro": "Je suis Clara, votre conseillère en santé digestive",
+    "namePrompt": "Comment vous appelez-vous ?",
+    "namePlaceholder": "Entrez votre nom...",
+    "continue": "Continuer",
+    "loading": "Préparation de votre diagnostic...",
+    "pleaseWait": "Un instant s'il vous plaît..."
+  },
+  "chat": {
+    "inputPlaceholder": "Écrivez votre message...",
+    "inputPlaceholderDisabled": "En attente de réponse...",
+    "sending": "Envoi en cours...",
+    "send": "Envoyer",
+    "voiceInput": "Entrée vocale",
+    "attachImage": "Joindre une image",
+    "camera": "Caméra",
+    "gallery": "Galerie",
+    "typing": "Clara est en train d'écrire",
+    "generatingDiagnosis": "Génération de votre diagnostic personnalisé...",
+    "analyzing": "Analyse de vos réponses",
+    "almostReady": "Presque prêt"
+  },
+  "diagnosis": {
+    "ready": "Votre diagnostic est prêt",
+    "downloadPDF": "Télécharger mon diagnostic en PDF",
+    "downloadingPDF": "Génération du PDF...",
+    "generating": "Génération en cours...",
+    "free": "Gratuit",
+    "subscribe": "Transformez votre santé digestive",
+    "subscribeShort": "Commencer maintenant",
+    "rateExperience": "Évaluer mon expérience"
+  },
+  "rating": {
+    "title": "Comment s'est passée votre expérience ?",
+    "subtitle": "Votre avis nous aide à nous améliorer",
+    "comment": "Commentaire (facultatif)",
+    "commentPlaceholder": "Qu'est-ce que vous avez aimé ou que pourrions-nous améliorer ?",
+    "cancel": "Annuler",
+    "submit": "Envoyer",
+    "submitting": "Envoi en cours...",
+    "ratings": {
+      "1": "Très insatisfait",
+      "2": "Insatisfait",
+      "3": "Neutre",
+      "4": "Satisfait",
+      "5": "Excellent !"
+    }
+  },
+  "email": {
+    "title": "Entrez votre email",
+    "subtitle": "Pour vous envoyer le PDF de votre diagnostic",
+    "placeholder": "votre@email.com",
+    "invalidEmail": "Email invalide",
+    "cancel": "Annuler",
+    "submit": "Continuer",
+    "submitting": "Enregistrement en cours..."
+  },
+  "camera": {
+    "title": "Prendre une photo",
+    "capture": "Capturer",
+    "retake": "Prendre une autre",
+    "use": "Utiliser la photo",
+    "cancel": "Annuler",
+    "permissionDenied": "Autorisation de la caméra refusée",
+    "enableCamera": "Veuillez activer l'accès à la caméra"
+  },
+  "imageUpload": {
+    "uploading": "Téléchargement de l'image...",
+    "limitReached": "Limite d'images atteinte",
+    "limitMessage": "Vous ne pouvez partager qu'une seule image dans le flux gratuit",
+    "selectImage": "Sélectionner une image",
+    "removeImage": "Supprimer l'image"
+  },
+  "progress": {
+    "yourDiagnosis": "Votre diagnostic",
+    "completed": "terminé",
+    "identifying": "Identification de votre problème...",
+    "analyzing": "Analyse des motifs...",
+    "preparing": "Préparation du diagnostic...",
+    "almostReady": "Presque prêt !",
+    "discount15": "15 % de réduction débloquée",
+    "discount30": "30 % de réduction garantie",
+    "diagnosticValue": "Diagnostic évalué à 30€"
+  },
+  "errors": {
+    "generic": "Une erreur est survenue. Veuillez réessayer.",
+    "connection": "Erreur de connexion. Vérifiez votre connexion Internet.",
+    "sessionExpired": "Votre session a expiré",
+    "tryAgain": "Réessayer"
+  },
+  "buttons": {
+    "continue": "Continuer",
+    "cancel": "Annuler",
+    "close": "Fermer",
+    "accept": "Accepter",
+    "reject": "Rejeter",
+    "yes": "Oui",
+    "no": "Non",
+    "back": "Retour",
+    "next": "Suivant",
+    "finish": "Terminer",
+    "send": "Envoyer"
+  },
+  "header": {
+    "backToHome": "Retour à l'accueil",
+    "toggleDarkMode": "Changer le mode sombre"
+  }
+}

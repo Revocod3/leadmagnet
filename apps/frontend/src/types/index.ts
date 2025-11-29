@@ -10,6 +10,7 @@ export interface User {
 
 export interface SessionData {
   id: string;
+  userId?: string; // ID del usuario PRO (si aplica)
   user?: User;
   userName?: string;
   userEmail?: string;
@@ -70,6 +71,7 @@ export interface ApiResponse<T = any> {
 export interface CreateSessionRequest {
   language?: Language;
   user?: User;
+  userId?: string; // Para usuarios PRO - backend buscará/creará sesión ligada al userId
   userName?: string;
   userEmail?: string;
   wordpressLeadId?: string;

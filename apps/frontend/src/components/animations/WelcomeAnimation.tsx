@@ -9,6 +9,7 @@ interface WelcomeAnimationProps {
   onComplete: () => void;
   onNameCaptured?: (name: string) => void;  // Callback cuando se captura el nombre
   language?: 'es' | 'en';
+  alwaysAskName?: boolean; // Si es true, siempre pide el nombre aunque no haya query
 }
 
 export const WelcomeAnimation = ({
@@ -19,6 +20,7 @@ export const WelcomeAnimation = ({
   onComplete,
   onNameCaptured,
   language = 'es',
+  alwaysAskName = false,
 }: WelcomeAnimationProps) => {
   const [showEtymology, setShowEtymology] = useState(false);
   const [showButton, setShowButton] = useState(false);
@@ -26,8 +28,10 @@ export const WelcomeAnimation = ({
   const [userName, setUserName] = useState(initialUserName || '');
   const [nameInputValue, setNameInputValue] = useState('');
 
-  // Determinar si necesitamos pedir el nombre (hay query pero no hay nombre)
-  const needsNameInput = !!initialQuery && !initialUserName;
+  // Determinar si necesitamos pedir el nombre
+  // 1. Si alwaysAskName=true y no hay nombre → pedir nombre
+  // 2. Si hay query pero no hay nombre → pedir nombre
+  const needsNameInput = (alwaysAskName && !initialUserName) || (!!initialQuery && !initialUserName);
 
   // Mostrar input de nombre si es necesario
   useEffect(() => {

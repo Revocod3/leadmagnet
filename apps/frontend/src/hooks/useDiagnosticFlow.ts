@@ -142,29 +142,19 @@ export const useDiagnosticFlow = () => {
       }
 
       // 2) No history: call backend to initialize diagnostic flow with user name
-      const data = await apiClient.initializeChat(sessionId, sessionStore.language);
+      const welcomeMsg = await apiClient.initializeChat(sessionId, sessionStore.language);
 
-      if (data) {
-        console.log('✅ Mensaje de bienvenida recibido del backend:', data.message.substring(0, 50));
-        // Add welcome message from backend (already personalized with name)
+      if (welcomeMsg && welcomeMsg.content) {
+        console.log('✅ Mensaje de bienvenida de Clara V2:', welcomeMsg.content.substring(0, 50));
+        // Add welcome message from backend (Clara V2)
         setMessages([
           {
-            role: 'assistant',
-            content: data.message,
+            role: (welcomeMsg.role === 'system' ? 'assistant' : welcomeMsg.role) || 'assistant',
+            content: welcomeMsg.content,
             type: 'welcome',
-            timestamp: new Date().toISOString(),
+            timestamp: welcomeMsg.timestamp || new Date().toISOString(),
           },
         ]);
-
-        // Update state with backend state
-        if (data.state) {
-          setState((prev) => ({
-            ...prev,
-            step: data.state.step,
-            currentQuestionIndex: data.state.currentQuestionIndex,
-            language: data.state.language,
-          }));
-        }
       }
     } catch (error) {
       console.error('Error initializing diagnostic:', error);

@@ -1,0 +1,110 @@
+{
+  "welcome": {
+    "greeting": "Hello!",
+    "intro": "I am Clara, your digestive health advisor",
+    "namePrompt": "What is your name?",
+    "namePlaceholder": "Type your name...",
+    "continue": "Continue",
+    "loading": "Preparing your diagnosis...",
+    "pleaseWait": "One moment please..."
+  },
+  "chat": {
+    "inputPlaceholder": "Type your message...",
+    "inputPlaceholderDisabled": "Waiting for response...",
+    "sending": "Sending...",
+    "send": "Send",
+    "voiceInput": "Voice input",
+    "attachImage": "Attach image",
+    "camera": "Camera",
+    "gallery": "Gallery",
+    "typing": "Clara is typing",
+    "generatingDiagnosis": "Generating your personalized diagnosis...",
+    "analyzing": "Analyzing your responses",
+    "almostReady": "Almost ready"
+  },
+  "diagnosis": {
+    "ready": "Your diagnosis is ready",
+    "downloadPDF": "Download my diagnosis as PDF",
+    "downloadingPDF": "Generating PDF...",
+    "generating": "Generating...",
+    "free": "Free",
+    "subscribe": "Transform your digestive health",
+    "subscribeShort": "Get started now",
+    "rateExperience": "Rate my experience"
+  },
+  "rating": {
+    "title": "How was your experience?",
+    "subtitle": "Your feedback helps us improve",
+    "comment": "Comment (optional)",
+    "commentPlaceholder": "What did you like or what could we improve?",
+    "cancel": "Cancel",
+    "submit": "Submit",
+    "submitting": "Submitting...",
+    "ratings": {
+      "1": "Very dissatisfied",
+      "2": "Dissatisfied",
+      "3": "Neutral",
+      "4": "Satisfied",
+      "5": "Excellent!"
+    }
+  },
+  "email": {
+    "title": "Enter your email",
+    "subtitle": "To send you the PDF of your diagnosis",
+    "placeholder": "your@email.com",
+    "invalidEmail": "Invalid email",
+    "cancel": "Cancel",
+    "submit": "Continue",
+    "submitting": "Saving..."
+  },
+  "camera": {
+    "title": "Take photo",
+    "capture": "Capture",
+    "retake": "Take another",
+    "use": "Use photo",
+    "cancel": "Cancel",
+    "permissionDenied": "Camera permission denied",
+    "enableCamera": "Please enable camera access"
+  },
+  "imageUpload": {
+    "uploading": "Uploading image...",
+    "limitReached": "Image limit reached",
+    "limitMessage": "You can only share 1 image in the free flow",
+    "selectImage": "Select image",
+    "removeImage": "Remove image"
+  },
+  "progress": {
+    "yourDiagnosis": "Your diagnosis",
+    "completed": "completed",
+    "identifying": "Identifying your issue...",
+    "analyzing": "Analyzing patterns...",
+    "preparing": "Preparing diagnosis...",
+    "almostReady": "Almost ready!",
+    "discount15": "15% discount unlocked",
+    "discount30": "30% discount guaranteed",
+    "diagnosticValue": "Diagnosis valued at €30"
+  },
+  "errors": {
+    "generic": "An error occurred. Please try again.",
+    "connection": "Connection error. Check your internet.",
+    "sessionExpired": "Your session has expired",
+    "tryAgain": "Try again"
+  },
+  "buttons": {
+    "continue": "Continue",
+    "cancel": "Cancel",
+    "close": "Close",
+    "accept": "Accept",
+    "reject": "Reject",
+    "yes": "Yes",
+    "no": "No",
+    "back": "Back",
+    "next": "Next",
+    "finish": "Finish",
+    "send": "Send"
+  },
+  "header": {
+    "backToHome": "Back to home",
+    "toggleDarkMode": "Toggle dark mode"
+  }
+}

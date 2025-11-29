@@ -72,8 +72,8 @@ class ApiClient {
   }
 
   // Chat endpoints
-  async initializeChat(sessionId: string, language: 'es' | 'en'): Promise<{ message: string; state: any }> {
-    const response = await this.client.post<ApiResponse<{ message: string; state: any }>>('/chat/init', {
+  async initializeChat(sessionId: string, language: 'es' | 'en'): Promise<ChatMessage> {
+    const response = await this.client.post<ApiResponse<ChatMessage>>('/chat/init', {
       sessionId,
       language,
     });
@@ -192,6 +192,19 @@ class ApiClient {
       throw new Error(response.data.error || 'Error al obtener análisis');
     }
     return response.data.data;
+  }
+
+  // Rating endpoints
+  async createRating(data: {
+    sessionId: string;
+    rating: number;
+    comment?: string;
+    flowType: 'free' | 'paid';
+  }): Promise<void> {
+    const response = await this.client.post<ApiResponse>('/ratings', data);
+    if (!response.data.success) {
+      throw new Error(response.data.error || 'Error al enviar valoración');
+    }
   }
 
   // Health check

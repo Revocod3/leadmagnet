@@ -7,7 +7,7 @@
 
 import { Request, Response } from 'express';
 import { prisma } from '../config/database';
-import { conversationalAssistant } from '../services/conversational-assistant.service';
+import { agentService } from '../services/agent.service';
 import { ValidationService } from '../services/openai/validation.service';
 import { DiscountService } from '../services/discount.service';
 import { wordPressSyncService } from '../services/wordpress-sync.service';
@@ -63,7 +63,7 @@ export class ChatController {
       }
 
       // 1. Crear conversación y obtener mensaje de bienvenida
-      const { conversationId, welcomeMessage } = await conversationalAssistant.startConversation(
+      const { conversationId, welcomeMessage } = await agentService.startConversation(
         session.userName || 'Usuario'
       );
 
@@ -89,9 +89,11 @@ export class ChatController {
       res.json({
         success: true,
         data: {
-          message: welcomeMessage,
+          role: 'assistant',
+          content: welcomeMessage,
+          metadata: { type: 'welcome' },
         },
-      } as ApiResponse);
+      } as ApiResponse<ChatMessage>);
 
     } catch (error) {
       console.error('Error initializing diagnostic:', error);
@@ -140,10 +142,13 @@ export class ChatController {
         return;
       }
 
-      // Obtener sesión
+      // Obtener sesión (incluye user para verificar role PRO)
       const session = await prisma.session.findUnique({
         where: { id: sessionId },
-        include: { diagnosis: true },
+        include: {
+          diagnosis: true,
+          user: true, // Para verificar si es PRO
+        },
       });
 
       if (!session) {
@@ -163,44 +168,52 @@ export class ChatController {
         return;
       }
 
-      // Verificar límites de interacción
+      // Verificar límites de interacción (FREEMIUM MODEL)
       const language = session.language || 'es';
       const hasCompletedDiagnosis = session.completedDiagnosis;
+      const isPROUser = session.userId && session.user?.role === 'PRO';
 
-      // Check post-diagnosis limit
-      if (hasCompletedDiagnosis) {
-        if (session.postDiagnosisMessageCount >= INTERACTION_LIMITS.POST_DIAGNOSIS_LIMIT) {
-          // Exceeded post-diagnosis limit
-          const limitMessage = LIMIT_EXCEEDED_MESSAGES[language as keyof typeof LIMIT_EXCEEDED_MESSAGES].postDiagnosis;
+      // FREEMIUM: FREE users tienen límites, PRO users NO
+      if (!isPROUser) {
+        // Check post-diagnosis limit (FREE users)
+        if (hasCompletedDiagnosis) {
+          if (session.postDiagnosisMessageCount >= INTERACTION_LIMITS.POST_DIAGNOSIS_LIMIT) {
+            // Exceeded post-diagnosis limit - Show subscription CTA
+            const limitMessage = language === 'es'
+              ? '🌟 Has alcanzado el límite de mensajes gratuitos.\n\n¿Quieres continuar con Clara 24/7, planes personalizados, seguimiento diario y toda la comunidad?\n\n✨ **Suscríbete al Método Objetivo Vientre Plano** y transforma tu salud digestiva.'
+              : '🌟 You have reached the free message limit.\n\n Want to continue with Clara 24/7, personalized plans, daily tracking, and the entire community?\n\n✨ **Subscribe to the Flat Belly Method** and transform your digestive health.';
 
-          res.json({
-            success: true,
-            data: {
-              role: 'assistant',
-              content: limitMessage,
-              metadata: {
-                type: 'limit_exceeded',
-                limitType: 'post_diagnosis',
-                shouldShowSubscriptionCTA: true,
+            res.json({
+              success: true,
+              data: {
+                role: 'assistant',
+                content: limitMessage,
+                metadata: {
+                  type: 'limit_exceeded',
+                  limitType: 'post_diagnosis',
+                  shouldShowSubscriptionCTA: true,
+                  requiresUpgrade: true,
+                },
               },
-            },
-          } as ApiResponse<ChatMessage>);
-          return;
-        }
-      } else {
-        // Check pre-diagnosis limit
-        const maxMessages = session.hasSharedImage
-          ? INTERACTION_LIMITS.MAX_MESSAGES_WITH_PHOTO
-          : INTERACTION_LIMITS.MAX_MESSAGES_WITHOUT_PHOTO;
+            } as ApiResponse<ChatMessage>);
+            return;
+          }
+        } else {
+          // Check pre-diagnosis limit (FREE users)
+          const maxMessages = session.hasSharedImage
+            ? INTERACTION_LIMITS.MAX_MESSAGES_WITH_PHOTO
+            : INTERACTION_LIMITS.MAX_MESSAGES_WITHOUT_PHOTO;
 
-        if (session.messageCount >= maxMessages) {
-          // Force diagnosis generation
-          const forceDiagnosis = true;
+          if (session.messageCount >= maxMessages) {
+            // Force diagnosis generation
+            const forceDiagnosis = true;
 
-          // Continue processing to generate diagnosis
-          // (will be handled below in the normal flow)
+            // Continue processing to generate diagnosis
+            // (will be handled below in the normal flow)
+          }
         }
       }
+      // PRO users: NO LIMITS - continue to chat
 
       // Obtener conversationId
       const flowState = session.flowState as any;
@@ -256,7 +269,7 @@ export class ChatController {
       }
 
       // Procesar mensaje (con o sin imagen)
-      const response = await conversationalAssistant.processMessage(
+      const response = await agentService.processMessage(
         conversationId,
         message,
         context,
@@ -332,7 +345,7 @@ export class ChatController {
         // y guardarlo en la base de datos para que el frontend lo recoja
         setImmediate(async () => {
           try {
-            const diagnosisContent = await conversationalAssistant.generateDiagnosis(
+            const diagnosisContent = await agentService.generateDiagnosis(
               conversationId,
               session.userName || 'Usuario'
             );
