@@ -25,7 +25,7 @@ export const ChatHeader = ({
 
   const handleLogout = () => {
     logout();
-    navigate('/');
+    navigate('/login');
     setShowMenu(false);
   };
   return (
