@@ -21,7 +21,7 @@ export class AgentProService {
     this.claraProAgent = new Agent({
       name: 'ClaraPRO',
       instructions: CLARA_PRO_INSTRUCTIONS,
-      model: 'gpt-4o',
+      model: 'gpt-5-mini-2025-08-07',
     });
   }
 
@@ -83,7 +83,7 @@ IMPORTANTE: Usa este contexto para dar continuidad. El usuario no debería repet
       const claraWithContext = new Agent({
         name: 'ClaraPRO',
         instructions: `${CLARA_PRO_INSTRUCTIONS}\n\n${dynamicInstructions}\n\n${contextFromHistory}`,
-        model: 'gpt-4o',
+        model: 'gpt-5-mini-2025-08-07',
       });
 
       // Generate welcome message
@@ -260,7 +260,7 @@ ${summaries.join('\n')}
       const claraWithContext = new Agent({
         name: 'ClaraPRO',
         instructions: `${CLARA_PRO_INSTRUCTIONS}\n\n${dynamicInstructions}${otherConversationsContext}`,
-        model: 'gpt-4o',
+        model: 'gpt-5-mini-2025-08-07',
       });
 
       // Build conversation context as a string (SDK expects string input)

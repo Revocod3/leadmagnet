@@ -1,3 +1,4 @@
+import { forwardRef } from 'react';
 import { motion } from 'framer-motion';
 import { Download, Star } from 'lucide-react';
 import { MessageActions } from './MessageActions';
@@ -13,18 +14,19 @@ interface ChatMessageProps {
   onRateExperience?: () => void;
 }
 
-export const ChatMessage = ({
+export const ChatMessage = forwardRef<HTMLDivElement, ChatMessageProps>(({
   message,
   state,
   isLatest,
   onDownloadPDF,
   isGeneratingPDF = false,
   onRateExperience
-}: ChatMessageProps) => {
+}, ref) => {
   const isUser = message.role === 'user';
 
   return (
     <motion.div
+      ref={ref}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
@@ -167,4 +169,6 @@ export const ChatMessage = ({
       )}
     </motion.div>
   );
-};
+});
+
+ChatMessage.displayName = 'ChatMessage';

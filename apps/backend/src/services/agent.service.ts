@@ -84,7 +84,7 @@ IMPORTANTE:
     this.claraAgent = new Agent({
       name: 'Clara',
       instructions: CLARA_INSTRUCTIONS,
-      model: 'gpt-4o',
+      model: 'gpt-5-mini-2025-08-07',
       tools: [
         tools.saveConversation,
         tools.trackEngagement,
@@ -533,35 +533,7 @@ IMPORTANTE:
     try {
       const tempSessionId = `temp_${Date.now()}`;
 
-      // Construir instrucciones dinámicas para turno 1
-      const dynamicInstructions = buildDynamicInstructions({
-        userName,
-        turnCount: 1,
-        hasRealProblem: false,
-      });
-
-      // Crear Clara temporal con instrucciones para turno 1
-      const tools = this.createTools();
-      const tempClara = new Agent({
-        name: 'Clara',
-        instructions: `${CLARA_INSTRUCTIONS}\n\n${dynamicInstructions}`,
-        model: 'gpt-4o',
-        tools: [
-          tools.saveConversation,
-          tools.trackEngagement,
-          tools.trackEmotion,
-        tools.trackKeyMoment,
-        ],
-        handoffs: [this.styleAnalyzerAgent, this.diagnosisAgent],
-      });
-
-      // Ejecutar Clara
-      const result = await run(tempClara, `Mi nombre es ${userName}. Comienza el diagnóstico.`);
-
-      const welcomeMessage = result.finalOutput ||
-        `¡Encantada de saludarte, ${userName}! ✨\n\nSoy Clara 🌿 y voy a acompañarte en este pequeño viaje para entender qué necesita tu cuerpo.\n\n¿Empezamos?`;
-
-      logger.info(`Conversation started for ${userName}`);
+      const welcomeMessage = `Hola ${userName}, bienvenido a Objetivo Vientre Plano 🌿\n\nEncantada de saludarte. Soy Clara, tu asistente personal.\n\nVoy a ayudarte mediante algunas preguntas a obtener un diagnóstico personalizado para entender tu inflamación abdominal, mejorar tu energía y ayudarte a sentirte realmente bien contigo mismo.\n\n**¿Empezamos?** ¿O prefieres hacerme alguna pregunta antes?\n\nEstoy aquí para ti. Este es tu espacio.`;
 
       return {
         conversationId: tempSessionId,
@@ -654,12 +626,12 @@ IMPORTANTE:
       const tempClara = new Agent({
         name: 'Clara',
         instructions: fullInstructions,
-        model: 'gpt-4o',
+        model: 'gpt-5-mini-2025-08-07',
         tools: [
           tools.saveConversation,
           tools.trackEngagement,
           tools.trackEmotion,
-        tools.trackKeyMoment,
+          tools.trackKeyMoment,
         ],
         handoffs: [this.diagnosisAgent], // Diagnosis Agent implícito
       });

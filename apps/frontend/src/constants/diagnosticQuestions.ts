@@ -24,7 +24,7 @@ export interface LocalizedContent {
 export const diagnosticContent: Record<'es' | 'en', LocalizedContent> = {
   es: {
     welcomeMessage:
-      '¡Hola! Soy tu asistente virtual para ayudarte a conseguir un vientre plano de forma saludable y duradera.\n\nEstás a punto de empezar un diagnóstico personalizado que me permitirá conocerte mejor y darte recomendaciones adaptadas a ti.\n\nEl proceso es sencillo: yo te haré unas preguntas, tú me respondes con sinceridad, y al final recibirás un análisis completo de tu situación.\n\n¿Estás listo/a para empezar?',
+      'Hola {userName}, bienvenido a Objetivo Vientre Plano 🌿\nEncantada de saludarte. Soy Clara, tu asistente personal.\n\nVoy a ayudarte mediante algunas preguntas a obtener un diagnóstico personalizado para entender tu inflamación abdominal, mejorar tu energía y ayudarte a sentirte realmente bien contigo mismo.\n\n¿Empezamos?\n¿O prefieres hacerme alguna pregunta antes?\n\nEstoy aquí para ti. Este es tu espacio.',
     greeting: 'Encantado de conocerte, {userName}. 😊',
     didYouKnow: ' Por cierto, ¿sabías que ',
     diagnosticQuestions: [
