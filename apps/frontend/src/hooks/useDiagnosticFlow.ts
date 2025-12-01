@@ -85,7 +85,21 @@ export const useDiagnosticFlow = () => {
     const sessionId = sessionStore.session?.id;
     if (!sessionId) return;
 
+    let pollCount = 0;
+    const maxPolls = 30; // 30 polls * 2 seconds = 60 seconds max
+
     const pollInterval = setInterval(async () => {
+      pollCount++;
+
+      // Timeout after maxPolls - diagnosis generation failed or was interrupted
+      if (pollCount >= maxPolls) {
+        console.warn('Diagnosis polling timeout, resetting state');
+        clearInterval(pollInterval);
+        setState((prev) => ({ ...prev, step: 'asking_questions' }));
+        setIsProcessing(false);
+        return;
+      }
+
       try {
         const diagnosisData = await apiClient.getConversationalDiagnosis(sessionId);
 
@@ -100,6 +114,7 @@ export const useDiagnosticFlow = () => {
               content: diagnosisData.content!,
               type: 'diagnosis_ready',
               timestamp: new Date().toISOString(),
+              isNew: true, // Animate diagnosis from polling
             },
           ]);
 
@@ -113,6 +128,11 @@ export const useDiagnosticFlow = () => {
         }
       } catch (error) {
         console.error('Error polling for diagnosis:', error);
+        // If we get an error (e.g. 404), the diagnosis was never started
+        // Reset to normal state
+        clearInterval(pollInterval);
+        setState((prev) => ({ ...prev, step: 'asking_questions' }));
+        setIsProcessing(false);
       }
     }, 2000); // Poll every 2 seconds
 
@@ -160,7 +180,12 @@ export const useDiagnosticFlow = () => {
       const restoredFromLocal = chatStore.restoreFreeChatState(sessionId);
       if (restoredFromLocal && chatStore.freeChatState.messages.length > 0) {
         console.log('✅ Restored chat from localStorage');
-        setMessages(chatStore.freeChatState.messages as FlowMessage[]);
+        // Mark all restored messages as not new (don't animate typewriter)
+        const restoredMessages = (chatStore.freeChatState.messages as FlowMessage[]).map(m => ({
+          ...m,
+          isNew: false,
+        }));
+        setMessages(restoredMessages);
 
         // Check if diagnostic was already completed
         if (chatStore.freeChatState.diagnosticCompleted) {
@@ -177,6 +202,7 @@ export const useDiagnosticFlow = () => {
             role: m.role === 'system' ? 'assistant' : (m.role as 'user' | 'assistant'),
             content: m.content,
             timestamp: m.timestamp || m.createdAt || new Date().toISOString(),
+            isNew: false, // Don't animate restored messages
           })) as FlowMessage[];
 
           setMessages(restoredMessages);
@@ -203,6 +229,7 @@ export const useDiagnosticFlow = () => {
             content: welcomeMsg.content,
             type: 'welcome',
             timestamp: welcomeMsg.timestamp || new Date().toISOString(),
+            isNew: true, // Animate new welcome message
           },
         ];
         setMessages(welcomeMessages);
@@ -221,6 +248,7 @@ export const useDiagnosticFlow = () => {
           content: content.welcomeMessage,
           type: 'welcome',
           timestamp: new Date().toISOString(),
+          isNew: true, // Animate fallback welcome message
         },
       ]);
     }
@@ -299,6 +327,7 @@ export const useDiagnosticFlow = () => {
                 content: response.content,
                 type: 'comment',
                 timestamp: new Date().toISOString(),
+                isNew: true, // Animate new message
               },
             ]);
           }, 500); // Reducido de 500ms a 200ms
@@ -318,6 +347,7 @@ export const useDiagnosticFlow = () => {
                   content: metadata.diagnosisContent,
                   type: 'diagnosis_ready',
                   timestamp: new Date().toISOString(),
+                  isNew: true, // Animate diagnosis
                 },
               ]);
               setState((prev) => ({ ...prev, step: 'diagnosis_ready' }));
@@ -336,6 +366,7 @@ export const useDiagnosticFlow = () => {
             content: response.content,
             type: metadata.type,
             timestamp: new Date().toISOString(),
+            isNew: true, // Animate new assistant message
           };
           setMessages((prev) => [...prev, assistantMsg]);
           setIsProcessing(false);
@@ -351,6 +382,7 @@ export const useDiagnosticFlow = () => {
                 content: metadata.nextQuestion,
                 type: 'question',
                 timestamp: new Date().toISOString(),
+                isNew: true, // Animate next question
               },
             ]);
           }, 1500);
@@ -367,6 +399,7 @@ export const useDiagnosticFlow = () => {
                 ? 'Lo siento, hubo un error. Por favor, intenta de nuevo.'
                 : 'Sorry, there was an error. Please try again.',
             timestamp: new Date().toISOString(),
+            isNew: true, // Animate error message
           },
         ]);
         setIsProcessing(false);

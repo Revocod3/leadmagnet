@@ -50,6 +50,8 @@ export const useAuthStore = create<AuthStore>()(
         localStorage.removeItem('ovp-auth-storage');
         // Clear session storage (backend manejará la creación de nueva sesión)
         localStorage.removeItem('ovp-session-storage');
+        // Clear hasSeenWelcome so modal shows again for free flow
+        localStorage.removeItem('hasSeenWelcome');
       },
 
       updateUser: (updates: Partial<User>) => {

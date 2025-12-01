@@ -5,6 +5,7 @@ import { WelcomeModal } from '../components/modals/WelcomeModal';
 import { WelcomeAnimation } from '../components/animations/WelcomeAnimation';
 import { useSessionStore } from '../stores/sessionStore';
 import { useAuthStore } from '../stores/authStore';
+import { useChatStore } from '../stores/chatStore';
 
 /**
  * HomePage - Flujo gratuito sin login
@@ -14,10 +15,10 @@ import { useAuthStore } from '../stores/authStore';
 export const HomePage = () => {
   const navigate = useNavigate();
   const { isAuthenticated, user } = useAuthStore();
+  const { session, setSession } = useSessionStore();
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [showWelcomeAnimation, setShowWelcomeAnimation] = useState(false);
   const [capturedUserName, setCapturedUserName] = useState<string>('');
-  const { setSession } = useSessionStore();
 
   // Redirigir usuarios PRO logueados a /chat
   useEffect(() => {
@@ -28,14 +29,31 @@ export const HomePage = () => {
   }, [isAuthenticated, user, navigate]);
 
   useEffect(() => {
-    // Check if user has seen the welcome modal before
-    const hasSeenWelcome = localStorage.getItem('hasSeenWelcome');
+    // Skip if authenticated (will redirect)
+    if (isAuthenticated) return;
 
-    // Show modal only if user hasn't seen it before AND not authenticated
-    if (!hasSeenWelcome && !isAuthenticated) {
+    const chatStore = useChatStore.getState();
+
+    // Check if FREE chat has expired (48h after diagnosis completed)
+    const isExpired = chatStore.isFreeChatExpired();
+
+    if (isExpired) {
+      console.log('🔄 FREE chat expired, clearing state and showing welcome modal');
+      chatStore.clearFreeChatState();
+      localStorage.removeItem('hasSeenWelcome');
+    }
+
+    // Show modal if:
+    // 1. No session exists (first time or after logout)
+    // 2. OR hasn't seen welcome before
+    const hasSeenWelcome = localStorage.getItem('hasSeenWelcome');
+    const hasValidSession = session?.id && session?.userName;
+
+    if (!hasValidSession || !hasSeenWelcome) {
+      console.log('📝 Showing welcome modal - no valid session or first time');
       setShowWelcomeModal(true);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, session?.id, session?.userName]);
 
   const handleCloseModal = (userName?: string) => {
     setShowWelcomeModal(false);

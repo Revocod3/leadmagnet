@@ -4,8 +4,8 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { ChatMessage } from '../types';
 
-// Expiration time for FREE chat messages (24 hours in milliseconds)
-const FREE_CHAT_EXPIRATION_MS = 24 * 60 * 60 * 1000;
+// Expiration time for FREE chat messages (48 hours in milliseconds)
+const FREE_CHAT_EXPIRATION_MS = 48 * 60 * 60 * 1000;
 
 interface FreeChatState {
   messages: ChatMessage[];

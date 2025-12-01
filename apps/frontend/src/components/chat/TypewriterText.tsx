@@ -16,39 +16,47 @@ export const TypewriterText = ({
   className = '',
   shouldAnimate = true // Por defecto anima
 }: TypewriterTextProps) => {
+  // Si no debe animar, mostrar texto completo desde el inicio
   const [displayedText, setDisplayedText] = useState(shouldAnimate ? '' : text);
   const [currentIndex, setCurrentIndex] = useState(shouldAnimate ? 0 : text.length);
-  const [isComplete, setIsComplete] = useState(!shouldAnimate); // Si no anima, ya está completo
+  const [isComplete, setIsComplete] = useState(!shouldAnimate);
   const initialTextRef = useRef(text);
   const animationStarted = useRef(false);
+
+  // Si shouldAnimate es false, mostrar texto completo inmediatamente
+  useEffect(() => {
+    if (!shouldAnimate && !isComplete) {
+      setDisplayedText(text);
+      setCurrentIndex(text.length);
+      setIsComplete(true);
+    }
+  }, [shouldAnimate, text, isComplete]);
 
   // Solo resetear si el texto inicial cambia (prevenir re-renders)
   useEffect(() => {
     if (initialTextRef.current !== text && !animationStarted.current) {
-      console.log('🔄 TypewriterText: Texto cambiado, reiniciando animación');
       initialTextRef.current = text;
-      setDisplayedText('');
-      setCurrentIndex(0);
-      setIsComplete(false);
-      animationStarted.current = false;
+      if (shouldAnimate) {
+        setDisplayedText('');
+        setCurrentIndex(0);
+        setIsComplete(false);
+        animationStarted.current = false;
+      } else {
+        setDisplayedText(text);
+        setCurrentIndex(text.length);
+        setIsComplete(true);
+      }
     }
-  }, [text]);
+  }, [text, shouldAnimate]);
 
   useEffect(() => {
-    // Si no debe animar, saltar todo
+    // Si no debe animar, ya se maneja en el otro useEffect
     if (!shouldAnimate) {
-      if (!isComplete) {
-        setIsComplete(true);
-        if (onComplete) {
-          onComplete();
-        }
-      }
       return;
     }
 
     if (!animationStarted.current && currentIndex === 0) {
       animationStarted.current = true;
-      console.log('▶️ TypewriterText: Iniciando animación');
     }
 
     if (currentIndex < text.length) {
@@ -60,7 +68,6 @@ export const TypewriterText = ({
       return () => clearTimeout(timeout);
     } else if (currentIndex === text.length && !isComplete) {
       setIsComplete(true);
-      console.log('✅ TypewriterText: Animación completada');
       if (onComplete) {
         onComplete();
       }

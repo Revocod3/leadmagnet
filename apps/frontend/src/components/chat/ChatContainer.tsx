@@ -144,7 +144,7 @@ export const ChatContainer = () => {
       // 1. No hay session.id O tiene un ID temporal (free_*)
       // 2. Y hay user (PRO) O hay userName (free)
       const needsSession = (!session?.id || session.id.startsWith('free_')) &&
-                          (user || session?.userName);
+        (user || session?.userName);
 
       if (needsSession) {
         try {
@@ -422,7 +422,7 @@ export const ChatContainer = () => {
           {/* Messages Area */}
           <main className={`mobile-chat-main smooth-scroll scroll-pt-4 pt-20 pb-32 ${state.step === 'asking_questions' ? 'pt-32' : 'pt-20'}`}>
             <div className="container-narrow pt-4 pb-4">
-              {/* Empty State - Solo mostrar cuando realmente no hay mensajes Y no estamos cargando */}
+              {/* Empty State - Loading state while initializing */}
               {messages.length === 0 && !isProcessing && (
                 <div className="flex flex-col items-center justify-center min-h-[50vh] text-center px-4">
                   <motion.div
@@ -442,7 +442,7 @@ export const ChatContainer = () => {
                     Preparando tu diagnóstico
                   </h2>
                   <p className="text-secondary max-w-md">
-                    Un momento por favor...
+                    Un momento por favor
                   </p>
                 </div>
               )}

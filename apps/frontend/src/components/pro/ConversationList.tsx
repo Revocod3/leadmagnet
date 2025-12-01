@@ -19,13 +19,13 @@ interface Conversation {
 
 interface ConversationListProps {
   onSelectConversation: (conversationId: string) => void;
-  onNewConversation: () => void;
+  onNewConversation?: () => void; // Optional, not used in UI but kept for API compatibility
   selectedConversationId: string | undefined;
 }
 
 export const ConversationList = ({
   onSelectConversation,
-  onNewConversation,
+  onNewConversation: _onNewConversation, // Prefixed with _ to indicate intentionally unused
   selectedConversationId,
 }: ConversationListProps) => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
