@@ -2,7 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Layout } from './components/layout/Layout';
 import { HomePage } from './pages/HomePage';
-import { ChatContainer } from './components/chat/ChatContainer';
+import { ProChat } from './components/pro';
 import { LoginPage } from './pages/LoginPage';
 import { AuthCallback } from './pages/AuthCallback';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
@@ -31,12 +31,12 @@ function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
 
-            {/* Protected routes - Clara PRO */}
+            {/* Protected routes - Clara PRO (completely separate from FREE flow) */}
             <Route
               path="/chat"
               element={
                 <ProtectedRoute>
-                  <ChatContainer />
+                  <ProChat />
                 </ProtectedRoute>
               }
             />

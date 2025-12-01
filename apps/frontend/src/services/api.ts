@@ -207,6 +207,112 @@ class ApiClient {
     }
   }
 
+  // ══════════════════════════════════════════════════════════════
+  // PRO API Endpoints
+  // ══════════════════════════════════════════════════════════════
+
+  private getAuthHeaders(): { Authorization: string } | {} {
+    const token = localStorage.getItem('auth_token');
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  }
+
+  // Get PRO status and subscription info
+  async getProStatus(): Promise<{
+    user: { name: string; email: string; role: string };
+    subscription: {
+      status: string;
+      plan: string;
+      currentPeriodEnd: string;
+      cancelAtPeriodEnd: boolean;
+      isActive: boolean;
+    } | null;
+    stats: { conversationCount: number };
+  }> {
+    const response = await this.client.get<ApiResponse<any>>('/pro/status', {
+      headers: this.getAuthHeaders(),
+    });
+    if (!response.data.success || !response.data.data) {
+      throw new Error(response.data.error || 'Error al obtener estado PRO');
+    }
+    return response.data.data;
+  }
+
+  // List all PRO conversations
+  async getProConversations(): Promise<Array<{
+    id: string;
+    title: string | null;
+    lastMessageAt: string;
+    messageCount: number;
+    createdAt: string;
+  }>> {
+    const response = await this.client.get<ApiResponse<any>>('/pro/conversations', {
+      headers: this.getAuthHeaders(),
+    });
+    if (!response.data.success || !response.data.data) {
+      throw new Error(response.data.error || 'Error al obtener conversaciones');
+    }
+    return response.data.data;
+  }
+
+  // Create new PRO conversation
+  async createProConversation(): Promise<{
+    conversationId: string;
+    message: { role: string; content: string };
+  }> {
+    const response = await this.client.post<ApiResponse<any>>('/pro/conversations', {}, {
+      headers: this.getAuthHeaders(),
+    });
+    if (!response.data.success || !response.data.data) {
+      throw new Error(response.data.error || 'Error al crear conversación');
+    }
+    return response.data.data;
+  }
+
+  // Get PRO conversation with messages
+  async getProConversation(conversationId: string): Promise<{
+    messages: Array<{ role: string; content: string; createdAt: string }>;
+    conversation: { id: string; title: string | null; createdAt: string };
+  }> {
+    const response = await this.client.get<ApiResponse<any>>(`/pro/conversations/${conversationId}`, {
+      headers: this.getAuthHeaders(),
+    });
+    if (!response.data.success || !response.data.data) {
+      throw new Error(response.data.error || 'Error al obtener conversación');
+    }
+    return response.data.data;
+  }
+
+  // Send message in PRO conversation
+  async sendProMessage(conversationId: string, message: string): Promise<{
+    role: string;
+    content: string;
+  }> {
+    const response = await this.client.post<ApiResponse<any>>(
+      `/pro/conversations/${conversationId}/message`,
+      { message },
+      { headers: this.getAuthHeaders() }
+    );
+    if (!response.data.success || !response.data.data) {
+      // Check for subscription expired
+      if ((response.data as any).code === 'SUBSCRIPTION_EXPIRED') {
+        throw new Error('SUBSCRIPTION_EXPIRED');
+      }
+      throw new Error(response.data.error || 'Error al enviar mensaje');
+    }
+    return response.data.data;
+  }
+
+  // Delete PRO conversation
+  async deleteProConversation(conversationId: string): Promise<void> {
+    const response = await this.client.delete<ApiResponse<any>>(
+      `/pro/conversations/${conversationId}`,
+      { headers: this.getAuthHeaders() }
+    );
+    if (!response.data.success) {
+      throw new Error(response.data.error || 'Error al eliminar conversación');
+    }
+  }
+
   // Health check
   async healthCheck(): Promise<{ status: string }> {
     const response = await this.client.get('/health');

@@ -33,8 +33,49 @@ model User {
   sessions      Session[]
   diagnoses     Diagnosis[]
   subscriptions Subscription[]
+  conversations ProConversation[]  // PRO user conversations
 
   @@map("users")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PRO FLOW MODELS - Separate from FREE diagnostic flow
+// ═══════════════════════════════════════════════════════════════
+
+model ProConversation {
+  id                   String   @id @default(cuid())
+  userId               String
+  title                String?  // Auto-generated from first messages
+  summary              String?  @db.Text // Compact summary for context in future conversations
+  openaiConversationId String?  // OpenAI conversation/thread ID
+  
+  // Metadata
+  messageCount         Int      @default(0)
+  lastMessageAt        DateTime @default(now())
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages             ProMessage[]
+
+  @@index([userId])
+  @@index([lastMessageAt])
+  @@map("pro_conversations")
+}
+
+model ProMessage {
+  id             String   @id @default(cuid())
+  conversationId String
+  role           String   // "user" | "assistant"
+  content        String   @db.Text
+  metadata       Json?    // For storing additional info like image URLs, etc.
+  createdAt      DateTime @default(now())
+
+  conversation   ProConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@index([createdAt])
+  @@map("pro_messages")
 }
 
 model Session {
