@@ -86,7 +86,7 @@ export class AuthController {
         data: result,
       });
     } catch (error) {
-      logger.error('Login error', { 
+      logger.error('Login error', {
         error,
         message: error instanceof Error ? error.message : String(error)
       });
