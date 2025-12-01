@@ -212,8 +212,20 @@ class ApiClient {
   // ══════════════════════════════════════════════════════════════
 
   private getAuthHeaders(): { Authorization: string } | {} {
-    const token = localStorage.getItem('auth_token');
-    return token ? { Authorization: `Bearer ${token}` } : {};
+    // Read from Zustand persisted store
+    const storedAuth = localStorage.getItem('ovp-auth-storage');
+    if (storedAuth) {
+      try {
+        const parsed = JSON.parse(storedAuth);
+        const token = parsed.state?.token;
+        if (token) {
+          return { Authorization: `Bearer ${token}` };
+        }
+      } catch (e) {
+        console.error('Error parsing auth storage:', e);
+      }
+    }
+    return {};
   }
 
   // Get PRO status and subscription info
