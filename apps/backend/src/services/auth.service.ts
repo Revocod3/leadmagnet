@@ -34,16 +34,20 @@ export class AuthService {
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
       where: { email },
+      include: { subscriptions: true },
     });
 
     if (existingUser) {
       throw new Error('User already exists with this email');
     }
 
+    // Check if email has an active subscription in Stripe (from WordPress purchase)
+    const hasActiveSubscription = await this.checkEmailHasStripeSubscription(email);
+
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user
+    // Create user with appropriate role
     const user = await prisma.user.create({
       data: {
         email,
@@ -51,11 +55,11 @@ export class AuthService {
         name,
         provider: 'email',
         emailVerified: false, // TODO: Implement email verification
-        role: 'FREE',
+        role: hasActiveSubscription ? 'PRO' : 'FREE',
       },
     });
 
-    logger.info(`User registered: ${user.email}`);
+    logger.info(`User registered: ${user.email} (role: ${user.role})`);
 
     // Generate JWT
     const token = this.generateToken(user);
@@ -75,6 +79,7 @@ export class AuthService {
     // Find user
     const user = await prisma.user.findUnique({
       where: { email },
+      include: { subscriptions: true },
     });
 
     if (!user || !user.password) {
@@ -88,13 +93,16 @@ export class AuthService {
       throw new Error('Invalid credentials');
     }
 
-    logger.info(`User logged in: ${user.email}`);
+    // Sync user role with current subscription status
+    const updatedUser = await this.syncUserRoleWithSubscription(user.id);
 
-    // Generate JWT
-    const token = this.generateToken(user);
+    logger.info(`User logged in: ${updatedUser.email} (role: ${updatedUser.role})`);
+
+    // Generate JWT with updated role
+    const token = this.generateToken(updatedUser);
 
     return {
-      user: this.sanitizeUser(user),
+      user: this.sanitizeUser(updatedUser),
       token,
     };
   }
@@ -113,22 +121,28 @@ export class AuthService {
     // Check if user exists by googleId
     let user = await prisma.user.findUnique({
       where: { googleId },
+      include: { subscriptions: true },
     });
 
     // If not, check by email
     if (!user) {
       user = await prisma.user.findUnique({
         where: { email },
+        include: { subscriptions: true },
       });
 
       // Update existing user with googleId
       if (user) {
+        // Sync role with subscription before updating
+        const hasActiveSub = await this.checkEmailHasStripeSubscription(email);
+
         user = await prisma.user.update({
           where: { id: user.id },
           data: {
             googleId,
             provider: 'google',
             emailVerified: true,
+            role: hasActiveSub ? 'PRO' : user.role, // Upgrade if subscription exists
           },
         });
       }
@@ -136,6 +150,9 @@ export class AuthService {
 
     // Create new user if doesn't exist
     if (!user) {
+      // Check if email has a subscription from WordPress
+      const hasActiveSubscription = await this.checkEmailHasStripeSubscription(email);
+
       user = await prisma.user.create({
         data: {
           email,
@@ -143,12 +160,15 @@ export class AuthService {
           googleId,
           provider: 'google',
           emailVerified: true,
-          role: 'FREE',
+          role: hasActiveSubscription ? 'PRO' : 'FREE',
           password: null, // No password for OAuth users
         },
       });
 
-      logger.info(`New user created via Google OAuth: ${user.email}`);
+      logger.info(`New user created via Google OAuth: ${user.email} (role: ${user.role})`);
+    } else {
+      // Sync existing user's role
+      user = await this.syncUserRoleWithSubscription(user.id);
     }
 
     return user;
@@ -202,6 +222,146 @@ export class AuthService {
   private sanitizeUser(user: any) {
     const { password, ...sanitized } = user;
     return sanitized;
+  }
+
+  /**
+   * Check if email has an active Stripe subscription
+   */
+  private async checkEmailHasStripeSubscription(email: string): Promise<boolean> {
+    // Check in database first
+    const subscription = await prisma.subscription.findFirst({
+      where: {
+        user: {
+          email,
+        },
+        status: {
+          in: ['active', 'trialing'],
+        },
+        currentPeriodEnd: {
+          gte: new Date(),
+        },
+      },
+    });
+
+    return !!subscription;
+  }
+
+  /**
+   * Sync user role with their subscription status
+   */
+  private async syncUserRoleWithSubscription(userId: string) {
+    const activeSubscription = await prisma.subscription.findFirst({
+      where: {
+        userId,
+        status: {
+          in: ['active', 'trialing'],
+        },
+        currentPeriodEnd: {
+          gte: new Date(),
+        },
+      },
+    });
+
+    const hasActiveSub = !!activeSubscription;
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        role: hasActiveSub ? 'PRO' : 'FREE',
+      },
+    });
+
+    return updatedUser;
+  }
+
+  /**
+   * Set password for user (for users created via webhook)
+   */
+  async setPassword(email: string, password: string, resetToken?: string) {
+    const user = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    // If resetToken is provided, verify it
+    if (resetToken) {
+      if (!user.passwordResetToken || user.passwordResetToken !== resetToken) {
+        throw new Error('Invalid reset token');
+      }
+
+      if (!user.passwordResetExpiry || user.passwordResetExpiry < new Date()) {
+        throw new Error('Reset token has expired');
+      }
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Update user
+    const updatedUser = await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password: hashedPassword,
+        passwordResetToken: null,
+        passwordResetExpiry: null,
+        emailVerified: true,
+      },
+    });
+
+    logger.info(`Password set for user: ${user.email}`);
+
+    // Generate JWT
+    const token = this.generateToken(updatedUser);
+
+    return {
+      user: this.sanitizeUser(updatedUser),
+      token,
+    };
+  }
+
+  /**
+   * Request password reset (generate token)
+   */
+  async requestPasswordReset(email: string) {
+    const user = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      // Don't reveal if user exists
+      return { success: true };
+    }
+
+    // Generate reset token
+    const resetToken = this.generateResetToken();
+    const resetExpiry = new Date(Date.now() + 3600000); // 1 hour
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordResetToken: resetToken,
+        passwordResetExpiry: resetExpiry,
+      },
+    });
+
+    logger.info(`Password reset requested for: ${user.email}`);
+
+    return {
+      success: true,
+      resetToken, // In production, send this via email
+    };
+  }
+
+  /**
+   * Generate secure reset token
+   */
+  private generateResetToken(): string {
+    return Math.random().toString(36).substring(2, 15) +
+           Math.random().toString(36).substring(2, 15) +
+           Date.now().toString(36);
   }
 }
 

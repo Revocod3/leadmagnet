@@ -1,0 +1,174 @@
+import { Request, Response, NextFunction } from 'express';
+import { prisma } from '../config/database';
+import type { ApiResponse } from '../types';
+
+export interface AuthenticatedRequest extends Request {
+  user?: {
+    id: string;
+    email: string;
+    role: string;
+  };
+}
+
+/**
+ * Middleware to verify user has an active PRO subscription
+ * Use this on routes that require PRO access
+ */
+export async function requireProSubscription(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const user = req.user;
+
+    if (!user) {
+      res.status(401).json({
+        success: false,
+        error: 'No autenticado',
+      } as ApiResponse);
+      return;
+    }
+
+    // Check if user has PRO role
+    if (user.role !== 'PRO') {
+      res.status(403).json({
+        success: false,
+        error: 'Necesitas una suscripción Pro para acceder a esta función',
+        data: {
+          requiresSubscription: true,
+          currentRole: user.role,
+        },
+      } as ApiResponse);
+      return;
+    }
+
+    // Verify they have an active subscription in the database
+    const activeSubscription = await prisma.subscription.findFirst({
+      where: {
+        userId: user.id,
+        status: {
+          in: ['active', 'trialing'], // Allow both active and trial subscriptions
+        },
+        currentPeriodEnd: {
+          gte: new Date(), // Period hasn't ended
+        },
+      },
+    });
+
+    if (!activeSubscription) {
+      // User has PRO role but no active subscription - downgrade them
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { role: 'FREE' },
+      });
+
+      res.status(403).json({
+        success: false,
+        error: 'Tu suscripción ha expirado. Por favor, renueva tu plan Pro.',
+        data: {
+          requiresSubscription: true,
+          subscriptionExpired: true,
+        },
+      } as ApiResponse);
+      return;
+    }
+
+    // Check if subscription is past due (payment failed)
+    if (activeSubscription.status === 'past_due') {
+      res.status(403).json({
+        success: false,
+        error: 'Tu último pago falló. Por favor, actualiza tu método de pago.',
+        data: {
+          requiresSubscription: true,
+          paymentFailed: true,
+        },
+      } as ApiResponse);
+      return;
+    }
+
+    // All checks passed - user has valid PRO subscription
+    next();
+  } catch (error) {
+    console.error('[Subscription Middleware] Error verifying subscription:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error al verificar la suscripción',
+    } as ApiResponse);
+  }
+}
+
+/**
+ * Middleware to check subscription status and attach to request
+ * Doesn't block the request, just adds subscription info
+ */
+export async function attachSubscriptionInfo(
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const user = req.user;
+
+    if (!user) {
+      next();
+      return;
+    }
+
+    // Get user's active subscription
+    const subscription = await prisma.subscription.findFirst({
+      where: {
+        userId: user.id,
+        status: {
+          in: ['active', 'trialing', 'past_due'],
+        },
+      },
+      orderBy: {
+        currentPeriodEnd: 'desc', // Get the most recent one
+      },
+    });
+
+    // Attach subscription info to request
+    (req as any).subscription = subscription || null;
+
+    next();
+  } catch (error) {
+    console.error('[Subscription Middleware] Error attaching subscription info:', error);
+    // Don't block the request on error
+    next();
+  }
+}
+
+/**
+ * Check if user has any valid subscription (doesn't block)
+ */
+export async function hasActiveSubscription(userId: string): Promise<boolean> {
+  const subscription = await prisma.subscription.findFirst({
+    where: {
+      userId,
+      status: {
+        in: ['active', 'trialing'],
+      },
+      currentPeriodEnd: {
+        gte: new Date(),
+      },
+    },
+  });
+
+  return !!subscription;
+}
+
+/**
+ * Sync user's role with their subscription status
+ * Call this periodically or on-demand
+ */
+export async function syncUserRoleWithSubscription(userId: string): Promise<void> {
+  const hasActiveSub = await hasActiveSubscription(userId);
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      role: hasActiveSub ? 'PRO' : 'FREE',
+    },
+  });
+}

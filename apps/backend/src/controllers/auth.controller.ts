@@ -15,6 +15,16 @@ const loginSchema = z.object({
   password: z.string().min(1, 'Password is required'),
 });
 
+const setPasswordSchema = z.object({
+  email: z.string().email('Invalid email address'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+  resetToken: z.string().optional(),
+});
+
+const requestPasswordResetSchema = z.object({
+  email: z.string().email('Invalid email address'),
+});
+
 export class AuthController {
   /**
    * POST /api/auth/register
@@ -157,6 +167,84 @@ export class AuthController {
     } catch (error) {
       logger.error('Google callback error', { error });
       res.redirect(`${process.env.CORS_ORIGIN}/login?error=auth_failed`);
+    }
+  }
+
+  /**
+   * POST /api/auth/set-password
+   * Set password for user (for users created via Stripe webhook)
+   */
+  async setPassword(req: Request, res: Response): Promise<void> {
+    try {
+      const validatedData = setPasswordSchema.parse(req.body);
+
+      const result = await authService.setPassword(
+        validatedData.email,
+        validatedData.password,
+        validatedData.resetToken
+      );
+
+      res.status(200).json({
+        success: true,
+        data: result,
+      });
+    } catch (error) {
+      logger.error('Set password error', { error });
+
+      if (error instanceof z.ZodError) {
+        res.status(400).json({
+          success: false,
+          error: 'Validation error',
+          details: error.errors,
+        });
+        return;
+      }
+
+      if (error instanceof Error) {
+        res.status(400).json({
+          success: false,
+          error: error.message,
+        });
+        return;
+      }
+
+      res.status(500).json({
+        success: false,
+        error: 'Failed to set password',
+      });
+    }
+  }
+
+  /**
+   * POST /api/auth/request-password-reset
+   * Request password reset token
+   */
+  async requestPasswordReset(req: Request, res: Response): Promise<void> {
+    try {
+      const validatedData = requestPasswordResetSchema.parse(req.body);
+
+      const result = await authService.requestPasswordReset(validatedData.email);
+
+      res.status(200).json({
+        success: true,
+        data: result,
+      });
+    } catch (error) {
+      logger.error('Request password reset error', { error });
+
+      if (error instanceof z.ZodError) {
+        res.status(400).json({
+          success: false,
+          error: 'Validation error',
+          details: error.errors,
+        });
+        return;
+      }
+
+      res.status(500).json({
+        success: false,
+        error: 'Failed to request password reset',
+      });
     }
   }
 }

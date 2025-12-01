@@ -48,4 +48,18 @@ router.get(
   (req, res) => authController.googleCallback(req, res)
 );
 
+/**
+ * POST /api/auth/set-password
+ * Set password for user (for users created via Stripe webhook)
+ * Body: { email, password, resetToken? }
+ */
+router.post('/set-password', (req, res) => authController.setPassword(req, res));
+
+/**
+ * POST /api/auth/request-password-reset
+ * Request password reset token
+ * Body: { email }
+ */
+router.post('/request-password-reset', (req, res) => authController.requestPasswordReset(req, res));
+
 export default router;

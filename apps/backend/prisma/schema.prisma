@@ -20,13 +20,19 @@ model User {
   emailVerified Boolean  @default(false)
 
   // Role and subscription
-  role          String   @default("FREE") // "FREE" | "PRO"
+  role                String   @default("FREE") // "FREE" | "PRO"
+  stripeCustomerId    String?  @unique
+
+  // Password reset
+  passwordResetToken  String?  @unique
+  passwordResetExpiry DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  sessions   Session[]
-  diagnoses  Diagnosis[]
+  sessions      Session[]
+  diagnoses     Diagnosis[]
+  subscriptions Subscription[]
 
   @@map("users")
 }
@@ -194,4 +200,40 @@ model ChatRating {
 
   @@index([sessionId])
   @@map("chat_ratings")
+}
+
+model Subscription {
+  id                    String    @id @default(cuid())
+  userId                String
+  stripeSubscriptionId  String    @unique
+  stripeCustomerId      String
+  stripePriceId         String
+  stripeProductId       String?
+
+  // Subscription details
+  plan                  String    // "monthly" | "yearly" | "lifetime"
+  status                String    // "active" | "canceled" | "past_due" | "incomplete" | "trialing" | "unpaid"
+
+  // Billing period
+  currentPeriodStart    DateTime
+  currentPeriodEnd      DateTime
+  cancelAtPeriodEnd     Boolean   @default(false)
+  canceledAt            DateTime?
+
+  // Trial
+  trialStart            DateTime?
+  trialEnd              DateTime?
+
+  // Metadata
+  metadata              Json?     // Additional Stripe metadata
+
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([stripeCustomerId])
+  @@index([status])
+  @@map("subscriptions")
 }

@@ -11,12 +11,14 @@ import { Agent, tool, run, handoff } from '@openai/agents';
 import { z } from 'zod';
 import { prisma } from '../config/database';
 import { CLARA_INSTRUCTIONS_V2 as CLARA_INSTRUCTIONS, DIAGNOSIS_INSTRUCTIONS, buildDynamicInstructionsV2 as buildDynamicInstructions } from '../config/assistant-instructions-v2';
+import { PATTERN_ANALYZER_INSTRUCTIONS } from '../config/pattern-detection-instructions';
 import { logger } from '../utils/logger';
 import { convertDiagnosisToHTML } from '../utils/markdown-to-html';
 
 export class AgentService {
   private claraAgent: Agent;
   private styleAnalyzerAgent: Agent;
+  private patternAnalyzerAgent: Agent;
   private diagnosisAgent: Agent;
 
   constructor() {
@@ -57,7 +59,14 @@ FORMATO DE RESPUESTA:
       tools: [tools.saveStyleAnalysis],
     });
 
-    // Agent 2: Diagnosis Agent - Genera diagnóstico personalizado
+    // Agent 2: Pattern Analyzer - Detecta patrón de usuario
+    this.patternAnalyzerAgent = new Agent({
+      name: 'PatternAnalyzer',
+      instructions: PATTERN_ANALYZER_INSTRUCTIONS,
+      tools: [tools.saveUserPattern],
+    });
+
+    // Agent 3: Diagnosis Agent - Genera diagnóstico personalizado
     this.diagnosisAgent = new Agent({
       name: 'DiagnosisGenerator',
       instructions: `${CLARA_INSTRUCTIONS}\n\n${DIAGNOSIS_INSTRUCTIONS}
@@ -68,10 +77,10 @@ IMPORTANTE:
 - Menciona síntomas específicos que el usuario compartió
 - Usa el tool save_diagnosis para guardar el diagnóstico generado
 `,
-      tools: [tools.saveDiagnosis],
+      tools: [tools.saveDiagnosis, tools.saveDiagnosisMetadata],
     });
 
-    // Agent 3: Clara (Conversation Agent) - Principal
+    // Agent 4: Clara (Conversation Agent) - Principal
     this.claraAgent = new Agent({
       name: 'Clara',
       instructions: CLARA_INSTRUCTIONS,
@@ -81,9 +90,11 @@ IMPORTANTE:
         tools.trackEngagement,
         tools.trackEmotion,
         tools.trackKeyMoment,
+        tools.track24x7Pitch,
       ],
       handoffs: [
         this.styleAnalyzerAgent,
+        this.patternAnalyzerAgent,
         this.diagnosisAgent,
       ],
     });
@@ -290,6 +301,176 @@ IMPORTANTE:
       },
     });
 
+    // Tool: Guardar patrón de usuario (usado por Pattern Analyzer Agent)
+    const saveUserPattern = tool({
+      name: 'save_user_pattern',
+      description: 'Guarda el patrón de usuario detectado en ConversationalMemory',
+      parameters: z.object({
+        sessionId: z.string(),
+        pattern: z.enum([
+          'MOTIVACION_ALTA',
+          'MOTIVACION_MEDIA',
+          'MOTIVACION_BAJA',
+          'DOLOR_FUERTE',
+          'PERFIL_EMOCIONAL',
+          'PERFIL_ESTETICO',
+        ]),
+        confidence: z.number().min(0).max(100),
+        indicators: z.array(z.string()),
+        recommendedQuestionCount: z.number().min(3).max(10),
+      }),
+      async execute({ sessionId, pattern, confidence, indicators, recommendedQuestionCount }) {
+        try {
+          // Obtener o crear ConversationalMemory
+          let memory = await prisma.conversationalMemory.findUnique({
+            where: { sessionId },
+          });
+
+          if (!memory) {
+            memory = await prisma.conversationalMemory.create({
+              data: {
+                sessionId,
+                factualInfo: {
+                  userPattern: pattern,
+                  patternConfidence: confidence,
+                  patternIndicators: indicators,
+                  recommendedQuestionCount,
+                },
+                turnCount: 0,
+              },
+            });
+          } else {
+            const currentFactualInfo = (memory.factualInfo || {}) as any;
+            await prisma.conversationalMemory.update({
+              where: { sessionId },
+              data: {
+                factualInfo: {
+                  ...currentFactualInfo,
+                  userPattern: pattern,
+                  patternConfidence: confidence,
+                  patternIndicators: indicators,
+                  recommendedQuestionCount,
+                },
+              },
+            });
+          }
+
+          logger.info(
+            `[PATTERN] Session ${sessionId}: ${pattern} (${confidence}% confianza, ${recommendedQuestionCount} preguntas)`
+          );
+          logger.info(`[PATTERN] Indicadores: ${indicators.join(', ')}`);
+
+          return {
+            success: true,
+            message: 'Pattern saved successfully',
+            pattern: { pattern, confidence, recommendedQuestionCount },
+          };
+        } catch (error) {
+          logger.error('Error saving user pattern:', { error });
+          return { success: false, error: String(error) };
+        }
+      },
+    });
+
+    // Tool: Guardar metadata de diagnóstico (usado por Diagnosis Agent)
+    const saveDiagnosisMetadata = tool({
+      name: 'save_diagnosis_metadata',
+      description: 'Guarda metadata del tipo de diagnóstico generado',
+      parameters: z.object({
+        sessionId: z.string(),
+        diagnosisType: z.enum([
+          'DIGESTIVO_INFLAMATORIO',
+          'EMOCIONAL_DIGESTIVO',
+          'MIXTO',
+          'ESTETICO_BASE_DIGESTIVA',
+        ]),
+        confidence: z.number().min(0).max(100),
+        keyFindings: z.array(z.string()),
+        primaryRecommendations: z.array(z.string()),
+      }),
+      async execute({ sessionId, diagnosisType, confidence, keyFindings, primaryRecommendations }) {
+        try {
+          const memory = await prisma.conversationalMemory.findUnique({
+            where: { sessionId },
+          });
+
+          if (!memory) {
+            logger.warn(`Memory not found for session ${sessionId}`);
+            return { success: false, error: 'Memory not found' };
+          }
+
+          const currentHypothesis = (memory.currentHypothesis || {}) as any;
+          await prisma.conversationalMemory.update({
+            where: { sessionId },
+            data: {
+              currentHypothesis: {
+                ...currentHypothesis,
+                diagnosisType,
+                diagnosisConfidence: confidence,
+                keyFindings,
+                primaryRecommendations,
+              },
+            },
+          });
+
+          logger.info(`[DIAGNOSIS TYPE] ${diagnosisType} (${confidence}% confianza) - Session: ${sessionId}`);
+          logger.info(`[DIAGNOSIS] Key findings: ${keyFindings.join(', ')}`);
+
+          return { success: true };
+        } catch (error) {
+          logger.error('Error saving diagnosis metadata:', { error });
+          return { success: false, error: String(error) };
+        }
+      },
+    });
+
+    // Tool: Track 24/7 pitch
+    const track24x7Pitch = tool({
+      name: 'track_24x7_pitch',
+      description: 'Rastrea cuándo se muestra el pitch del Chat 24/7 PRO y la respuesta del usuario',
+      parameters: z.object({
+        sessionId: z.string(),
+        pitchShown: z.boolean(),
+        userResponse: z.enum(['interested', 'declined', 'thinking', 'no_response']),
+        objection: z.string().optional(),
+      }),
+      async execute({ sessionId, pitchShown, userResponse, objection }) {
+        try {
+          const session = await prisma.session.findUnique({
+            where: { id: sessionId },
+          });
+
+          if (!session) {
+            return { success: false, error: 'Session not found' };
+          }
+
+          const currentFlowState = (session.flowState || {}) as any;
+          await prisma.session.update({
+            where: { id: sessionId },
+            data: {
+              flowState: {
+                ...currentFlowState,
+                pitchShown,
+                pitchResponse: userResponse,
+                pitchObjection: objection || null,
+                pitchTimestamp: new Date().toISOString(),
+              },
+            },
+          });
+
+          logger.info(`[24/7 PITCH] ${userResponse} - Session: ${sessionId}`);
+          if (objection) {
+            logger.info(`[24/7 PITCH] Objection: ${objection}`);
+          }
+
+          return { success: true };
+        } catch (error) {
+          logger.error('Error tracking 24/7 pitch:', { error });
+          return { success: false, error: String(error) };
+        }
+      },
+    });
+
     // Tool: Track key moment
     const trackKeyMoment = tool({
       name: 'track_key_moment',
@@ -333,9 +514,12 @@ IMPORTANTE:
       saveConversation,
       trackEngagement,
       saveStyleAnalysis,
+      saveUserPattern,
       saveDiagnosis,
+      saveDiagnosisMetadata,
       trackEmotion,
       trackKeyMoment,
+      track24x7Pitch,
     };
   }
 
@@ -411,16 +595,34 @@ IMPORTANTE:
     shouldEndConversation?: boolean;
   }> {
     try {
-      // Obtener análisis de estilo si existe (después del turno 2)
+      // Obtener análisis de estilo y patrón si existen
       let userStyle = null;
-      if (context.sessionId && context.turnCount >= 3) {
+      let detectedPattern = null;
+      if (context.sessionId) {
         const memory = await prisma.conversationalMemory.findUnique({
           where: { sessionId: context.sessionId },
         });
-        userStyle = memory?.userStyle as { formality: number; verbosity: number; emotionLevel: number } | null;
 
-        if (userStyle) {
-          logger.info('[STYLE] Using user style analysis:', { userStyle, turnCount: context.turnCount });
+        // Style analysis (después del turno 2)
+        if (context.turnCount >= 3) {
+          userStyle = memory?.userStyle as { formality: number; verbosity: number; emotionLevel: number } | null;
+          if (userStyle) {
+            logger.info('[STYLE] Using user style analysis:', { userStyle, turnCount: context.turnCount });
+          }
+        }
+
+        // Pattern detection (después del turno 1)
+        if (context.turnCount >= 2 && memory?.factualInfo) {
+          const factualInfo = memory.factualInfo as any;
+          if (factualInfo.userPattern) {
+            detectedPattern = {
+              pattern: factualInfo.userPattern,
+              confidence: factualInfo.patternConfidence || 0,
+              indicators: factualInfo.patternIndicators || [],
+              recommendedQuestionCount: factualInfo.recommendedQuestionCount || 6,
+            };
+            logger.info('[PATTERN] Using detected pattern:', { detectedPattern, turnCount: context.turnCount });
+          }
         }
       }
 
@@ -431,6 +633,7 @@ IMPORTANTE:
         hasRealProblem: context.hasRealProblem || undefined,
         hasImage: context.hasImage || undefined,
         userStyle: userStyle || undefined,
+        detectedPattern: detectedPattern || undefined,
       });
 
       const fullInstructions = `${CLARA_INSTRUCTIONS}\n\n${dynamicInstructions}`;
@@ -460,6 +663,41 @@ IMPORTANTE:
         ],
         handoffs: [this.diagnosisAgent], // Diagnosis Agent implícito
       });
+
+      // HANDOFF EXPLÍCITO 0: Pattern Analyzer (turnos 1 y 2 - detecta patrón temprano)
+      if (context.turnCount === 1 || context.turnCount === 2) {
+        logger.info(`[HANDOFF] Calling Pattern Analyzer at turn ${context.turnCount}`);
+        try {
+          const conversationHistory = await prisma.message.findMany({
+            where: { sessionId: context.sessionId! },
+            orderBy: { createdAt: 'asc' },
+            take: 3, // Primeros mensajes para detectar patrón
+          });
+
+          const historyText = conversationHistory
+            .map(m => `${m.role}: ${m.content}`)
+            .join('\n');
+
+          const patternAnalysisPrompt = `Analiza el patrón del usuario basándote en estos mensajes:
+
+${historyText}
+
+Determina cuál de los 6 patrones describe mejor al usuario:
+1. MOTIVACION_ALTA - Alta energía, decisión, urgencia positiva
+2. MOTIVACION_MEDIA - Interés moderado, cauteloso
+3. MOTIVACION_BAJA - Poco compromiso, escéptico
+4. DOLOR_FUERTE - Síntomas intensos, frustración, urgencia
+5. PERFIL_EMOCIONAL - Estrés, ansiedad, conexión emocional
+6. PERFIL_ESTETICO - Enfoque estético, vientre plano
+
+Usa el tool save_user_pattern con el sessionId: ${context.sessionId}`;
+
+          await run(this.patternAnalyzerAgent, patternAnalysisPrompt);
+          logger.info('[HANDOFF] Pattern Analyzer completed successfully');
+        } catch (error) {
+          logger.error('[HANDOFF] Pattern Analyzer failed:', { error });
+        }
+      }
 
       // HANDOFF EXPLÍCITO 1: Style Analyzer (turnos 2 y 3 - ambos aportan contexto)
       if (context.turnCount === 2 || context.turnCount === 3) {
