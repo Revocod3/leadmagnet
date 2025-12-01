@@ -549,7 +549,6 @@ IMPORTANTE:
    * Procesar mensaje del usuario
    */
   async processMessage(
-    conversationId: string,
     userMessage: string,
     context: {
       userName?: string;
