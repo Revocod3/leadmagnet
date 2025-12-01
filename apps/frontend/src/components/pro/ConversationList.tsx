@@ -87,19 +87,6 @@ export const ConversationList = ({
 
   return (
     <div className="flex flex-col h-full bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-        <button
-          onClick={onNewConversation}
-          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-medium transition-colors"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Nueva conversación
-        </button>
-      </div>
-
       {/* Conversations List */}
       <div className="flex-1 overflow-y-auto">
         {conversations.length === 0 ? (
@@ -114,8 +101,8 @@ export const ConversationList = ({
                 key={conversation.id}
                 onClick={() => onSelectConversation(conversation.id)}
                 className={`p-4 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${selectedConversationId === conversation.id
-                    ? 'bg-emerald-50 dark:bg-emerald-900/20 border-l-4 border-emerald-500'
-                    : ''
+                  ? 'bg-emerald-50 dark:bg-emerald-900/20 border-l-4 border-emerald-500'
+                  : ''
                   }`}
               >
                 <div className="flex items-start justify-between gap-2">

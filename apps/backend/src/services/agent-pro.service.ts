@@ -86,14 +86,14 @@ IMPORTANTE: Usa este contexto para dar continuidad. El usuario no debería repet
         model: 'gpt-5-mini-2025-08-07',
       });
 
-      // Generate welcome message
+      // Generate welcome message - simple and natural like a friend
       const result = await run(
         claraWithContext,
-        `El usuario ${userName} ha iniciado una nueva conversación. Dale la bienvenida de manera cálida y natural. Si hay historial de conversaciones anteriores, menciona sutilmente que recuerdas cosas de antes (sin ser muy específica). Si es su primera vez, dale la bienvenida al programa PRO.`
+        `Saluda al usuario ${userName} de forma muy breve y natural, como un amigo. Solo di "Hola [nombre], ¿qué te trae por aquí hoy?" o algo igual de corto y cálido. NO des información, NO hagas listas, NO menciones el programa. Solo un saludo simple.`
       );
 
       const welcomeMessage = result.finalOutput ||
-        `¡Hola ${userName}! 💚\n\nQué gusto tenerte aquí. Soy Clara, tu compañera en este viaje de salud digestiva.\n\n¿Cómo te encuentras hoy? ¿En qué puedo ayudarte?`;
+        `¡Hola ${userName}! ¿Qué te trae por aquí hoy? 💚`;
 
       // Save welcome message
       await prisma.proMessage.create({

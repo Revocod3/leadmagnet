@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Moon, Sun, Menu, LogOut, BookOpen } from 'lucide-react';
+import { Moon, Sun, Menu, LogOut, BookOpen, MessageSquare } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -7,9 +7,18 @@ import { motion, AnimatePresence } from 'framer-motion';
 interface ChatHeaderProps {
   isDarkMode: boolean;
   onToggleDarkMode: () => void;
+  showConversationsOption?: boolean;
+  onToggleConversations?: () => void;
+  isConversationsSidebarOpen?: boolean;
 }
 
-export const ChatHeader = ({ isDarkMode, onToggleDarkMode }: ChatHeaderProps) => {
+export const ChatHeader = ({
+  isDarkMode,
+  onToggleDarkMode,
+  showConversationsOption = false,
+  onToggleConversations,
+  isConversationsSidebarOpen = false,
+}: ChatHeaderProps) => {
   const navigate = useNavigate();
   const { isAuthenticated, user, logout } = useAuthStore();
   const [showMenu, setShowMenu] = useState(false);
@@ -94,6 +103,22 @@ export const ChatHeader = ({ isDarkMode, onToggleDarkMode }: ChatHeaderProps) =>
 
                       {/* Menu Items */}
                       <div className="py-2">
+                        {/* Mis Conversaciones - Solo para PRO */}
+                        {showConversationsOption && onToggleConversations && (
+                          <button
+                            onClick={() => {
+                              onToggleConversations();
+                              setShowMenu(false);
+                            }}
+                            className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors text-left"
+                          >
+                            <MessageSquare className="w-4 h-4 text-brand-green-600 dark:text-brand-green-400" />
+                            <span className="text-sm font-medium text-neutral-700 dark:text-neutral-200">
+                              {isConversationsSidebarOpen ? 'Ocultar Conversaciones' : 'Mis Conversaciones'}
+                            </span>
+                          </button>
+                        )}
+
                         <button
                           onClick={() => {
                             navigate('/diary');

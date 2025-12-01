@@ -6,6 +6,7 @@ import { ProChat } from './components/pro';
 import { LoginPage } from './pages/LoginPage';
 import { AuthCallback } from './pages/AuthCallback';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
+import { useAuthStore } from './stores/authStore';
 import './styles/globals.css';
 
 // Create a client
@@ -18,14 +19,25 @@ const queryClient = new QueryClient({
   },
 });
 
+// Component that redirects authenticated users from home to chat
+const HomeOrRedirect = () => {
+  const { isAuthenticated } = useAuthStore();
+
+  if (isAuthenticated) {
+    return <Navigate to="/chat" replace />;
+  }
+
+  return <HomePage />;
+};
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <Router>
         <Layout>
           <Routes>
-            {/* Public home - Free diagnostic flow */}
-            <Route path="/" element={<HomePage />} />
+            {/* Home - Redirects to /chat if authenticated, otherwise shows free flow */}
+            <Route path="/" element={<HomeOrRedirect />} />
 
             {/* Public routes */}
             <Route path="/login" element={<LoginPage />} />

@@ -1,28 +1,41 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ChatContainer } from '../components/chat/ChatContainer';
 import { WelcomeModal } from '../components/modals/WelcomeModal';
 import { WelcomeAnimation } from '../components/animations/WelcomeAnimation';
 import { useSessionStore } from '../stores/sessionStore';
+import { useAuthStore } from '../stores/authStore';
 
 /**
  * HomePage - Flujo gratuito sin login
  * Muestra el chat directamente con WelcomeModal overlay en primera visita
+ * Si el usuario está logueado como PRO, redirige a /chat
  */
 export const HomePage = () => {
+  const navigate = useNavigate();
+  const { isAuthenticated, user } = useAuthStore();
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [showWelcomeAnimation, setShowWelcomeAnimation] = useState(false);
   const [capturedUserName, setCapturedUserName] = useState<string>('');
   const { setSession } = useSessionStore();
 
+  // Redirigir usuarios PRO logueados a /chat
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      console.log('🔄 Usuario PRO detectado, redirigiendo a /chat');
+      navigate('/chat', { replace: true });
+    }
+  }, [isAuthenticated, user, navigate]);
+
   useEffect(() => {
     // Check if user has seen the welcome modal before
     const hasSeenWelcome = localStorage.getItem('hasSeenWelcome');
 
-    // Show modal only if user hasn't seen it before
-    if (!hasSeenWelcome) {
+    // Show modal only if user hasn't seen it before AND not authenticated
+    if (!hasSeenWelcome && !isAuthenticated) {
       setShowWelcomeModal(true);
     }
-  }, []);
+  }, [isAuthenticated]);
 
   const handleCloseModal = (userName?: string) => {
     setShowWelcomeModal(false);
