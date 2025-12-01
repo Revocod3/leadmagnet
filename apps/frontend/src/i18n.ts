@@ -3,12 +3,12 @@ import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 
 // Import translations
-import es from '../public/locales/es/translation.json';
-import en from '../public/locales/en/translation.json';
-import fr from '../public/locales/fr/translation.json';
-import de from '../public/locales/de/translation.json';
-import it from '../public/locales/it/translation.json';
-import pt from '../public/locales/pt/translation.json';
+import es from './locales/es/translation.json';
+import en from './locales/en/translation.json';
+import fr from './locales/fr/translation.json';
+import de from './locales/de/translation.json';
+import it from './locales/it/translation.json';
+import pt from './locales/pt/translation.json';
 
 // Lista de idiomas soportados
 export const SUPPORTED_LANGUAGES = {
