@@ -25,6 +25,7 @@ export interface FlowMessage {
   | 'completed';
   question?: DiagnosticQuestion;
   timestamp?: string;
+  isNew?: boolean; // True if message just arrived, should animate
 }
 
 export interface DiagnosticState {

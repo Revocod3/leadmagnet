@@ -75,7 +75,7 @@ export const ChatMessage = forwardRef<HTMLDivElement, ChatMessageProps>(({
                   text={message.content}
                   speed={20}
                   className="font-semibold"
-                  shouldAnimate={isLatest}
+                  shouldAnimate={isLatest && message.isNew !== false}
                 />
               ) : (
                 /* Solo mensajes de usuario en texto plano */

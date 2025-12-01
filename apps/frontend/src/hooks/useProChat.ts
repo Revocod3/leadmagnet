@@ -109,11 +109,13 @@ export const useProChat = (onSubscriptionExpired?: () => void): UseProChatReturn
       const data = await apiClient.getProConversation(conversationId);
 
       // Convert API messages to FlowMessage format
+      // isNew: false because these are loaded from history, not new
       const flowMessages: FlowMessage[] = data.messages.map((msg) => ({
         role: msg.role as 'user' | 'assistant',
         content: msg.content,
-        type: msg.role === 'assistant' ? 'comment' : 'comment', // Use 'comment' for all
+        type: msg.role === 'assistant' ? 'comment' : 'comment',
         timestamp: msg.createdAt,
+        isNew: false, // Don't animate messages loaded from history
       }));
 
       setMessages(flowMessages);
@@ -143,6 +145,7 @@ export const useProChat = (onSubscriptionExpired?: () => void): UseProChatReturn
         content: data.message.content,
         type: 'welcome',
         timestamp: new Date().toISOString(),
+        isNew: true, // Animate new welcome message
       }]);
 
       // Refresh conversation list
@@ -211,6 +214,7 @@ export const useProChat = (onSubscriptionExpired?: () => void): UseProChatReturn
         content: response.content,
         type: 'comment',
         timestamp: new Date().toISOString(),
+        isNew: true, // Animate new assistant response
       };
 
       setMessages((prev) => [...prev, assistantMessage]);
