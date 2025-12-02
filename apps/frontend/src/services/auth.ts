@@ -84,6 +84,36 @@ class AuthService {
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
     return `${API_URL}/api/auth/google`;
   }
+
+  /**
+   * Set password (for users created via webhook)
+   */
+  async setPassword(data: { email: string; password: string; resetToken: string }): Promise<AuthResponse> {
+    try {
+      const response = await apiClient['client'].post('/auth/set-password', data);
+      return response.data;
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.response?.data?.error || 'Failed to set password',
+      };
+    }
+  }
+
+  /**
+   * Request password reset
+   */
+  async requestPasswordReset(email: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const response = await apiClient['client'].post('/auth/request-password-reset', { email });
+      return response.data;
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.response?.data?.error || 'Failed to request password reset',
+      };
+    }
+  }
 }
 
 export const authService = new AuthService();

@@ -2,10 +2,14 @@ import { Request, Response } from 'express';
 import Stripe from 'stripe';
 import { prisma } from '../config/database';
 import type { ApiResponse } from '../types';
+import { emailService } from '../services/email.service';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
   apiVersion: '2024-11-20.acacia',
 });
+
+// Token expiry for password reset (24 hours)
+const PASSWORD_RESET_EXPIRY_MS = 24 * 60 * 60 * 1000;
 
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
 
@@ -142,8 +146,14 @@ export class StripeWebhookController {
       where: { email },
     });
 
+    let isNewUser = false;
+    let resetToken: string | undefined;
+
     if (!user) {
-      // Create new user
+      // Create new user with reset token for password setup
+      isNewUser = true;
+      resetToken = this.generateResetToken();
+      
       console.log('[Stripe Webhook] Creating new user for:', email);
       user = await prisma.user.create({
         data: {
@@ -153,12 +163,14 @@ export class StripeWebhookController {
           stripeCustomerId: customer.id,
           emailVerified: true,
           provider: 'email',
+          passwordResetToken: resetToken,
+          passwordResetExpiry: new Date(Date.now() + PASSWORD_RESET_EXPIRY_MS),
         },
       });
     } else {
       // Update existing user
       console.log('[Stripe Webhook] Updating existing user:', user.id);
-      await prisma.user.update({
+      user = await prisma.user.update({
         where: { id: user.id },
         data: {
           role: 'PRO',
@@ -208,6 +220,33 @@ export class StripeWebhookController {
       plan,
       status: subscription.status,
     });
+
+    // Send welcome email (only on subscription created, not updated)
+    // Check if this is a new subscription by looking at the status
+    if (subscription.status === 'active' || subscription.status === 'trialing') {
+      try {
+        await emailService.sendWelcomeEmail({
+          email,
+          name: user.name || 'Usuario',
+          plan,
+          isNewUser,
+          resetToken,
+        });
+        console.log('[Stripe Webhook] 📧 Welcome email sent to:', email);
+      } catch (emailError) {
+        console.error('[Stripe Webhook] ❌ Failed to send welcome email:', emailError);
+        // Don't throw - subscription is still valid even if email fails
+      }
+    }
+  }
+
+  /**
+   * Generate secure reset token
+   */
+  private generateResetToken(): string {
+    return Math.random().toString(36).substring(2, 15) +
+           Math.random().toString(36).substring(2, 15) +
+           Date.now().toString(36);
   }
 
   /**
