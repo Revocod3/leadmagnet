@@ -15,6 +15,7 @@ import { authMiddleware } from './middleware/auth.middleware';
 import { logger } from './utils/logger';
 import passport from './config/passport';
 import { StripeWebhookController } from './controllers/stripe-webhook.controller';
+import { initializeReminders, stopReminders } from './services/reminder.service';
 
 const app: Express = express();
 
@@ -96,6 +97,9 @@ const gracefulShutdown = async (signal: string) => {
   logger.info(`Received ${signal}, shutting down gracefully...`);
 
   try {
+    // Stop scheduled reminders
+    stopReminders();
+
     // Close database connections
     await prisma.$disconnect();
 
@@ -135,6 +139,14 @@ const server = app.listen(env.PORT, () => {
   logger.info(`🗄️  Database: ${env.DATABASE_URL ? 'Connected' : 'Not configured'}`);
   logger.info(`🤖 OpenAI: ${env.OPENAI_API_KEY ? 'Configured' : 'Not configured'}`);
   logger.info(`🔴 Redis: ${redis ? 'Connected' : 'Not configured'}`);
+
+  // Initialize scheduled reminders (push notifications)
+  if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+    initializeReminders();
+    logger.info(`🔔 Push notifications: Configured`);
+  } else {
+    logger.warn(`🔔 Push notifications: Not configured (missing VAPID keys)`);
+  }
 });
 
 // Handle server errors

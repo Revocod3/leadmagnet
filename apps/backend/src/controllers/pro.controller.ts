@@ -384,6 +384,83 @@ export class ProController {
       } as ApiResponse);
     }
   }
+
+  /**
+   * GET /api/pro/progress - Get user's Clara Premium progress
+   */
+  async getProgress(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = req.user?.userId;
+
+      if (!userId) {
+        res.status(401).json({
+          success: false,
+          error: 'Authentication required',
+        } as ApiResponse);
+        return;
+      }
+
+      // Get global context
+      const context = await prisma.userGlobalContext.findUnique({
+        where: { userId }
+      });
+
+      // Get counts
+      const [conversationCount, messageCount, diaryCount, challengesCompleted] = await Promise.all([
+        prisma.proConversation.count({ where: { userId } }),
+        prisma.proMessage.count({
+          where: {
+            conversation: { userId }
+          }
+        }),
+        prisma.diaryEntry.count({ where: { userId } }),
+        prisma.userChallenge.count({
+          where: { userId, status: 'COMPLETED' }
+        })
+      ]);
+
+      // Calculate days active
+      const firstActivity = await prisma.proConversation.findFirst({
+        where: { userId },
+        orderBy: { createdAt: 'asc' },
+        select: { createdAt: true }
+      });
+
+      const daysActive = firstActivity
+        ? Math.ceil((Date.now() - firstActivity.createdAt.getTime()) / (1000 * 60 * 60 * 24))
+        : 0;
+
+      res.json({
+        success: true,
+        data: {
+          phase: context?.currentPhase || 'onboarding',
+          phaseStartDate: context?.programStartDate || null,
+          radiographyComplete: context?.radiographyCompleted || false,
+          stats: {
+            conversationCount,
+            messageCount,
+            diaryEntries: diaryCount,
+            challengesCompleted,
+            daysActive
+          },
+          context: context ? {
+            mainSymptoms: context.digestiveProfile ? (context.digestiveProfile as Record<string, unknown>).symptoms : null,
+            dietaryProfile: context.habitsProfile ? JSON.stringify(context.habitsProfile) : null,
+            stressLevel: context.emotionalProfile ? (context.emotionalProfile as Record<string, unknown>).stressLevel : null,
+            digestiveGoals: Array.isArray(context.goals) ? context.goals : [],
+            knownTriggers: Array.isArray(context.identifiedTriggers) ? context.identifiedTriggers : [],
+            improvements: Array.isArray(context.strengths) ? context.strengths : []
+          } : null
+        }
+      } as ApiResponse);
+    } catch (error) {
+      logger.error('Error getting progress:', { error });
+      res.status(500).json({
+        success: false,
+        error: 'Error retrieving progress',
+      } as ApiResponse);
+    }
+  }
 }
 
 export const proController = new ProController();

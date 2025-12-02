@@ -18,6 +18,9 @@ router.use(authenticateJWT);
 // GET /api/pro/status - Get user's PRO status and subscription info (no subscription check)
 router.get('/status', proController.getStatus.bind(proController));
 
+// GET /api/pro/progress - Get user's Clara Premium progress data
+router.get('/progress', proController.getProgress.bind(proController));
+
 // GET /api/pro/conversations - List all conversations (allowed for all authenticated users)
 router.get('/conversations', proController.listConversations.bind(proController));
 

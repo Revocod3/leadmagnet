@@ -30,10 +30,18 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  sessions      Session[]
-  diagnoses     Diagnosis[]
-  subscriptions Subscription[]
-  conversations ProConversation[]  // PRO user conversations
+  sessions           Session[]
+  diagnoses          Diagnosis[]
+  subscriptions      Subscription[]
+  conversations      ProConversation[]  // PRO user conversations
+  
+  // Clara Premium models
+  globalContext      UserGlobalContext?
+  diaryEntries       DiaryEntry[]
+  dailyCheckIns      DailyCheckIn[]
+  userChallenges     UserChallenge[]
+  pushSubscriptions  PushSubscription[]
+  reminders          Reminder[]
 
   @@map("users")
 }
@@ -277,4 +285,216 @@ model Subscription {
   @@index([stripeCustomerId])
   @@index([status])
   @@map("subscriptions")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CLARA PREMIUM MODELS - Global context, diary, challenges, notifications
+// ═══════════════════════════════════════════════════════════════
+
+// Global context that persists across ALL conversations for a user
+model UserGlobalContext {
+  id                    String   @id @default(cuid())
+  userId                String   @unique
+
+  // User profiles extracted from conversations
+  digestiveProfile      Json     @default("{}") // { symptoms, patterns, triggers, intolerances }
+  emotionalProfile      Json     @default("{}") // { stressLevel, emotionalPatterns, gutBrainConnection }
+  culturalProfile       Json     @default("{}") // { country, timezone, foodCulture, mealSchedule, religion }
+  habitsProfile         Json     @default("{}") // { eatingSpeed, cookingAbility, hydration, exercise, sleep }
+  medicalHistory        Json     @default("{}") // { diagnoses, medications, surgeries, allergies }
+  
+  // Goals and progress
+  goals                 Json     @default("[]") // Array of user goals
+  identifiedTriggers    Json     @default("[]") // Foods/situations that cause issues
+  strengths             Json     @default("[]") // User's identified strengths
+  
+  // Program tracking
+  currentPhase          String   @default("onboarding") // "onboarding" | "week1" | "week2" | "week3" | "week4" | "maintenance"
+  weekNumber            Int      @default(0)
+  daysInProgram         Int      @default(0)
+  programStartDate      DateTime?
+  
+  // Radiografía Premium
+  radiographyCompleted  Boolean  @default(false)
+  radiographyContent    String?  @db.Text  // The generated radiography
+  radiographyDate       DateTime?
+  
+  // User personality/style for adaptation
+  personalityType       String?  // "timido" | "extrovertido" | "emocional" | "racional" | "esceptico" | etc.
+  communicationStyle    Json     @default("{}") // { formality, verbosity, emotionLevel, preferredTone }
+  
+  // Last interaction tracking
+  lastCheckInDate       DateTime?
+  lastDiaryEntryDate    DateTime?
+  consecutiveDays       Int      @default(0)  // Days in a row user has interacted
+  
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("user_global_contexts")
+}
+
+// Daily diary entries written by the user
+model DiaryEntry {
+  id          String   @id @default(cuid())
+  userId      String
+  
+  // Content
+  content     String   @db.Text  // User's diary text
+  
+  // Quick metrics (1-10 scale)
+  mood        Int?     // 1-10 emotional state
+  bloating    Int?     // 1-10 abdominal bloating
+  energy      Int?     // 1-10 energy level
+  stress      Int?     // 1-10 stress level
+  
+  // Detailed tracking
+  symptoms    Json     @default("[]") // Array of symptoms experienced
+  meals       Json     @default("[]") // What they ate today
+  
+  // Clara's response/notes on the entry
+  claraNotes  String?  @db.Text
+  
+  // Date tracking
+  date        DateTime @db.Date  // The date this entry is for
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])  // One entry per day per user
+  @@index([userId])
+  @@index([date])
+  @@map("diary_entries")
+}
+
+// Daily check-ins for the 4-route system
+model DailyCheckIn {
+  id                    String   @id @default(cuid())
+  userId                String
+  date                  DateTime @db.Date
+  
+  // 4 routes tracking
+  digestiveStatus       String?  // How was your belly today?
+  emotionalStatus       String?  // How did you feel emotionally?
+  microActionCompleted  Boolean  @default(false)  // Did they complete today's action?
+  microActionNotes      String?  // Notes about the micro action
+  
+  // Celebration tracking
+  celebrationGiven      Boolean  @default(false)  // Did Clara celebrate their progress?
+  
+  notes                 String?  @db.Text
+  createdAt             DateTime @default(now())
+
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@index([userId])
+  @@index([date])
+  @@map("daily_check_ins")
+}
+
+// Catalog of micro-challenges
+model MicroChallenge {
+  id            String   @id @default(cuid())
+  
+  // Challenge details
+  title         String   @unique  // e.g., "Respiración antes de comer"
+  description   String   @db.Text  // Detailed description
+  category      String   // "breathing" | "eating" | "hydration" | "mindfulness" | "movement"
+  durationDays  Int      @default(1)  // How many days for this challenge
+  
+  // Difficulty and targeting
+  difficulty    String   @default("easy")  // "easy" | "medium" | "hard"
+  targetPhase   String?  // Which phase this is good for, null = any
+  points        Int      @default(10) // Points earned for completion
+  
+  // Instructions Clara should give
+  instructions  String   @db.Text  // What Clara tells the user
+  followUpQuestion String @db.Text // Question Clara asks after
+  
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+
+  userChallenges UserChallenge[]
+
+  @@map("micro_challenges")
+}
+
+// User's assigned challenges
+model UserChallenge {
+  id            String    @id @default(cuid())
+  userId        String
+  challengeId   String
+  
+  // Status tracking
+  status        String    @default("assigned")  // "assigned" | "in_progress" | "completed" | "skipped"
+  assignedAt    DateTime  @default(now())
+  startedAt     DateTime?
+  completedAt   DateTime?
+  
+  // User feedback
+  feedback      String?   @db.Text  // How did they feel about it?
+  rating        Int?      // 1-5 how helpful was it
+  notes         String?   @db.Text  // Notes about completion
+  pointsEarned  Int?      // Points earned (may include bonuses)
+  
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  challenge     MicroChallenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([challengeId])
+  @@index([status])
+  @@map("user_challenges")
+}
+
+// Web Push subscriptions for notifications
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  
+  // Web Push subscription data
+  endpoint  String   @unique
+  p256dh    String   // Public key
+  auth      String   // Auth secret
+  
+  // Device info
+  userAgent String?
+  
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("push_subscriptions")
+}
+
+// User reminder preferences
+model Reminder {
+  id             String   @id @default(cuid())
+  userId         String
+  
+  // Reminder type
+  type           String   // "diary" | "checkin" | "challenge" | "motivation"
+  
+  // Scheduling
+  preferredTime  String   // HH:MM format in user's timezone
+  timezone       String   @default("Europe/Madrid")
+  enabled        Boolean  @default(true)
+  
+  // Tracking
+  lastSentAt     DateTime?
+  
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type])  // One reminder per type per user
+  @@index([userId])
+  @@index([enabled])
+  @@map("reminders")
 }

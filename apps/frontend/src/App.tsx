@@ -2,7 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'r
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Layout } from './components/layout/Layout';
 import { HomePage } from './pages/HomePage';
-import { ProChat } from './components/pro';
+import { ProPremiumContainer } from './components/pro';
 import { LoginPage } from './pages/LoginPage';
 import { AuthCallback } from './pages/AuthCallback';
 import { SetPasswordPage } from './pages/SetPasswordPage';
@@ -28,21 +28,21 @@ const HomeOrRedirect = () => {
   const { isAuthenticated } = useAuthStore();
 
   if (isAuthenticated) {
-    return <Navigate to="/chat" replace />;
+    return <Navigate to="/pro" replace />;
   }
 
   return <HomePage />;
 };
 
-// Wrapper component for ProChat with subscription redirect
-const ProChatWithRedirect = () => {
+// Wrapper component for ProPremiumContainer with subscription redirect
+const ProPremiumWithRedirect = () => {
   const navigate = useNavigate();
 
   const handleSubscriptionExpired = () => {
     navigate('/pricing');
   };
 
-  return <ProChat onSubscriptionExpired={handleSubscriptionExpired} />;
+  return <ProPremiumContainer onSubscriptionExpired={handleSubscriptionExpired} />;
 };
 
 function App() {
@@ -51,7 +51,7 @@ function App() {
       <Router>
         <Layout>
           <Routes>
-            {/* Home - Redirects to /chat if authenticated, otherwise shows free flow */}
+            {/* Home - Redirects to /pro if authenticated, otherwise shows free flow */}
             <Route path="/" element={<HomeOrRedirect />} />
 
             {/* Public routes */}
@@ -62,15 +62,18 @@ function App() {
             <Route path="/pricing" element={<PricingPage />} />
             <Route path="/suscripcion" element={<PricingPage />} />
 
-            {/* Protected routes - Clara PRO (completely separate from FREE flow) */}
+            {/* Protected routes - Clara Premium with tabs */}
             <Route
-              path="/chat"
+              path="/pro"
               element={
                 <ProtectedRoute>
-                  <ProChatWithRedirect />
+                  <ProPremiumWithRedirect />
                 </ProtectedRoute>
               }
             />
+
+            {/* Legacy route redirect */}
+            <Route path="/chat" element={<Navigate to="/pro" replace />} />
 
             {/* Redirect all other routes to home */}
             <Route path="*" element={<Navigate to="/" replace />} />

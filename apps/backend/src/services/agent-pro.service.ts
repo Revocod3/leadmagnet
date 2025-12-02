@@ -1,27 +1,37 @@
 /**
- * Agent PRO Service - Clara PRO for subscribed users
+ * Agent PRO Service - Clara Premium for subscribed users
  *
- * Separate agent with its own instructions, no diagnosis flow.
- * Supports multiple conversations per user with context summaries.
+ * Integrates with global context for persistent memory across conversations.
+ * Supports the Clara Premium flow: onboarding → radiography → daily support.
  */
 
 import { Agent, run } from '@openai/agents';
 import { prisma } from '../config/database';
-import { CLARA_PRO_INSTRUCTIONS, buildDynamicInstructionsPro } from '../config/assistant-instructions-pro';
+import {
+  CLARA_PREMIUM_INSTRUCTIONS,
+  WELCOME_MESSAGE_TEMPLATE,
+  buildDynamicInstructionsPro,
+  buildGlobalContextSection,
+  type ClaraPremiumContext
+} from '../config/assistant-instructions-pro';
+import { globalContextService } from './global-context.service';
 import { logger } from '../utils/logger';
 import OpenAI from 'openai';
 
 const openai = new OpenAI();
 
+// Extract context every N messages
+const CONTEXT_EXTRACTION_INTERVAL = 8;
+
 export class AgentProService {
-  private claraProAgent: Agent;
+  private claraPremiumAgent: Agent;
 
   constructor() {
-    // Clara PRO Agent - No diagnosis handoff, focused on ongoing support
-    this.claraProAgent = new Agent({
-      name: 'ClaraPRO',
-      instructions: CLARA_PRO_INSTRUCTIONS,
-      model: 'gpt-5-mini-2025-08-07',
+    // Clara Premium Agent - Full 24/7 support
+    this.claraPremiumAgent = new Agent({
+      name: 'ClaraPremium',
+      instructions: CLARA_PREMIUM_INSTRUCTIONS,
+      model: 'gpt-4o-mini',
     });
   }
 
@@ -34,37 +44,23 @@ export class AgentProService {
   ): Promise<{
     conversationId: string;
     welcomeMessage: string;
+    isFirstConversation: boolean;
   }> {
     try {
-      // Get user's previous conversations for context
-      const previousConversations = await prisma.proConversation.findMany({
-        where: { userId },
-        orderBy: { lastMessageAt: 'desc' },
-        take: 5,
-        select: {
-          id: true,
-          title: true,
-          summary: true,
-          lastMessageAt: true,
-        },
-      });
+      // Get or create global context
+      const globalContext = await globalContextService.getOrCreateContext(userId);
 
-      // Build context from previous conversations
-      let contextFromHistory = '';
-      if (previousConversations.length > 0) {
-        contextFromHistory = `
-══════════════════════════════════════════════════════════════
-📚 HISTORIAL DE CONVERSACIONES ANTERIORES
-══════════════════════════════════════════════════════════════
+      // Check if this is the first conversation
+      const isFirstConversation = await globalContextService.isFirstConversation(userId);
 
-${previousConversations
-            .filter(c => c.summary)
-            .map(c => `• "${c.title || 'Conversación'}": ${c.summary}`)
-            .join('\n')}
+      // Update phase based on progress
+      await globalContextService.updatePhase(userId);
 
-IMPORTANTE: Usa este contexto para dar continuidad. El usuario no debería repetirte cosas que ya te contó.
-`;
-      }
+      // Get recent diary entries
+      const recentDiaryEntries = await globalContextService.getRecentDiaryEntries(userId);
+
+      // Get current challenge
+      const currentChallenge = await globalContextService.getCurrentChallenge(userId);
 
       // Create new conversation in database
       const conversation = await prisma.proConversation.create({
@@ -74,26 +70,70 @@ IMPORTANTE: Usa este contexto para dar continuidad. El usuario no debería repet
         },
       });
 
-      // Build dynamic instructions
-      const dynamicInstructions = buildDynamicInstructionsPro({
+      // Build context for Clara
+      const contextData: ClaraPremiumContext = {
         userName,
-      });
+        userId,
+        digestiveProfile: globalContext.digestiveProfile as Record<string, unknown>,
+        emotionalProfile: globalContext.emotionalProfile as Record<string, unknown>,
+        culturalProfile: globalContext.culturalProfile as Record<string, unknown>,
+        habitsProfile: globalContext.habitsProfile as Record<string, unknown>,
+        medicalHistory: globalContext.medicalHistory as Record<string, unknown>,
+        goals: globalContext.goals as string[],
+        identifiedTriggers: globalContext.identifiedTriggers as string[],
+        strengths: globalContext.strengths as string[],
+        currentPhase: globalContext.currentPhase,
+        weekNumber: globalContext.weekNumber,
+        daysInProgram: globalContext.daysInProgram,
+        radiographyCompleted: globalContext.radiographyCompleted,
+        ...(globalContext.personalityType && { personalityType: globalContext.personalityType }),
+        communicationStyle: globalContext.communicationStyle as Record<string, unknown>,
+        consecutiveDays: globalContext.consecutiveDays,
+        ...(currentChallenge && { currentChallenge }),
+        recentDiaryEntries,
+        isFirstConversation,
+      };
 
-      // Create Clara PRO with context
-      const claraWithContext = new Agent({
-        name: 'ClaraPRO',
-        instructions: `${CLARA_PRO_INSTRUCTIONS}\n\n${dynamicInstructions}\n\n${contextFromHistory}`,
-        model: 'gpt-5-mini-2025-08-07',
-      });
-
-      // Generate welcome message - simple and natural like a friend
-      const result = await run(
-        claraWithContext,
-        `Saluda al usuario ${userName} de forma muy breve y natural, como un amigo. Solo di "Hola [nombre], ¿qué te trae por aquí hoy?" o algo igual de corto y cálido. NO des información, NO hagas listas, NO menciones el programa. Solo un saludo simple.`
+      // Build instructions with global context
+      const formattedGlobalContext = await globalContextService.getFormattedContext(userId);
+      const dynamicInstructions = buildDynamicInstructionsPro(contextData);
+      const globalContextSection = buildGlobalContextSection(
+        isFirstConversation ? null : globalContext as unknown as Record<string, unknown>
       );
 
-      const welcomeMessage = result.finalOutput ||
-        `¡Hola ${userName}! ¿Qué te trae por aquí hoy? 💚`;
+      // Create Clara Premium with full context
+      const fullInstructions = CLARA_PREMIUM_INSTRUCTIONS
+        .replace('{{GLOBAL_CONTEXT}}', globalContextSection)
+        .replace('{{DYNAMIC_INSTRUCTIONS}}', dynamicInstructions);
+
+      const claraWithContext = new Agent({
+        name: 'ClaraPremium',
+        instructions: fullInstructions,
+        model: 'gpt-4o-mini',
+      });
+
+      // Generate welcome message based on whether it's first conversation
+      let welcomeMessage: string;
+
+      if (isFirstConversation && !globalContext.radiographyCompleted) {
+        // First time user - use official welcome message
+        welcomeMessage = WELCOME_MESSAGE_TEMPLATE.replace(/\{\{nombre\}\}/g, userName);
+      } else {
+        // Returning user - generate contextual greeting
+        const result = await run(
+          claraWithContext,
+          `El usuario ${userName} vuelve al chat. Genera un saludo breve y cálido (máximo 3 líneas) que:
+1. Le dé la bienvenida de vuelta
+2. Mencione algo del contexto si es relevante (fase actual, último tema, reto activo)
+3. Pregunte cómo está hoy
+
+Contexto actual:
+${formattedGlobalContext}
+
+Recuerda: máximo 1 emoji, tono cálido pero profesional.`
+        );
+        welcomeMessage = result.finalOutput || `¡Hola ${userName}! 💖 ¿Cómo te encuentras hoy?`;
+      }
 
       // Save welcome message
       await prisma.proMessage.create({
@@ -113,14 +153,15 @@ IMPORTANTE: Usa este contexto para dar continuidad. El usuario no debería repet
         },
       });
 
-      logger.info(`PRO conversation started for user ${userId}, conversation ${conversation.id}`);
+      logger.info(`Clara Premium conversation started for user ${userId}, conversation ${conversation.id}, firstConvo: ${isFirstConversation}`);
 
       return {
         conversationId: conversation.id,
         welcomeMessage,
+        isFirstConversation,
       };
     } catch (error) {
-      logger.error('Error starting PRO conversation:', { error });
+      logger.error('Error starting Clara Premium conversation:', { error });
       throw error;
     }
   }
@@ -170,7 +211,7 @@ IMPORTANTE: Usa este contexto para dar continuidad. El usuario no debería repet
         },
       };
     } catch (error) {
-      logger.error('Error continuing PRO conversation:', { error });
+      logger.error('Error continuing Clara Premium conversation:', { error });
       throw error;
     }
   }
@@ -186,25 +227,16 @@ IMPORTANTE: Usa este contexto para dar continuidad. El usuario no debería repet
   ): Promise<{
     message: string;
     shouldGenerateTitle: boolean;
+    shouldExtractContext: boolean;
   }> {
     try {
-      // Verify conversation ownership and get context
+      // Get conversation with messages
       const conversation = await prisma.proConversation.findUnique({
         where: { id: conversationId },
         include: {
           messages: {
             orderBy: { createdAt: 'asc' },
             take: 50, // Last 50 messages for context
-          },
-          user: {
-            include: {
-              conversations: {
-                where: { id: { not: conversationId } },
-                orderBy: { lastMessageAt: 'desc' },
-                take: 3,
-                select: { summary: true, title: true },
-              },
-            },
           },
         },
       });
@@ -226,44 +258,62 @@ IMPORTANTE: Usa este contexto para dar continuidad. El usuario no debería repet
         },
       });
 
-      // Build message history for OpenAI
+      // Get global context
+      const globalContext = await globalContextService.getOrCreateContext(userId);
+
+      // Get additional context
+      const recentDiaryEntries = await globalContextService.getRecentDiaryEntries(userId);
+      const currentChallenge = await globalContextService.getCurrentChallenge(userId);
+      const isFirstConversation = await globalContextService.isFirstConversation(userId);
+
+      // Build context for Clara
+      const contextData: ClaraPremiumContext = {
+        userName,
+        userId,
+        digestiveProfile: globalContext.digestiveProfile as Record<string, unknown>,
+        emotionalProfile: globalContext.emotionalProfile as Record<string, unknown>,
+        culturalProfile: globalContext.culturalProfile as Record<string, unknown>,
+        habitsProfile: globalContext.habitsProfile as Record<string, unknown>,
+        medicalHistory: globalContext.medicalHistory as Record<string, unknown>,
+        goals: globalContext.goals as string[],
+        identifiedTriggers: globalContext.identifiedTriggers as string[],
+        strengths: globalContext.strengths as string[],
+        currentPhase: globalContext.currentPhase,
+        weekNumber: globalContext.weekNumber,
+        daysInProgram: globalContext.daysInProgram,
+        radiographyCompleted: globalContext.radiographyCompleted,
+        ...(globalContext.personalityType && { personalityType: globalContext.personalityType }),
+        communicationStyle: globalContext.communicationStyle as Record<string, unknown>,
+        consecutiveDays: globalContext.consecutiveDays,
+        ...(currentChallenge && { currentChallenge }),
+        recentDiaryEntries,
+        isFirstConversation,
+      };
+
+      // Build full instructions
+      const dynamicInstructions = buildDynamicInstructionsPro(contextData);
+      const globalContextSection = buildGlobalContextSection(
+        globalContext as unknown as Record<string, unknown>
+      );
+
+      const fullInstructions = CLARA_PREMIUM_INSTRUCTIONS
+        .replace('{{GLOBAL_CONTEXT}}', globalContextSection)
+        .replace('{{DYNAMIC_INSTRUCTIONS}}', dynamicInstructions);
+
+      // Create Clara with context
+      const claraWithContext = new Agent({
+        name: 'ClaraPremium',
+        instructions: fullInstructions,
+        model: 'gpt-4o-mini',
+      });
+
+      // Build conversation history
       const messageHistory = conversation.messages.map(m => ({
         role: m.role as 'user' | 'assistant',
         content: m.content,
       }));
 
-      // Add context from other conversations
-      let otherConversationsContext = '';
-      if (conversation.user?.conversations && conversation.user.conversations.length > 0) {
-        const summaries = conversation.user.conversations
-          .filter(c => c.summary)
-          .map(c => `• ${c.title || 'Conversación anterior'}: ${c.summary}`);
-
-        if (summaries.length > 0) {
-          otherConversationsContext = `
-
-══════════════════════════════════════════════════════════════
-📚 CONTEXTO DE OTRAS CONVERSACIONES
-══════════════════════════════════════════════════════════════
-
-${summaries.join('\n')}
-`;
-        }
-      }
-
-      // Build dynamic instructions
-      const dynamicInstructions = buildDynamicInstructionsPro({
-        userName,
-      });
-
-      // Create Clara PRO with full context
-      const claraWithContext = new Agent({
-        name: 'ClaraPRO',
-        instructions: `${CLARA_PRO_INSTRUCTIONS}\n\n${dynamicInstructions}${otherConversationsContext}`,
-        model: 'gpt-5-mini-2025-08-07',
-      });
-
-      // Build conversation context as a string (SDK expects string input)
+      // Build conversation context as string
       const conversationContext = messageHistory
         .map(m => `${m.role === 'user' ? 'Usuario' : 'Clara'}: ${m.content}`)
         .join('\n\n');
@@ -272,7 +322,7 @@ ${summaries.join('\n')}
         ? `${conversationContext}\n\nUsuario: ${userMessage}`
         : userMessage;
 
-      // Run agent with conversation history
+      // Run agent
       const result = await run(claraWithContext, fullInput);
 
       const assistantMessage = result.finalOutput || 'Lo siento, hubo un error. ¿Puedes repetirme eso?';
@@ -296,19 +346,71 @@ ${summaries.join('\n')}
         },
       });
 
-      // Determine if we should generate title (after first user message exchange)
+      // Determine if we should extract context (every N messages)
+      const shouldExtractContext = newMessageCount % CONTEXT_EXTRACTION_INTERVAL === 0;
+
+      // If we should extract, do it asynchronously (don't block response)
+      if (shouldExtractContext) {
+        this.extractContextAsync(userId, [
+          ...messageHistory,
+          { role: 'user', content: userMessage },
+          { role: 'assistant', content: assistantMessage }
+        ]);
+      }
+
+      // Check if this looks like a radiography response (long, structured message)
+      if (this.isRadiographyMessage(assistantMessage)) {
+        await globalContextService.completeRadiography(userId, assistantMessage);
+      }
+
+      // Determine if we should generate title
       const shouldGenerateTitle = !conversation.title && newMessageCount >= 2;
 
-      logger.info(`PRO message processed for conversation ${conversationId}`);
+      logger.info(`Clara Premium message processed for conversation ${conversationId}`);
 
       return {
         message: assistantMessage,
         shouldGenerateTitle,
+        shouldExtractContext,
       };
     } catch (error) {
-      logger.error('Error processing PRO message:', { error });
+      logger.error('Error processing Clara Premium message:', { error });
       throw error;
     }
+  }
+
+  /**
+   * Extract context asynchronously (non-blocking)
+   */
+  private extractContextAsync(
+    userId: string,
+    messages: Array<{ role: string; content: string }>
+  ): void {
+    globalContextService.extractAndUpdateContext(userId, messages)
+      .then(() => logger.info(`Context extracted for user ${userId}`))
+      .catch(err => logger.error('Error extracting context:', { error: err, userId }));
+  }
+
+  /**
+   * Check if a message looks like a radiography (long, structured diagnosis)
+   */
+  private isRadiographyMessage(message: string): boolean {
+    const indicators = [
+      'Gracias por confiar',
+      'Radiografía',
+      'perfil digestivo',
+      'perfil emocional',
+      'puntos fuertes',
+      'fortalezas',
+      'paso a paso'
+    ];
+
+    const matchCount = indicators.filter(ind =>
+      message.toLowerCase().includes(ind.toLowerCase())
+    ).length;
+
+    // If message is long and contains multiple indicators
+    return message.length > 500 && matchCount >= 3;
   }
 
   /**
@@ -321,7 +423,7 @@ ${summaries.join('\n')}
         include: {
           messages: {
             orderBy: { createdAt: 'asc' },
-            take: 6, // First 6 messages for title generation
+            take: 6,
           },
         },
       });
@@ -351,7 +453,6 @@ ${summaries.join('\n')}
 
       const title = completion.choices[0]?.message?.content?.trim() || 'Nueva conversación';
 
-      // Update conversation with title
       await prisma.proConversation.update({
         where: { id: conversationId },
         data: { title },
@@ -367,7 +468,7 @@ ${summaries.join('\n')}
   }
 
   /**
-   * Generate/update summary for a conversation
+   * Generate/update summary for a conversation and extract context
    */
   async generateSummary(conversationId: string): Promise<string> {
     try {
@@ -418,7 +519,15 @@ El resumen será usado para dar contexto a futuras conversaciones. Solo responde
         data: { summary },
       });
 
-      logger.info(`Summary generated for conversation ${conversationId}`);
+      // Also extract and update global context from this conversation
+      const messages = conversation.messages.map(m => ({
+        role: m.role,
+        content: m.content
+      }));
+
+      await globalContextService.extractAndUpdateContext(conversation.userId, messages);
+
+      logger.info(`Summary generated and context extracted for conversation ${conversationId}`);
 
       return summary;
     } catch (error) {
@@ -483,6 +592,31 @@ El resumen será usado para dar contexto a futuras conversaciones. Solo responde
       logger.error('Error deleting conversation:', { error });
       throw error;
     }
+  }
+
+  /**
+   * Get user's global context summary (for frontend display)
+   */
+  async getUserContextSummary(userId: string): Promise<{
+    currentPhase: string;
+    weekNumber: number;
+    daysInProgram: number;
+    consecutiveDays: number;
+    radiographyCompleted: boolean;
+    goalsCount: number;
+    triggersCount: number;
+  }> {
+    const context = await globalContextService.getOrCreateContext(userId);
+
+    return {
+      currentPhase: context.currentPhase,
+      weekNumber: context.weekNumber,
+      daysInProgram: context.daysInProgram,
+      consecutiveDays: context.consecutiveDays,
+      radiographyCompleted: context.radiographyCompleted,
+      goalsCount: (context.goals as string[])?.length || 0,
+      triggersCount: (context.identifiedTriggers as string[])?.length || 0,
+    };
   }
 }
 
