@@ -49,6 +49,14 @@ export class EmailService {
    * Send welcome email to new PRO subscriber
    */
   async sendWelcomeEmail(data: WelcomeEmailData): Promise<boolean> {
+    console.log('[EmailService] sendWelcomeEmail called with:', {
+      email: data.email,
+      name: data.name,
+      plan: data.plan,
+      isNewUser: data.isNewUser,
+      hasResetToken: !!data.resetToken,
+    });
+    
     const { email, name, plan, isNewUser, resetToken } = data;
 
     const subject = isNewUser
