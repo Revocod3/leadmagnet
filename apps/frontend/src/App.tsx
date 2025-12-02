@@ -7,9 +7,11 @@ import { LoginPage } from './pages/LoginPage';
 import { AuthCallback } from './pages/AuthCallback';
 import { SetPasswordPage } from './pages/SetPasswordPage';
 import { WelcomePage } from './pages/WelcomePage';
+import { PricingPage } from './pages/PricingPage';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { useAuthStore } from './stores/authStore';
 import './styles/globals.css';
+import './styles/pricing.css';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -46,6 +48,8 @@ function App() {
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/set-password" element={<SetPasswordPage />} />
             <Route path="/welcome" element={<WelcomePage />} />
+            <Route path="/pricing" element={<PricingPage />} />
+            <Route path="/suscripcion" element={<PricingPage />} />
 
             {/* Protected routes - Clara PRO (completely separate from FREE flow) */}
             <Route
