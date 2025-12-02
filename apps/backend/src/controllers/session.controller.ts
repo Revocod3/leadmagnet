@@ -8,14 +8,60 @@ const validationService = new ValidationService();
 export class SessionController {
   async createSession(req: Request, res: Response): Promise<void> {
     try {
-      const { userName, userEmail, language, wordpressLeadId }: CreateSessionRequest = req.body;
+      const { userName, userEmail, language, wordpressLeadId, userId }: CreateSessionRequest & { userId?: string } = req.body;
 
       console.log('📝 CREATE SESSION - Request body:', {
+        userId: userId || '❌ NO (FREE USER)',
         userName,
         userEmail: userEmail || '⚠️ NO PROPORCIONADO (OPCIONAL)',
         language,
         wordpressLeadId: wordpressLeadId || '❌ NO ENVIADO',
       });
+
+      // Si es usuario PRO (tiene userId), buscar sesión existente primero
+      if (userId) {
+        console.log('🔍 Usuario PRO detectado, buscando sesión existente...');
+
+        const existingSession = await prisma.session.findFirst({
+          where: {
+            userId,
+            expiresAt: {
+              gt: new Date(), // Solo sesiones no expiradas
+            },
+          },
+          orderBy: {
+            startTime: 'desc', // La más reciente primero
+          },
+        });
+
+        if (existingSession) {
+          console.log('✅ SESIÓN EXISTENTE ENCONTRADA:', {
+            id: existingSession.id,
+            userName: existingSession.userName,
+            startTime: existingSession.startTime,
+          });
+
+          const sessionData: SessionData = {
+            id: existingSession.id,
+            ...(existingSession.userId && { userId: existingSession.userId }),
+            ...(existingSession.userName && { userName: existingSession.userName }),
+            ...(existingSession.userEmail && { userEmail: existingSession.userEmail }),
+            language: existingSession.language as any,
+            step: existingSession.step as any,
+            startTime: existingSession.startTime,
+            ...(existingSession.completionTime && { completionTime: existingSession.completionTime }),
+            expiresAt: existingSession.expiresAt,
+          };
+
+          res.json({
+            success: true,
+            data: sessionData,
+          } as ApiResponse<SessionData>);
+          return;
+        }
+
+        console.log('📝 No hay sesión existente, creando nueva para usuario PRO...');
+      }
 
       // Validate input - Name is required, email is optional
       if (!userName) {
@@ -53,6 +99,7 @@ export class SessionController {
 
       const session = await prisma.session.create({
         data: {
+          userId: userId || null,
           userName: userName || null,
           userEmail: userEmail || null,
           language: language || 'es',
@@ -63,12 +110,14 @@ export class SessionController {
 
       console.log('✅ SESSION CREATED:', {
         id: session.id,
+        userId: session.userId || 'N/A (FREE)',
         userName: session.userName,
         wordpressLeadId: session.wordpressLeadId || '❌ NO GUARDADO',
       });
 
       const sessionData: SessionData = {
         id: session.id,
+        ...(session.userId && { userId: session.userId }),
         ...(session.userName && { userName: session.userName }),
         ...(session.userEmail && { userEmail: session.userEmail }),
         language: session.language as any,

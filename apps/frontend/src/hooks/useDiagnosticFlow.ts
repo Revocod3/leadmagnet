@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { diagnosticContent, type DiagnosticQuestion } from '../constants/diagnosticQuestions';
 import { useSessionStore } from '../stores/sessionStore';
+import { useChatStore } from '../stores/chatStore';
 import { apiClient } from '../services/api';
 
 export type FlowStep =
@@ -24,6 +25,7 @@ export interface FlowMessage {
   | 'completed';
   question?: DiagnosticQuestion;
   timestamp?: string;
+  isNew?: boolean; // True if message just arrived, should animate
 }
 
 export interface DiagnosticState {
@@ -55,6 +57,26 @@ export const useDiagnosticFlow = () => {
   const [etymology, setEtymology] = useState<string>('');
   const [isInitialized, setIsInitialized] = useState(false);
 
+  // Auto-save messages to localStorage when they change (for FREE flow persistence)
+  useEffect(() => {
+    if (messages.length === 0) return;
+
+    const sessionStore = useSessionStore.getState();
+    const chatStore = useChatStore.getState();
+    const sessionId = sessionStore.session?.id;
+
+    if (!sessionId) return;
+
+    // Save current messages to localStorage
+    chatStore.setMessages(messages);
+    chatStore.saveFreeChatState(sessionId, state.step === 'diagnosis_ready');
+
+    // Mark diagnostic as completed if we reached that step
+    if (state.step === 'diagnosis_ready') {
+      chatStore.setDiagnosticCompleted(true);
+    }
+  }, [messages, state.step]);
+
   // Poll for diagnosis when in generating state
   useEffect(() => {
     if (state.step !== 'generating_diagnosis') return;
@@ -63,7 +85,21 @@ export const useDiagnosticFlow = () => {
     const sessionId = sessionStore.session?.id;
     if (!sessionId) return;
 
+    let pollCount = 0;
+    const maxPolls = 30; // 30 polls * 2 seconds = 60 seconds max
+
     const pollInterval = setInterval(async () => {
+      pollCount++;
+
+      // Timeout after maxPolls - diagnosis generation failed or was interrupted
+      if (pollCount >= maxPolls) {
+        console.warn('Diagnosis polling timeout, resetting state');
+        clearInterval(pollInterval);
+        setState((prev) => ({ ...prev, step: 'asking_questions' }));
+        setIsProcessing(false);
+        return;
+      }
+
       try {
         const diagnosisData = await apiClient.getConversationalDiagnosis(sessionId);
 
@@ -78,6 +114,7 @@ export const useDiagnosticFlow = () => {
               content: diagnosisData.content!,
               type: 'diagnosis_ready',
               timestamp: new Date().toISOString(),
+              isNew: true, // Animate diagnosis from polling
             },
           ]);
 
@@ -91,6 +128,11 @@ export const useDiagnosticFlow = () => {
         }
       } catch (error) {
         console.error('Error polling for diagnosis:', error);
+        // If we get an error (e.g. 404), the diagnosis was never started
+        // Reset to normal state
+        clearInterval(pollInterval);
+        setState((prev) => ({ ...prev, step: 'asking_questions' }));
+        setIsProcessing(false);
       }
     }, 2000); // Poll every 2 seconds
 
@@ -100,6 +142,7 @@ export const useDiagnosticFlow = () => {
   // Initialize chat: try to restore history; if empty, request welcome/init
   const initialize = useCallback(async () => {
     const sessionStore = useSessionStore.getState();
+    const chatStore = useChatStore.getState();
     const sessionId = sessionStore.session?.id;
     const userName = sessionStore.session?.userName;
 
@@ -124,47 +167,76 @@ export const useDiagnosticFlow = () => {
     }));
 
     try {
-      // 1) Try to restore chat history first
+      // 0) Check if FREE chat state is expired (24h after diagnosis completed)
+      if (chatStore.isFreeChatExpired()) {
+        console.log('FREE chat state expired, clearing and starting fresh');
+        chatStore.clearFreeChatState();
+        // Also clear the session to force a new one
+        sessionStore.clearSession();
+        return;
+      }
+
+      // 1) Try to restore from localStorage first (fastest)
+      const restoredFromLocal = chatStore.restoreFreeChatState(sessionId);
+      if (restoredFromLocal && chatStore.freeChatState.messages.length > 0) {
+        console.log('✅ Restored chat from localStorage');
+        // Mark all restored messages as not new (don't animate typewriter)
+        const restoredMessages = (chatStore.freeChatState.messages as FlowMessage[]).map(m => ({
+          ...m,
+          isNew: false,
+        }));
+        setMessages(restoredMessages);
+
+        // Check if diagnostic was already completed
+        if (chatStore.freeChatState.diagnosticCompleted) {
+          setState((prev) => ({ ...prev, step: 'diagnosis_ready' }));
+        }
+        return;
+      }
+
+      // 2) Try to restore chat history from server
       try {
         const history = await apiClient.getChatHistory(sessionId);
         if (history && history.length > 0) {
-          setMessages(
-            history.map((m) => ({
-              role: m.role === 'system' ? 'assistant' : (m.role as 'user' | 'assistant'),
-              content: m.content,
-              timestamp: m.timestamp || m.createdAt || new Date().toISOString(),
-            }))
-          );
+          const restoredMessages = history.map((m) => ({
+            role: m.role === 'system' ? 'assistant' : (m.role as 'user' | 'assistant'),
+            content: m.content,
+            timestamp: m.timestamp || m.createdAt || new Date().toISOString(),
+            isNew: false, // Don't animate restored messages
+          })) as FlowMessage[];
+
+          setMessages(restoredMessages);
+
+          // Save to localStorage for future fast restore
+          chatStore.setMessages(restoredMessages);
+          chatStore.saveFreeChatState(sessionId);
+
           return; // History restored; no need to call init
         }
       } catch (historyErr) {
         console.warn('Could not restore chat history, will call init:', historyErr);
       }
 
-      // 2) No history: call backend to initialize diagnostic flow with user name
-      const data = await apiClient.initializeChat(sessionId, sessionStore.language);
+      // 3) No history: call backend to initialize diagnostic flow with user name
+      const welcomeMsg = await apiClient.initializeChat(sessionId, sessionStore.language);
 
-      if (data) {
-        console.log('✅ Mensaje de bienvenida recibido del backend:', data.message.substring(0, 50));
-        // Add welcome message from backend (already personalized with name)
-        setMessages([
+      if (welcomeMsg && welcomeMsg.content) {
+        console.log('✅ Mensaje de bienvenida de Clara V2:', welcomeMsg.content.substring(0, 50));
+        // Add welcome message from backend (Clara V2)
+        const welcomeMessages: FlowMessage[] = [
           {
-            role: 'assistant',
-            content: data.message,
+            role: (welcomeMsg.role === 'system' ? 'assistant' : welcomeMsg.role) || 'assistant',
+            content: welcomeMsg.content,
             type: 'welcome',
-            timestamp: new Date().toISOString(),
+            timestamp: welcomeMsg.timestamp || new Date().toISOString(),
+            isNew: true, // Animate new welcome message
           },
-        ]);
+        ];
+        setMessages(welcomeMessages);
 
-        // Update state with backend state
-        if (data.state) {
-          setState((prev) => ({
-            ...prev,
-            step: data.state.step,
-            currentQuestionIndex: data.state.currentQuestionIndex,
-            language: data.state.language,
-          }));
-        }
+        // Save to localStorage
+        chatStore.setMessages(welcomeMessages);
+        chatStore.saveFreeChatState(sessionId);
       }
     } catch (error) {
       console.error('Error initializing diagnostic:', error);
@@ -176,6 +248,7 @@ export const useDiagnosticFlow = () => {
           content: content.welcomeMessage,
           type: 'welcome',
           timestamp: new Date().toISOString(),
+          isNew: true, // Animate fallback welcome message
         },
       ]);
     }
@@ -254,6 +327,7 @@ export const useDiagnosticFlow = () => {
                 content: response.content,
                 type: 'comment',
                 timestamp: new Date().toISOString(),
+                isNew: true, // Animate new message
               },
             ]);
           }, 500); // Reducido de 500ms a 200ms
@@ -273,6 +347,7 @@ export const useDiagnosticFlow = () => {
                   content: metadata.diagnosisContent,
                   type: 'diagnosis_ready',
                   timestamp: new Date().toISOString(),
+                  isNew: true, // Animate diagnosis
                 },
               ]);
               setState((prev) => ({ ...prev, step: 'diagnosis_ready' }));
@@ -291,6 +366,7 @@ export const useDiagnosticFlow = () => {
             content: response.content,
             type: metadata.type,
             timestamp: new Date().toISOString(),
+            isNew: true, // Animate new assistant message
           };
           setMessages((prev) => [...prev, assistantMsg]);
           setIsProcessing(false);
@@ -306,6 +382,7 @@ export const useDiagnosticFlow = () => {
                 content: metadata.nextQuestion,
                 type: 'question',
                 timestamp: new Date().toISOString(),
+                isNew: true, // Animate next question
               },
             ]);
           }, 1500);
@@ -322,6 +399,7 @@ export const useDiagnosticFlow = () => {
                 ? 'Lo siento, hubo un error. Por favor, intenta de nuevo.'
                 : 'Sorry, there was an error. Please try again.',
             timestamp: new Date().toISOString(),
+            isNew: true, // Animate error message
           },
         ]);
         setIsProcessing(false);

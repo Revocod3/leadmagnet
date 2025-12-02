@@ -16,6 +16,8 @@ interface SessionStore {
   incrementImagesUploaded: () => void;
 }
 
+// Session store unificado - persiste solo sessionId y language
+// El backend maneja la lógica de buscar/crear sesiones basado en userId
 export const useSessionStore = create<SessionStore>()(
   persist(
     (set) => ({
