@@ -36,12 +36,15 @@ app.use(cors({
 // Compression
 app.use(compression());
 
+// Body parsing - with special handling for Stripe webhook
 // Stripe webhook needs raw body for signature verification
-// Apply raw body parser ONLY to Stripe webhook endpoint
-app.use('/api/webhooks/stripe', express.raw({ type: 'application/json' }));
-
-// Body parsing for all other routes
-app.use(express.json({ limit: '10mb' }));
+app.use((req, res, next) => {
+  if (req.originalUrl === '/api/webhooks/stripe') {
+    express.raw({ type: 'application/json' })(req, res, next);
+  } else {
+    express.json({ limit: '10mb' })(req, res, next);
+  }
+});
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Initialize Passport
