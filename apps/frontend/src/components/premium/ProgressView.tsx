@@ -334,21 +334,21 @@ export function ProgressView() {
             </div>
           )}
 
-          {progress.stats.diaryEntries < 3 && (
+          {(progress.stats?.diaryEntries ?? 0) < 3 && (
             <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
               <ChevronRight className="w-4 h-4 text-green-500" />
               Escribe en tu diario para identificar patrones
             </div>
           )}
 
-          {progress.stats.challengesCompleted < 1 && (
+          {(progress.stats?.challengesCompleted ?? 0) < 1 && (
             <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
               <ChevronRight className="w-4 h-4 text-green-500" />
               Acepta tu primer micro-reto
             </div>
           )}
 
-          {progress.radiographyComplete && progress.stats.diaryEntries >= 3 && (
+          {progress.radiographyComplete && (progress.stats?.diaryEntries ?? 0) >= 3 && (
             <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
               <ChevronRight className="w-4 h-4 text-green-500" />
               ¡Sigue así! Mantén la constancia para ver resultados
