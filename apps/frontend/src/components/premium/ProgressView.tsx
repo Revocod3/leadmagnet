@@ -178,25 +178,25 @@ export function ProgressView() {
       >
         <StatCard
           icon={Calendar}
-          value={progress.stats.daysActive}
+          value={progress.stats?.daysActive ?? 0}
           label="Días activa"
           color="bg-blue-500"
         />
         <StatCard
           icon={MessageCircle}
-          value={progress.stats.conversationCount}
+          value={progress.stats?.conversationCount ?? 0}
           label="Conversaciones"
           color="bg-green-500"
         />
         <StatCard
           icon={BookOpen}
-          value={progress.stats.diaryEntries}
+          value={progress.stats?.diaryEntries ?? 0}
           label="Entradas diario"
           color="bg-purple-500"
         />
         <StatCard
           icon={Trophy}
-          value={progress.stats.challengesCompleted}
+          value={progress.stats?.challengesCompleted ?? 0}
           label="Retos completados"
           color="bg-amber-500"
         />
