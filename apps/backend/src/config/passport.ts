@@ -20,7 +20,7 @@ if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
       async (accessToken, refreshToken, profile, done) => {
         try {
           const user = await authService.findOrCreateGoogleUser(profile);
-          done(null, user);
+          done(null, user as any);
         } catch (error) {
           logger.error('Error in Google OAuth strategy', { error });
           done(error as Error, undefined);

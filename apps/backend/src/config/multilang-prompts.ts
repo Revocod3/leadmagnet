@@ -3,7 +3,7 @@
  * Auto-generated translations from Spanish base
  */
 
-import { CLARA_INSTRUCTIONS } from './assistant-instructions-optimized';
+import { CLARA_INSTRUCTIONS_V2 as CLARA_INSTRUCTIONS } from './assistant-instructions-v2';
 
 export type SupportedLanguage = 'es' | 'en' | 'fr' | 'de' | 'it' | 'pt';
 

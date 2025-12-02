@@ -270,7 +270,6 @@ export class ChatController {
 
       // Procesar mensaje (con o sin imagen)
       const response = await agentService.processMessage(
-        conversationId,
         message,
         context,
         imageBuffer

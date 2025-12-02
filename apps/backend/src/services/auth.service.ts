@@ -144,6 +144,7 @@ export class AuthService {
             emailVerified: true,
             role: hasActiveSub ? 'PRO' : user.role, // Upgrade if subscription exists
           },
+          include: { subscriptions: true },
         });
       }
     }
@@ -163,6 +164,7 @@ export class AuthService {
           role: hasActiveSubscription ? 'PRO' : 'FREE',
           password: null, // No password for OAuth users
         },
+        include: { subscriptions: true },
       });
 
       logger.info(`New user created via Google OAuth: ${user.email} (role: ${user.role})`);
@@ -269,6 +271,7 @@ export class AuthService {
       data: {
         role: hasActiveSub ? 'PRO' : 'FREE',
       },
+      include: { subscriptions: true },
     });
 
     return updatedUser;
@@ -360,8 +363,8 @@ export class AuthService {
    */
   private generateResetToken(): string {
     return Math.random().toString(36).substring(2, 15) +
-           Math.random().toString(36).substring(2, 15) +
-           Date.now().toString(36);
+      Math.random().toString(36).substring(2, 15) +
+      Date.now().toString(36);
   }
 }
 

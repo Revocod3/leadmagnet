@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Layout } from './components/layout/Layout';
 import { HomePage } from './pages/HomePage';
@@ -34,6 +34,17 @@ const HomeOrRedirect = () => {
   return <HomePage />;
 };
 
+// Wrapper component for ProChat with subscription redirect
+const ProChatWithRedirect = () => {
+  const navigate = useNavigate();
+
+  const handleSubscriptionExpired = () => {
+    navigate('/pricing');
+  };
+
+  return <ProChat onSubscriptionExpired={handleSubscriptionExpired} />;
+};
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -56,7 +67,7 @@ function App() {
               path="/chat"
               element={
                 <ProtectedRoute>
-                  <ProChat />
+                  <ProChatWithRedirect />
                 </ProtectedRoute>
               }
             />

@@ -153,7 +153,11 @@ export const useProChat = (onSubscriptionExpired?: () => void): UseProChatReturn
     } catch (err: any) {
       console.error('Error creating conversation:', err);
 
-      if (err.message === 'SUBSCRIPTION_EXPIRED' || err.message?.includes('subscription')) {
+      // Check for subscription required error (new user without PRO)
+      if (err.requiresSubscription) {
+        onSubscriptionExpired?.();
+        setError('Necesitas una suscripción Pro para acceder al chat');
+      } else if (err.message === 'SUBSCRIPTION_EXPIRED' || err.message?.includes('subscription')) {
         onSubscriptionExpired?.();
         setError('Tu suscripción ha expirado');
       } else {
@@ -224,12 +228,13 @@ export const useProChat = (onSubscriptionExpired?: () => void): UseProChatReturn
     } catch (err: any) {
       console.error('Error sending message:', err);
 
-      if (err.message === 'SUBSCRIPTION_EXPIRED') {
+      // Check for subscription required error
+      if (err.requiresSubscription || err.message === 'SUBSCRIPTION_EXPIRED') {
         onSubscriptionExpired?.();
         // Add error message
         setMessages((prev) => [...prev, {
           role: 'assistant',
-          content: '❌ Tu suscripción ha expirado. Renueva para seguir conversando con Clara.',
+          content: '❌ Necesitas una suscripción Pro activa para seguir conversando con Clara.',
           type: 'comment',
           timestamp: new Date().toISOString(),
         }]);

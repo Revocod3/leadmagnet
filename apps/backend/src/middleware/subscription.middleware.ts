@@ -2,20 +2,12 @@ import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../config/database';
 import type { ApiResponse } from '../types';
 
-export interface AuthenticatedRequest extends Request {
-  user?: {
-    id: string;
-    email: string;
-    role: string;
-  };
-}
-
 /**
  * Middleware to verify user has an active PRO subscription
  * Use this on routes that require PRO access
  */
 export async function requireProSubscription(
-  req: AuthenticatedRequest,
+  req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> {
@@ -46,7 +38,7 @@ export async function requireProSubscription(
     // Verify they have an active subscription in the database
     const activeSubscription = await prisma.subscription.findFirst({
       where: {
-        userId: user.id,
+        userId: user.userId,
         status: {
           in: ['active', 'trialing'], // Allow both active and trial subscriptions
         },
@@ -59,7 +51,7 @@ export async function requireProSubscription(
     if (!activeSubscription) {
       // User has PRO role but no active subscription - downgrade them
       await prisma.user.update({
-        where: { id: user.id },
+        where: { id: user.userId },
         data: { role: 'FREE' },
       });
 
@@ -103,7 +95,7 @@ export async function requireProSubscription(
  * Doesn't block the request, just adds subscription info
  */
 export async function attachSubscriptionInfo(
-  req: AuthenticatedRequest,
+  req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> {
@@ -118,7 +110,7 @@ export async function attachSubscriptionInfo(
     // Get user's active subscription
     const subscription = await prisma.subscription.findFirst({
       where: {
-        userId: user.id,
+        userId: user.userId,
         status: {
           in: ['active', 'trialing', 'past_due'],
         },

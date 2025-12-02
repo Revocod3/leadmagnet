@@ -37,7 +37,17 @@ class ApiClient {
     this.client.interceptors.response.use(
       (response) => response,
       (error: AxiosError<ApiResponse>) => {
-        const errorMessage = error.response?.data?.error || 'Error de conexión';
+        const responseData = error.response?.data as any;
+
+        // Check for subscription required errors (403 with requiresSubscription)
+        if (error.response?.status === 403 && responseData?.data?.requiresSubscription) {
+          const subscriptionError = new Error(responseData.error || 'Necesitas una suscripción Pro');
+          (subscriptionError as any).requiresSubscription = true;
+          (subscriptionError as any).subscriptionExpired = responseData.data?.subscriptionExpired || false;
+          throw subscriptionError;
+        }
+
+        const errorMessage = responseData?.error || 'Error de conexión';
         throw new Error(errorMessage);
       }
     );

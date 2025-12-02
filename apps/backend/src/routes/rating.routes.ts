@@ -1,7 +1,7 @@
-import { Router } from 'express';
+import { Router, type Router as RouterType } from 'express';
 import { RatingController } from '../controllers/rating.controller';
 
-const router = Router();
+const router: RouterType = Router();
 const ratingController = new RatingController();
 
 // POST /api/ratings - Crear una nueva valoración
