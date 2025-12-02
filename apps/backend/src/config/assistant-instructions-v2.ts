@@ -241,7 +241,7 @@ Muchas personas usan el Método Objetivo Vientre Plano como **prevención inteli
 • Estado de ánimo más estable
 • Claridad mental
 
-¿Te gustaría conocer el programa? → [Conoce el Método](https://objetivovientreplano.com/suscripcion)
+¿Te gustaría conocer el programa? → [Conoce el Método](/pricing)
 
 ¿Tienes alguna duda que pueda resolver?"
 
@@ -660,7 +660,7 @@ Con el programa tendrás acceso a **Chat 24/7 con Clara PRO** (mi versión avanz
 
 *+135 personas transformaron su salud digestiva este mes* 🌾
 
-[Comienza tu transformación](https://objetivovientreplano.com/suscripcion)
+[Comienza tu transformación](/pricing)
 
 ---
 
@@ -729,7 +729,7 @@ Este método es perfecto para tu caso porque integra **gestión emocional + salu
 
 *+135 personas transformaron su salud digestiva este mes* 💖
 
-[Comienza tu transformación](https://objetivovientreplano.com/suscripcion)
+[Comienza tu transformación](/pricing)
 
 ---
 
@@ -801,7 +801,7 @@ Tu caso necesita un abordaje integral que combine alimentación, gestión emocio
 
 *+135 personas transformaron su salud digestiva este mes* ✨
 
-[Comienza tu transformación](https://objetivovientreplano.com/suscripcion)
+[Comienza tu transformación](/pricing)
 
 ---
 
@@ -869,7 +869,7 @@ Este método te dará el vientre plano que buscas, pero desde la raíz: desinfla
 
 *+135 personas transformaron su salud digestiva este mes* 🌸
 
-[Comienza tu transformación](https://objetivovientreplano.com/suscripcion)
+[Comienza tu transformación](/pricing)
 
 ═══════════════════════════════════════════════════════════════
 🎤 PASO 3: PITCH CHAT 24/7 PRO (después del diagnóstico)
@@ -910,7 +910,7 @@ El **Chat 24/7 PRO** es como tener una nutricionista especializada en salud dige
 
 **Inversión:** [El precio se muestra en la página]
 
-👉 [Comienza tu transformación aquí](https://objetivovientreplano.com/suscripcion)
+👉 [Comienza tu transformación aquí](/pricing)
 
 ¿Tienes alguna duda antes de empezar?"
 
@@ -951,7 +951,7 @@ La diferencia aquí es:
 "Por supuesto, {nombre}. Es una decisión importante.
 
 Mientras lo piensas, te dejo el enlace para que veas todo el detalle del programa cuando quieras:
-👉 [Método Objetivo Vientre Plano](https://objetivovientreplano.com/suscripcion)
+👉 [Método Objetivo Vientre Plano](/pricing)
 
 Si tienes alguna duda específica, escríbeme cuando quieras. Estoy aquí 🌸"
 
@@ -968,7 +968,7 @@ Si tienes alguna duda específica, escríbeme cuando quieras. Estoy aquí 🌸"
 Recuerda que el plan de acción inmediato que te di puedes empezarlo hoy mismo (eliminación de [triggers], respiraciones, ayuno 12h).
 
 Si en algún momento decides que quieres el acompañamiento completo con el **Chat 24/7 PRO**, aquí está el enlace:
-👉 [Objetivo Vientre Plano](https://objetivovientreplano.com/suscripcion)
+👉 [Objetivo Vientre Plano](/pricing)
 
 ¿Tienes alguna duda sobre el diagnóstico o los primeros pasos?"
 

@@ -73,10 +73,10 @@ export function convertDiagnosisToHTML(markdown: string): string {
     '<div class="bg-gradient-to-r from-brand-green-50 to-green-100 dark:from-neutral-800 dark:to-neutral-700 rounded-2xl p-6 mb-8 shadow-lg border border-brand-green-200 dark:border-neutral-600"><h3 class="text-2xl font-bold text-brand-green-700 dark:text-brand-green-400 mb-0">🔬 DIAGNÓSTICO INTEGRAL</h3></div>'
   );
 
-  // Agregar link al programa
+  // Agregar link al programa - apunta a la página de pricing interna
   html = html.replace(
     /Método Objetivo Vientre Plano|MÉTODO OVP|Método OVP/gi,
-    '<a href="https://objetivovientreplano.com/suscripcion/" target="_blank" rel="noopener noreferrer" class="text-brand-green-600 dark:text-brand-green-400 font-semibold hover:underline">Método Objetivo Vientre Plano</a>'
+    '<a href="/pricing" class="text-brand-green-600 dark:text-brand-green-400 font-semibold hover:underline">Método Objetivo Vientre Plano</a>'
   );
 
   // Limpiar líneas vacías múltiples

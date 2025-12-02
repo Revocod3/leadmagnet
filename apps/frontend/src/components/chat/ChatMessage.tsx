@@ -91,9 +91,7 @@ export const ChatMessage = forwardRef<HTMLDivElement, ChatMessageProps>(({
             <div className="mt-8 flex flex-col gap-3">
               {/* Primary CTA - Subscription Button */}
               <a
-                href="https://objetivovientreplano.com/suscripcion/"
-                target="_blank"
-                rel="noopener noreferrer"
+                href="/pricing"
                 className="group w-full py-4 sm:py-5 px-4 sm:px-6 rounded-2xl bg-gradient-to-r from-purple-600 via-purple-700 to-indigo-700 hover:from-purple-700 hover:via-purple-800 hover:to-indigo-800 text-white font-bold text-sm sm:text-base md:text-lg flex items-center justify-center gap-2 sm:gap-3 transition-all duration-300 shadow-2xl hover:shadow-purple-500/50 transform hover:-translate-y-1 hover:scale-[1.02] relative overflow-hidden"
               >
                 {/* Animated background effect */}

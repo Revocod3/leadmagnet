@@ -97,9 +97,7 @@ export const ChatFooter = ({
                     Ya has subido 1 imagen en esta sesión gratuita.
                   </p>
                   <a
-                    href="https://objetivovientreplano.com/suscripcion/"
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    href="/pricing"
                     className="inline-flex items-center gap-2 text-xs font-semibold text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 transition-colors"
                   >
                     <span>✨ Desbloquea imágenes ilimitadas</span>

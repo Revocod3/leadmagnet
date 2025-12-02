@@ -390,9 +390,7 @@ export function LoginPage() {
               ¿No tienes cuenta todavía?
             </p>
             <a
-              href="https://objetivovientreplano.com/suscripcion/"
-              target="_blank"
-              rel="noopener noreferrer"
+              href="/pricing"
               className="inline-block w-full py-2.5 px-4 border-2 border-[#A2AE5A] text-[#A2AE5A] rounded-lg font-semibold text-sm hover:bg-[#A2AE5A] hover:text-white transition-all"
             >
               Suscríbete a Clara PRO →
