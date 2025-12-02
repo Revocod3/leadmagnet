@@ -1,10 +1,10 @@
 import { useAuthStore } from '../stores/authStore';
 
-// URLs de los Payment Links de Stripe (staging/test)
+// URLs de los Payment Links de Stripe (LIVE)
 const PAYMENT_LINKS = {
-  monthly: import.meta.env.VITE_STRIPE_MONTHLY_LINK || 'https://buy.stripe.com/test_monthly',
-  yearly: import.meta.env.VITE_STRIPE_YEARLY_LINK || 'https://buy.stripe.com/test_yearly',
-  lifetime: import.meta.env.VITE_STRIPE_LIFETIME_LINK || 'https://buy.stripe.com/test_lifetime',
+  monthly: 'https://buy.stripe.com/8x214m6TMdU64jn3f9fMA00',   // 29.99€/mes
+  yearly: 'https://buy.stripe.com/28EbJ091U17k8zD9DxfMA01',    // 220€/año
+  lifetime: 'https://buy.stripe.com/3cIcN42Dwg2eg259DxfMA02',  // 399.99€
 };
 
 export const PricingPage = () => {
@@ -41,7 +41,7 @@ export const PricingPage = () => {
           <div className="ovp-pricing-card">
             <h3 className="ovp-plan-name">Plan Mensual</h3>
             <div className="ovp-plan-price">
-              <span className="ovp-price-amount">30€</span>
+              <span className="ovp-price-amount">29,99€</span>
               <span className="ovp-price-period">/mes</span>
             </div>
             <p className="ovp-plan-description">
@@ -86,7 +86,7 @@ export const PricingPage = () => {
             </div>
             <p className="ovp-price-detail">220€ facturados anualmente</p>
             <div style={{ textAlign: 'left' }}>
-              <span className="ovp-discount-badge">Ahorra 39%</span>
+              <span className="ovp-discount-badge">Ahorra 38%</span>
             </div>
             <p className="ovp-plan-description">
               Consolida tu bienestar durante todo el año
@@ -124,7 +124,7 @@ export const PricingPage = () => {
           <div className="ovp-pricing-card">
             <h3 className="ovp-plan-name">Plan Vitalicio</h3>
             <div className="ovp-plan-price">
-              <span className="ovp-price-amount">400€</span>
+              <span className="ovp-price-amount">399,99€</span>
               <span className="ovp-price-period">único</span>
             </div>
             <p className="ovp-plan-description">

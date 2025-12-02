@@ -15,15 +15,19 @@ const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
 
 // Map Stripe Price IDs to plan names
 const PRICE_TO_PLAN_MAP: Record<string, string> = {
-  // TEST MODE
+  // LIVE MODE (current prices)
+  'price_1Sa060AleRjmLgERh1nn1rqB': 'monthly',   // Plan Mensual - 29.99€/mes
+  'price_1SZKcVAleRjmLgERXZIruikV': 'yearly',    // Plan Anual - 220€/año
+  'price_1Sa060AleRjmLgERpMCZnTYt': 'lifetime',  // Plan Vitalicio - 399.99€
+
+  // LIVE MODE (old prices - keep for existing subscriptions)
+  'price_1SZKcUAleRjmLgEROPDE357g': 'monthly',   // Plan Mensual - 30€/mes (old)
+  'price_1SZKcWAleRjmLgER8KQYCk2O': 'lifetime',  // Plan Vitalicio - 400€ (old)
+
+  // TEST MODE (keep for staging/dev)
   'price_1SZKswAleRjmLgERGqm3mSsV': 'monthly',   // Plan Mensual TEST - 30€/mes
   'price_1SZKswAleRjmLgER9GBCPrJV': 'yearly',    // Plan Anual TEST - 220€/año
   'price_1SZKsxAleRjmLgERQ8iHe6NC': 'lifetime',  // Plan Vitalicio TEST - 400€
-
-  // LIVE MODE (commented out for now)
-  // 'price_1SZKcUAleRjmLgEROPDE357g': 'monthly',   // Plan Mensual - 30€/mes
-  // 'price_1SZKcVAleRjmLgERXZIruikV': 'yearly',    // Plan Anual - 220€/año
-  // 'price_1SZKcWAleRjmLgER8KQYCk2O': 'lifetime',  // Plan Vitalicio - 400€
 };
 
 // Get plan name from Stripe price ID
@@ -95,6 +99,10 @@ export class StripeWebhookController {
 
         case 'invoice.payment_failed':
           await this.handleInvoicePaymentFailed(event.data.object as Stripe.Invoice);
+          break;
+
+        case 'checkout.session.completed':
+          await this.handleCheckoutSessionCompleted(event.data.object as Stripe.Checkout.Session);
           break;
 
         case 'customer.created':
@@ -358,6 +366,112 @@ export class StripeWebhookController {
       // Optionally downgrade user immediately or wait for subscription.deleted event
       // For now, we'll keep them as PRO but with past_due status
       console.log('[Stripe Webhook] ⚠️ Subscription marked as past_due:', invoiceAny.subscription);
+    }
+  }
+
+  /**
+   * Handle checkout.session.completed - Important for Payment Links
+   * This handles both subscription and one-time payments (lifetime plan)
+   */
+  private async handleCheckoutSessionCompleted(session: Stripe.Checkout.Session): Promise<void> {
+    console.log('[Stripe Webhook] Checkout session completed:', session.id);
+
+    const customerEmail = session.customer_email || session.customer_details?.email;
+    const customerId = session.customer as string;
+
+    if (!customerEmail) {
+      console.error('[Stripe Webhook] No email in checkout session:', session.id);
+      return;
+    }
+
+    // If it's a subscription, the subscription events will handle it
+    if (session.mode === 'subscription' && session.subscription) {
+      console.log('[Stripe Webhook] Subscription checkout - will be handled by subscription events');
+      return;
+    }
+
+    // Handle one-time payment (lifetime plan)
+    if (session.mode === 'payment') {
+      console.log('[Stripe Webhook] One-time payment checkout (lifetime plan)');
+
+      // Get line items to determine the plan
+      const lineItems = await stripe.checkout.sessions.listLineItems(session.id);
+      const priceId = lineItems.data[0]?.price?.id;
+      const plan = priceId ? getPlanFromPriceId(priceId) : 'lifetime';
+
+      // Find or create user
+      let user = await prisma.user.findUnique({
+        where: { email: customerEmail },
+      });
+
+      let isNewUser = false;
+      let resetToken: string | undefined;
+
+      if (!user) {
+        isNewUser = true;
+        resetToken = this.generateResetToken();
+
+        console.log('[Stripe Webhook] Creating new user for lifetime plan:', customerEmail);
+        user = await prisma.user.create({
+          data: {
+            email: customerEmail,
+            name: session.customer_details?.name || 'Usuario Pro',
+            role: 'PRO',
+            stripeCustomerId: customerId,
+            emailVerified: true,
+            provider: 'email',
+            passwordResetToken: resetToken,
+            passwordResetExpiry: new Date(Date.now() + PASSWORD_RESET_EXPIRY_MS),
+          },
+        });
+      } else {
+        console.log('[Stripe Webhook] Updating existing user for lifetime plan:', user.id);
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            role: 'PRO',
+            stripeCustomerId: customerId,
+          },
+        });
+      }
+
+      // Create a "lifetime" subscription record
+      const lifetimeEnd = new Date('2099-12-31'); // Far future date for lifetime
+      await prisma.subscription.create({
+        data: {
+          userId: user.id,
+          stripeSubscriptionId: `lifetime_${session.id}`, // Use session ID as unique identifier
+          stripeCustomerId: customerId,
+          stripePriceId: priceId || '',
+          stripeProductId: lineItems.data[0]?.price?.product as string || null,
+          plan: 'lifetime',
+          status: 'active',
+          currentPeriodStart: new Date(),
+          currentPeriodEnd: lifetimeEnd,
+          cancelAtPeriodEnd: false,
+          metadata: { paymentIntentId: session.payment_intent as string },
+        },
+      });
+
+      console.log('[Stripe Webhook] ✅ Lifetime subscription created:', {
+        userId: user.id,
+        email: customerEmail,
+        plan: 'lifetime',
+      });
+
+      // Send welcome email
+      try {
+        await emailService.sendWelcomeEmail({
+          email: customerEmail,
+          name: user.name || 'Usuario',
+          plan: 'lifetime',
+          isNewUser,
+          ...(resetToken && { resetToken }),
+        });
+        console.log('[Stripe Webhook] 📧 Welcome email sent for lifetime plan:', customerEmail);
+      } catch (emailError) {
+        console.error('[Stripe Webhook] ❌ Failed to send welcome email:', emailError);
+      }
     }
   }
 }
