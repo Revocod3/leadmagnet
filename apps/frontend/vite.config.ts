@@ -13,11 +13,13 @@ export default defineConfig({
   server: {
     port: 5173,
     host: true,
+    allowedHosts: ['dev.objetivovientreplano.com', 'chat.objetivovientreplano.com', 'localhost'],
   },
   preview: {
     port: 5174,
     host: true,
     strictPort: true,
+    allowedHosts: ['dev.objetivovientreplano.com', 'chat.objetivovientreplano.com', 'localhost'],
   },
   build: {
     outDir: 'dist',
