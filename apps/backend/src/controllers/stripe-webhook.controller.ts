@@ -141,6 +141,14 @@ export class StripeWebhookController {
 
     const plan = getPlanFromSubscription(subscription);
 
+    // Parse dates safely - Stripe sends Unix timestamps (seconds)
+    const currentPeriodStart = subscription.current_period_start 
+      ? new Date(subscription.current_period_start * 1000) 
+      : new Date();
+    const currentPeriodEnd = subscription.current_period_end 
+      ? new Date(subscription.current_period_end * 1000) 
+      : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // Default 30 days
+
     // Find or create user
     let user = await prisma.user.findUnique({
       where: { email },
@@ -186,8 +194,8 @@ export class StripeWebhookController {
       },
       update: {
         status: subscription.status,
-        currentPeriodStart: new Date(subscription.current_period_start * 1000),
-        currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+        currentPeriodStart,
+        currentPeriodEnd,
         cancelAtPeriodEnd: subscription.cancel_at_period_end,
         canceledAt: subscription.canceled_at ? new Date(subscription.canceled_at * 1000) : null,
         trialStart: subscription.trial_start ? new Date(subscription.trial_start * 1000) : null,
@@ -204,8 +212,8 @@ export class StripeWebhookController {
         stripeProductId: subscription.items.data[0]?.price.product as string || null,
         plan,
         status: subscription.status,
-        currentPeriodStart: new Date(subscription.current_period_start * 1000),
-        currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+        currentPeriodStart,
+        currentPeriodEnd,
         cancelAtPeriodEnd: subscription.cancel_at_period_end,
         canceledAt: subscription.canceled_at ? new Date(subscription.canceled_at * 1000) : null,
         trialStart: subscription.trial_start ? new Date(subscription.trial_start * 1000) : null,
