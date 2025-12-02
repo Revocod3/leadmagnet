@@ -14,11 +14,20 @@ import { rateLimitMiddleware } from './middleware/rateLimit.middleware';
 import { authMiddleware } from './middleware/auth.middleware';
 import { logger } from './utils/logger';
 import passport from './config/passport';
+import { StripeWebhookController } from './controllers/stripe-webhook.controller';
 
 const app: Express = express();
 
 // Trust proxy for rate limiting behind reverse proxy
 app.set('trust proxy', 1);
+
+// IMPORTANT: Stripe webhook must be registered BEFORE any body parsing middleware
+// This is required for signature verification - the raw body is needed to verify the signature
+const stripeWebhookController = new StripeWebhookController();
+app.post('/api/webhooks/stripe',
+  express.raw({ type: 'application/json' }),
+  (req, res) => stripeWebhookController.handleWebhook(req, res)
+);
 
 // Security middleware
 app.use(helmet({
@@ -36,15 +45,8 @@ app.use(cors({
 // Compression
 app.use(compression());
 
-// Body parsing - with special handling for Stripe webhook
-// Stripe webhook needs raw body for signature verification
-app.use((req, res, next) => {
-  if (req.originalUrl === '/api/webhooks/stripe') {
-    express.raw({ type: 'application/json' })(req, res, next);
-  } else {
-    express.json({ limit: '10mb' })(req, res, next);
-  }
-});
+// Body parsing for all other routes
+app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Initialize Passport
