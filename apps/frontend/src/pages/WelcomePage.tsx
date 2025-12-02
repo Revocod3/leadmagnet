@@ -3,7 +3,9 @@ import { useSearchParams } from 'react-router-dom';
 
 export function WelcomePage() {
   const [searchParams] = useSearchParams();
-  const success = searchParams.get('success') === 'true';
+  const plan = searchParams.get('plan');
+  // Success if we have a plan parameter (coming from Stripe) or explicit success=true
+  const success = !!plan || searchParams.get('success') === 'true';
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-neutral-900 dark:to-neutral-800 p-4">
