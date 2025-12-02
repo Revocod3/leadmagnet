@@ -24,9 +24,18 @@ function createAuthClient(): AxiosInstance {
 
   // Add auth token to requests
   client.interceptors.request.use((config) => {
-    const token = localStorage.getItem('auth_token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    // Read from Zustand persisted store
+    const storedAuth = localStorage.getItem('ovp-auth-storage');
+    if (storedAuth) {
+      try {
+        const parsed = JSON.parse(storedAuth);
+        const token = parsed.state?.token;
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+      } catch (e) {
+        console.error('Error parsing auth storage:', e);
+      }
     }
     return config;
   });
