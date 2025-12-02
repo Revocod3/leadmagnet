@@ -5,7 +5,7 @@ import type { ApiResponse } from '../types';
 import { emailService } from '../services/email.service';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2024-11-20.acacia',
+  apiVersion: '2025-11-17.clover',
 });
 
 // Token expiry for password reset (24 hours)
@@ -142,11 +142,13 @@ export class StripeWebhookController {
     const plan = getPlanFromSubscription(subscription);
 
     // Parse dates safely - Stripe sends Unix timestamps (seconds)
-    const currentPeriodStart = subscription.current_period_start 
-      ? new Date(subscription.current_period_start * 1000) 
+    // Use type assertion to handle Stripe API version differences
+    const subAny = subscription as any;
+    const currentPeriodStart = subAny.current_period_start
+      ? new Date(subAny.current_period_start * 1000)
       : new Date();
-    const currentPeriodEnd = subscription.current_period_end 
-      ? new Date(subscription.current_period_end * 1000) 
+    const currentPeriodEnd = subAny.current_period_end
+      ? new Date(subAny.current_period_end * 1000)
       : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // Default 30 days
 
     // Find or create user
@@ -161,7 +163,7 @@ export class StripeWebhookController {
       // Create new user with reset token for password setup
       isNewUser = true;
       resetToken = this.generateResetToken();
-      
+
       console.log('[Stripe Webhook] Creating new user for:', email);
       user = await prisma.user.create({
         data: {
@@ -197,9 +199,9 @@ export class StripeWebhookController {
         currentPeriodStart,
         currentPeriodEnd,
         cancelAtPeriodEnd: subscription.cancel_at_period_end,
-        canceledAt: subscription.canceled_at ? new Date(subscription.canceled_at * 1000) : null,
-        trialStart: subscription.trial_start ? new Date(subscription.trial_start * 1000) : null,
-        trialEnd: subscription.trial_end ? new Date(subscription.trial_end * 1000) : null,
+        canceledAt: subAny.canceled_at ? new Date(subAny.canceled_at * 1000) : null,
+        trialStart: subAny.trial_start ? new Date(subAny.trial_start * 1000) : null,
+        trialEnd: subAny.trial_end ? new Date(subAny.trial_end * 1000) : null,
         stripePriceId: subscription.items.data[0]?.price.id || '',
         stripeProductId: subscription.items.data[0]?.price.product as string || null,
         metadata: subscription.metadata as any,
@@ -215,9 +217,9 @@ export class StripeWebhookController {
         currentPeriodStart,
         currentPeriodEnd,
         cancelAtPeriodEnd: subscription.cancel_at_period_end,
-        canceledAt: subscription.canceled_at ? new Date(subscription.canceled_at * 1000) : null,
-        trialStart: subscription.trial_start ? new Date(subscription.trial_start * 1000) : null,
-        trialEnd: subscription.trial_end ? new Date(subscription.trial_end * 1000) : null,
+        canceledAt: subAny.canceled_at ? new Date(subAny.canceled_at * 1000) : null,
+        trialStart: subAny.trial_start ? new Date(subAny.trial_start * 1000) : null,
+        trialEnd: subAny.trial_end ? new Date(subAny.trial_end * 1000) : null,
         metadata: subscription.metadata as any,
       },
     });
@@ -237,7 +239,7 @@ export class StripeWebhookController {
       isNewUser,
       hasResetToken: !!resetToken,
     });
-    
+
     if (subscription.status === 'active' || subscription.status === 'trialing') {
       console.log('[Stripe Webhook] 📧 Attempting to send welcome email to:', email);
       try {
@@ -246,7 +248,7 @@ export class StripeWebhookController {
           name: user.name || 'Usuario',
           plan,
           isNewUser,
-          resetToken,
+          ...(resetToken && { resetToken }),
         });
         console.log('[Stripe Webhook] 📧 Welcome email sent successfully to:', email);
       } catch (emailError) {
@@ -263,8 +265,8 @@ export class StripeWebhookController {
    */
   private generateResetToken(): string {
     return Math.random().toString(36).substring(2, 15) +
-           Math.random().toString(36).substring(2, 15) +
-           Date.now().toString(36);
+      Math.random().toString(36).substring(2, 15) +
+      Date.now().toString(36);
   }
 
   /**
@@ -319,13 +321,14 @@ export class StripeWebhookController {
   private async handleInvoicePaymentSucceeded(invoice: Stripe.Invoice): Promise<void> {
     console.log('[Stripe Webhook] Invoice payment succeeded:', invoice.id);
 
-    if (!invoice.subscription) {
+    const invoiceAny = invoice as any;
+    if (!invoiceAny.subscription) {
       console.log('[Stripe Webhook] Invoice has no subscription');
       return;
     }
 
     // Refresh subscription data
-    const subscription = await stripe.subscriptions.retrieve(invoice.subscription as string);
+    const subscription = await stripe.subscriptions.retrieve(invoiceAny.subscription as string);
     await this.handleSubscriptionCreatedOrUpdated(subscription);
   }
 
@@ -335,25 +338,26 @@ export class StripeWebhookController {
   private async handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<void> {
     console.log('[Stripe Webhook] Invoice payment failed:', invoice.id);
 
-    if (!invoice.subscription) {
+    const invoiceAny = invoice as any;
+    if (!invoiceAny.subscription) {
       console.log('[Stripe Webhook] Invoice has no subscription');
       return;
     }
 
     // Update subscription to past_due
     const subscription = await prisma.subscription.findUnique({
-      where: { stripeSubscriptionId: invoice.subscription as string },
+      where: { stripeSubscriptionId: invoiceAny.subscription as string },
     });
 
     if (subscription) {
       await prisma.subscription.update({
-        where: { stripeSubscriptionId: invoice.subscription as string },
+        where: { stripeSubscriptionId: invoiceAny.subscription as string },
         data: { status: 'past_due' },
       });
 
       // Optionally downgrade user immediately or wait for subscription.deleted event
       // For now, we'll keep them as PRO but with past_due status
-      console.log('[Stripe Webhook] ⚠️ Subscription marked as past_due:', invoice.subscription);
+      console.log('[Stripe Webhook] ⚠️ Subscription marked as past_due:', invoiceAny.subscription);
     }
   }
 }

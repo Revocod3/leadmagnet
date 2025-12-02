@@ -56,7 +56,7 @@ export class EmailService {
       isNewUser: data.isNewUser,
       hasResetToken: !!data.resetToken,
     });
-    
+
     const { email, name, plan, isNewUser, resetToken } = data;
 
     const subject = isNewUser

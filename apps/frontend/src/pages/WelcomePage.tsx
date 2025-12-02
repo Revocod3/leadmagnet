@@ -31,14 +31,14 @@ export function WelcomePage() {
             <h1 className="text-2xl font-bold text-neutral-900 dark:text-white mb-3">
               ¡Gracias por tu compra! 🎉
             </h1>
-            
+
             <p className="text-neutral-600 dark:text-neutral-400 mb-6">
               Tu membresía PRO ya está activa. Hemos enviado un correo a tu email con las instrucciones para acceder a tu cuenta.
             </p>
 
             <div className="bg-[#f0f7e6] dark:bg-[#9FB870]/10 rounded-xl p-4 mb-6">
               <p className="text-sm text-[#5a7a2d] dark:text-[#9FB870]">
-                <strong>📧 Revisa tu bandeja de entrada</strong><br/>
+                <strong>📧 Revisa tu bandeja de entrada</strong><br />
                 (también la carpeta de spam)
               </p>
             </div>
@@ -50,7 +50,7 @@ export function WelcomePage() {
               >
                 Ir al inicio de sesión
               </a>
-              
+
               <p className="text-xs text-neutral-500 dark:text-neutral-400">
                 Si ya tienes cuenta con Google, puedes acceder directamente
               </p>
@@ -63,11 +63,11 @@ export function WelcomePage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
             </div>
-            
+
             <h1 className="text-xl font-bold text-neutral-900 dark:text-white mb-3">
               Algo salió mal
             </h1>
-            
+
             <p className="text-neutral-600 dark:text-neutral-400 mb-6">
               No pudimos procesar tu solicitud. Por favor intenta de nuevo o contacta con soporte.
             </p>
