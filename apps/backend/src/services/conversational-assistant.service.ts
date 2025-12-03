@@ -306,11 +306,11 @@ export class ConversationalAssistantService {
     // Si ya hay muchos turnos (14+), generar diagnóstico
     if (turnCount >= 14) return true;
 
-    // Si el mensaje contiene señales de diagnóstico
+    // Si el mensaje contiene señales de diagnóstico (ampliado para instrucciones Ulises)
     const diagnosisSignals = [
+      // Señales originales
       'basándome en lo que me has contado',
       'basandome en lo que',
-      'hola \\w+,',
       'puntos clave',
       'necesitas enfoque integral',
       'necesitas un enfoque',
@@ -321,7 +321,24 @@ export class ConversationalAssistantService {
       'ya tengo todo',
       'dame un momento para preparar',
       'listo para tu diagnóstico',
-      'generar tu diagnóstico'
+      'generar tu diagnóstico',
+      // Señales nuevas (instrucciones Ulises)
+      'ya tengo bastante para darte',
+      'tengo suficiente información',
+      'con la información que me has dado',
+      'con todo lo que me has contado',
+      'veo un patrón muy claro',
+      'veo un patrón claro',
+      'gracias por todo lo que has compartido',
+      'gracias por abrirte así',
+      'este conjunto encaja perfectamente',
+      'encaja perfectamente con un perfil',
+      'perfil digestivo',
+      'perfil emocional',
+      'perfil mixto',
+      'perfil estético',
+      'tu diagnóstico',
+      'mi diagnóstico para ti',
     ];
 
     return diagnosisSignals.some(signal =>

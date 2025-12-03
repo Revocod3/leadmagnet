@@ -111,7 +111,14 @@ export const ChatContainer = () => {
   const [showImageLimitMessage, setShowImageLimitMessage] = useState(false);
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
   const [isRatingModalOpen, setIsRatingModalOpen] = useState(false);
-  const [hasRated, setHasRated] = useState(false);
+  // Persistir hasRated en localStorage para que no se muestre repetidamente
+  const [hasRated, setHasRated] = useState(() => {
+    const sessionId = session?.id;
+    if (sessionId) {
+      return localStorage.getItem(`rated_${sessionId}`) === 'true';
+    }
+    return false;
+  });
 
   const {
     messages,
@@ -125,6 +132,14 @@ export const ChatContainer = () => {
   const { isListening, transcript, startListening, stopListening, isSupported: isSpeechSupported } = useSpeechToText();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Actualizar hasRated cuando cambie la sesión
+  useEffect(() => {
+    if (session?.id) {
+      const rated = localStorage.getItem(`rated_${session.id}`) === 'true';
+      setHasRated(rated);
+    }
+  }, [session?.id]);
 
   // Create session if it doesn't exist OR if session doesn't belong to current user
   useEffect(() => {
@@ -383,6 +398,10 @@ export const ChatContainer = () => {
       });
 
       setHasRated(true);
+      // Guardar en localStorage para que persista
+      if (session?.id) {
+        localStorage.setItem(`rated_${session.id}`, 'true');
+      }
       console.log('✅ Valoración enviada exitosamente');
     } catch (error) {
       console.error('❌ Error al enviar valoración:', error);

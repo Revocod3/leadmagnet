@@ -521,16 +521,17 @@ FASE: INFORMACIÓN PERSONAL Y CIERRE (turnos 9-12)
 - Usa BLOQUE 5 (información personal) suavemente
 - Usa BLOQUE 6 (objetivo principal)
 - Prepara transición al diagnóstico
-- Mensaje: "Con lo que me cuentas, ya tengo bastante para darte un diagnóstico claro..."
+- Cuando tengas suficiente información, di EXACTAMENTE: "Gracias por todo lo que has compartido, [nombre]. Con la información que me has dado, veo un patrón muy claro. Dame un momento para preparar tu diagnóstico personalizado..."
 `;
    }
    // Turnos 13+: Diagnóstico
    else if (turnCount >= 13) {
       instructions += `
 FASE: DIAGNÓSTICO Y TRANSICIÓN (turnos 13+)
-- Si tienes suficiente información, genera el DIAGNÓSTICO
-- Usa la estructura de diagnóstico definida
-- Después del diagnóstico, ofrece el PUENTE SUAVE al Chat 24/7
+⚠️ IMPORTANTE: Si aún no has generado diagnóstico, di EXACTAMENTE:
+"Gracias por todo lo que has compartido, [nombre]. Con la información que me has dado, veo un patrón muy claro. Dame un momento para preparar tu diagnóstico personalizado..."
+
+Esto activará la generación del diagnóstico.
 - NO presiones. INVITA.
 `;
    }
