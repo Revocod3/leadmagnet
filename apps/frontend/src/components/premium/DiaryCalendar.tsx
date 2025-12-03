@@ -132,8 +132,8 @@ export function DiaryCalendar({ selectedDate, onDateSelect }: DiaryCalendarProps
           onClick={nextMonth}
           disabled={!canGoNext}
           className={`p-2 rounded-lg transition-colors ${canGoNext
-              ? 'hover:bg-neutral-100 dark:hover:bg-neutral-700'
-              : 'opacity-30 cursor-not-allowed'
+            ? 'hover:bg-neutral-100 dark:hover:bg-neutral-700'
+            : 'opacity-30 cursor-not-allowed'
             }`}
         >
           <ChevronRight className="w-5 h-5" />

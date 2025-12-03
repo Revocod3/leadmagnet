@@ -71,7 +71,7 @@ function StatCard({
   variant?: 'green' | 'purple';
 }) {
   const bgColor = variant === 'green' ? 'bg-brand-green-500' : 'bg-purple-500';
-  
+
   return (
     <div className="bg-white dark:bg-neutral-800 rounded-xl shadow-sm border border-neutral-200 
                     dark:border-neutral-700 p-4 text-center">

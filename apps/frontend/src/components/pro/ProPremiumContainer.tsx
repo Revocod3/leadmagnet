@@ -108,8 +108,8 @@ export function ProPremiumContainer({ onSubscriptionExpired }: ProPremiumContain
               exit={{ opacity: 0, x: 20 }}
               className="h-full"
             >
-              <ProChat 
-                {...(onSubscriptionExpired && { onSubscriptionExpired })} 
+              <ProChat
+                {...(onSubscriptionExpired && { onSubscriptionExpired })}
                 activeTab={activeTab}
                 onTabChange={handleTabChange}
               />
@@ -193,7 +193,7 @@ export function ProPremiumContainer({ onSubscriptionExpired }: ProPremiumContain
                 <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
                   Recibe recordatorios para tu diario y nuevos micro-retos.
                 </p>
-                
+
                 {pushError && (
                   <p className="text-xs text-red-500 mt-2">{pushError}</p>
                 )}

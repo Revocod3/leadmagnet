@@ -132,11 +132,10 @@ export const ChatHeader = ({
                             <div className="space-y-2">
                               <button
                                 onClick={() => handleTabClick('chat')}
-                                className={`w-full p-4 flex items-center gap-4 rounded-xl transition-colors ${
-                                  activeTab === 'chat'
+                                className={`w-full p-4 flex items-center gap-4 rounded-xl transition-colors ${activeTab === 'chat'
                                     ? 'bg-brand-green-50 dark:bg-brand-green-900/20 text-brand-green-600 dark:text-brand-green-400'
                                     : 'hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-200'
-                                }`}
+                                  }`}
                               >
                                 <MessageCircle className="w-6 h-6" />
                                 <span className="text-lg font-medium">Chat</span>
@@ -144,11 +143,10 @@ export const ChatHeader = ({
 
                               <button
                                 onClick={() => handleTabClick('diario')}
-                                className={`w-full p-4 flex items-center gap-4 rounded-xl transition-colors ${
-                                  activeTab === 'diario'
+                                className={`w-full p-4 flex items-center gap-4 rounded-xl transition-colors ${activeTab === 'diario'
                                     ? 'bg-brand-green-50 dark:bg-brand-green-900/20 text-brand-green-600 dark:text-brand-green-400'
                                     : 'hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-200'
-                                }`}
+                                  }`}
                               >
                                 <BookOpen className="w-6 h-6" />
                                 <span className="text-lg font-medium">Mi Diario</span>
@@ -156,11 +154,10 @@ export const ChatHeader = ({
 
                               <button
                                 onClick={() => handleTabClick('progreso')}
-                                className={`w-full p-4 flex items-center gap-4 rounded-xl transition-colors ${
-                                  activeTab === 'progreso'
+                                className={`w-full p-4 flex items-center gap-4 rounded-xl transition-colors ${activeTab === 'progreso'
                                     ? 'bg-brand-green-50 dark:bg-brand-green-900/20 text-brand-green-600 dark:text-brand-green-400'
                                     : 'hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-200'
-                                }`}
+                                  }`}
                               >
                                 <TrendingUp className="w-6 h-6" />
                                 <span className="text-lg font-medium">Mi Progreso</span>
@@ -239,33 +236,30 @@ export const ChatHeader = ({
                           <div className="py-2 border-b border-neutral-200 dark:border-neutral-700">
                             <button
                               onClick={() => handleTabClick('chat')}
-                              className={`w-full px-4 py-2.5 flex items-center gap-3 transition-colors text-left ${
-                                activeTab === 'chat'
+                              className={`w-full px-4 py-2.5 flex items-center gap-3 transition-colors text-left ${activeTab === 'chat'
                                   ? 'bg-brand-green-50 dark:bg-brand-green-900/20 text-brand-green-600'
                                   : 'hover:bg-neutral-100 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200'
-                              }`}
+                                }`}
                             >
                               <MessageCircle className="w-4 h-4" />
                               <span className="text-sm font-medium">Chat</span>
                             </button>
                             <button
                               onClick={() => handleTabClick('diario')}
-                              className={`w-full px-4 py-2.5 flex items-center gap-3 transition-colors text-left ${
-                                activeTab === 'diario'
+                              className={`w-full px-4 py-2.5 flex items-center gap-3 transition-colors text-left ${activeTab === 'diario'
                                   ? 'bg-brand-green-50 dark:bg-brand-green-900/20 text-brand-green-600'
                                   : 'hover:bg-neutral-100 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200'
-                              }`}
+                                }`}
                             >
                               <BookOpen className="w-4 h-4" />
                               <span className="text-sm font-medium">Mi Diario</span>
                             </button>
                             <button
                               onClick={() => handleTabClick('progreso')}
-                              className={`w-full px-4 py-2.5 flex items-center gap-3 transition-colors text-left ${
-                                activeTab === 'progreso'
+                              className={`w-full px-4 py-2.5 flex items-center gap-3 transition-colors text-left ${activeTab === 'progreso'
                                   ? 'bg-brand-green-50 dark:bg-brand-green-900/20 text-brand-green-600'
                                   : 'hover:bg-neutral-100 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200'
-                              }`}
+                                }`}
                             >
                               <TrendingUp className="w-4 h-4" />
                               <span className="text-sm font-medium">Mi Progreso</span>

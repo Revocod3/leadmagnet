@@ -20,21 +20,22 @@ interface UsePushNotificationsReturn {
 export function usePushNotifications(): UsePushNotificationsReturn {
   const [isSupported, setIsSupported] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [initialized, setInitialized] = useState(false);
 
-  // Check support and current subscription status
+  // Check support and current subscription status - only once
   useEffect(() => {
-    async function checkStatus() {
-      setIsLoading(true);
+    if (initialized) return;
 
+    async function checkStatus() {
       // Check browser support
       const supported = pushService.isSupported();
       setIsSupported(supported);
 
       if (!supported) {
-        setIsLoading(false);
+        setInitialized(true);
         return;
       }
 
@@ -45,25 +46,24 @@ export function usePushNotifications(): UsePushNotificationsReturn {
 
       // Register service worker if not already registered
       try {
-        const registration = await navigator.serviceWorker.register('/sw-push.js');
-        console.log('Service Worker registered:', registration.scope);
+        await navigator.serviceWorker.register('/sw-push.js');
       } catch (err) {
-        console.error('Service Worker registration failed:', err);
+        // Silent fail - service worker may already be registered
       }
 
-      // Check current subscription
+      // Check current subscription (local only, no API call)
       try {
         const subscription = await pushService.getCurrentSubscription();
         setIsSubscribed(!!subscription);
       } catch (err) {
-        console.error('Error checking subscription:', err);
+        // Silent fail
       }
 
-      setIsLoading(false);
+      setInitialized(true);
     }
 
     checkStatus();
-  }, []);
+  }, [initialized]);
 
   // Subscribe to push notifications
   const subscribe = useCallback(async (): Promise<boolean> => {

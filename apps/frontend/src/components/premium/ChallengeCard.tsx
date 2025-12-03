@@ -187,8 +187,8 @@ export function ChallengeCard() {
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             className={`px-4 py-2 text-sm ${message.type === 'success'
-                ? 'bg-brand-green-100 text-brand-green-700 dark:bg-brand-green-900/50 dark:text-green-300'
-                : 'bg-red-100 text-red-700 dark:bg-purple-900/50 dark:text-red-300'
+              ? 'bg-brand-green-100 text-brand-green-700 dark:bg-brand-green-900/50 dark:text-green-300'
+              : 'bg-red-100 text-red-700 dark:bg-purple-900/50 dark:text-red-300'
               }`}
           >
             {message.text}
