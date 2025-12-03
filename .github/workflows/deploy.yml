@@ -32,8 +32,8 @@ jobs:
         echo "Tests would run here"
         # pnpm test
 
-    - name: 🏗️ Build frontend
-      run: pnpm --filter @ovp/frontend build
+    - name: 🔍 Type check frontend
+      run: pnpm --filter @ovp/frontend exec tsc --noEmit
 
     - name: 📤 Deploy to server
       uses: appleboy/ssh-action@v1.0.0
