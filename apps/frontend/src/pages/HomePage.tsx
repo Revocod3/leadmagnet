@@ -6,6 +6,7 @@ import { WelcomeAnimation } from '../components/animations/WelcomeAnimation';
 import { useSessionStore } from '../stores/sessionStore';
 import { useAuthStore } from '../stores/authStore';
 import { useChatStore } from '../stores/chatStore';
+import { openaiService } from '../services/openai';
 
 /**
  * HomePage - Flujo gratuito sin login
@@ -19,6 +20,7 @@ export const HomePage = () => {
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [showWelcomeAnimation, setShowWelcomeAnimation] = useState(false);
   const [capturedUserName, setCapturedUserName] = useState<string>('');
+  const [etymology, setEtymology] = useState<string>('');
 
   // Redirigir usuarios PRO logueados a /chat
   useEffect(() => {
@@ -55,13 +57,30 @@ export const HomePage = () => {
     }
   }, [isAuthenticated, session?.id, session?.userName]);
 
-  const handleCloseModal = (userName?: string) => {
+  const handleCloseModal = async (userName?: string) => {
     setShowWelcomeModal(false);
 
     if (userName) {
       setCapturedUserName(userName);
-      // Mostrar la animación de bienvenida
+      // Mostrar la animación de bienvenida inmediatamente
       setShowWelcomeAnimation(true);
+
+      // Generar etimología en paralelo usando OpenAI
+      try {
+        console.log('🔍 Generando etimología para:', userName);
+        const etymologyText = await openaiService.generateNameEtymology(userName, 'es');
+        if (etymologyText) {
+          console.log('✅ Etimología generada:', etymologyText);
+          setEtymology(etymologyText);
+        } else {
+          // Fallback si no se genera etimología
+          setEtymology(`El significado de tu nombre es único y especial, ${userName.split(' ')[0]}. Juntos descubriremos tu camino hacia la transformación.`);
+        }
+      } catch (error) {
+        console.error('❌ Error generando etimología:', error);
+        // Fallback en caso de error
+        setEtymology(`El significado de tu nombre es único y especial, ${userName.split(' ')[0]}. Juntos descubriremos tu camino hacia la transformación.`);
+      }
     }
   };
 
@@ -92,7 +111,7 @@ export const HomePage = () => {
       {showWelcomeAnimation && (
         <WelcomeAnimation
           userName={capturedUserName}
-          etymology={`El significado de tu nombre es único y especial, ${capturedUserName.split(' ')[0]}. Juntos descubriremos tu camino hacia la transformación.`}
+          etymology={etymology}
           onComplete={handleAnimationComplete}
           language="es"
         />

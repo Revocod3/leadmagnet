@@ -35,16 +35,15 @@ i18n
       it: { translation: it },
       pt: { translation: pt },
     },
-    // Idioma por defecto si no se detecta ninguno
+    // Idioma por defecto: ESPAÑOL (no detectar del navegador automáticamente)
+    lng: localStorage.getItem('i18nextLng') || 'es',
     fallbackLng: 'es',
 
     // Configuración de detección automática
     detection: {
-      // Orden de detección:
-      // 1. localStorage (si usuario ya eligió manualmente)
-      // 2. navigator (idioma del navegador)
-      // 3. htmlTag (atributo lang del HTML)
-      order: ['localStorage', 'navigator', 'htmlTag'],
+      // SOLO usar localStorage (respeta la elección del usuario)
+      // NO detectar del navegador automáticamente para evitar cambios inesperados
+      order: ['localStorage'],
 
       // Guardar idioma seleccionado en localStorage
       caches: ['localStorage'],

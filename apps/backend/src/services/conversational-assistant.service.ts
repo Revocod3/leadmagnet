@@ -9,7 +9,7 @@
 
 import OpenAI from 'openai';
 import { openai, MODELS } from '../config/openai';
-import { CLARA_INSTRUCTIONS_V2 as CLARA_INSTRUCTIONS, DIAGNOSIS_INSTRUCTIONS, buildDynamicInstructionsV2 as buildDynamicInstructions } from '../config/assistant-instructions-v2';
+import { CLARA_INSTRUCTIONS, DIAGNOSIS_INSTRUCTIONS, buildDynamicInstructions } from '../config/assistant-instructions';
 import { logger } from '../utils/logger';
 import { convertDiagnosisToHTML } from '../utils/markdown-to-html';
 import { prisma } from '../config/database';

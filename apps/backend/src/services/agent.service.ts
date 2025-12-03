@@ -635,21 +635,23 @@ IMPORTANTE:
         handoffs: [this.diagnosisAgent], // Diagnosis Agent implícito
       });
 
-      // HANDOFF EXPLÍCITO 0: Pattern Analyzer (turnos 1 y 2 - detecta patrón temprano)
+      // HANDOFF EXPLÍCITO 0: Pattern Analyzer (turnos 1 y 2 - ejecutar en BACKGROUND, no bloquear)
       if (context.turnCount === 1 || context.turnCount === 2) {
-        logger.info(`[HANDOFF] Calling Pattern Analyzer at turn ${context.turnCount}`);
-        try {
-          const conversationHistory = await prisma.message.findMany({
-            where: { sessionId: context.sessionId! },
-            orderBy: { createdAt: 'asc' },
-            take: 3, // Primeros mensajes para detectar patrón
-          });
+        // Ejecutar en background sin await - no bloquea la respuesta
+        (async () => {
+          logger.info(`[HANDOFF] Calling Pattern Analyzer at turn ${context.turnCount} (background)`);
+          try {
+            const conversationHistory = await prisma.message.findMany({
+              where: { sessionId: context.sessionId! },
+              orderBy: { createdAt: 'asc' },
+              take: 3,
+            });
 
-          const historyText = conversationHistory
-            .map(m => `${m.role}: ${m.content}`)
-            .join('\n');
+            const historyText = conversationHistory
+              .map(m => `${m.role}: ${m.content}`)
+              .join('\n');
 
-          const patternAnalysisPrompt = `Analiza el patrón del usuario basándote en estos mensajes:
+            const patternAnalysisPrompt = `Analiza el patrón del usuario basándote en estos mensajes:
 
 ${historyText}
 
@@ -663,28 +665,31 @@ Determina cuál de los 6 patrones describe mejor al usuario:
 
 Usa el tool save_user_pattern con el sessionId: ${context.sessionId}`;
 
-          await run(this.patternAnalyzerAgent, patternAnalysisPrompt);
-          logger.info('[HANDOFF] Pattern Analyzer completed successfully');
-        } catch (error) {
-          logger.error('[HANDOFF] Pattern Analyzer failed:', { error });
-        }
+            await run(this.patternAnalyzerAgent, patternAnalysisPrompt);
+            logger.info('[HANDOFF] Pattern Analyzer completed successfully (background)');
+          } catch (error) {
+            logger.error('[HANDOFF] Pattern Analyzer failed (background):', { error });
+          }
+        })();
       }
 
-      // HANDOFF EXPLÍCITO 1: Style Analyzer (turnos 2 y 3 - ambos aportan contexto)
+      // HANDOFF EXPLÍCITO 1: Style Analyzer (turnos 2 y 3 - ejecutar en BACKGROUND, no bloquear)
       if (context.turnCount === 2 || context.turnCount === 3) {
-        logger.info(`[HANDOFF] Calling Style Analyzer at turn ${context.turnCount}`);
-        try {
-          const conversationHistory = await prisma.message.findMany({
-            where: { sessionId: context.sessionId! },
-            orderBy: { createdAt: 'asc' },
-            take: 5, // Primeros 5 mensajes
-          });
+        // Ejecutar en background sin await - no bloquea la respuesta
+        (async () => {
+          logger.info(`[HANDOFF] Calling Style Analyzer at turn ${context.turnCount} (background)`);
+          try {
+            const conversationHistory = await prisma.message.findMany({
+              where: { sessionId: context.sessionId! },
+              orderBy: { createdAt: 'asc' },
+              take: 5,
+            });
 
-          const historyText = conversationHistory
-            .map(m => `${m.role}: ${m.content}`)
-            .join('\n');
+            const historyText = conversationHistory
+              .map(m => `${m.role}: ${m.content}`)
+              .join('\n');
 
-          const styleAnalysisPrompt = `Analiza el estilo de comunicación del usuario basándote en estos mensajes:
+            const styleAnalysisPrompt = `Analiza el estilo de comunicación del usuario basándote en estos mensajes:
 
 ${historyText}
 
@@ -695,11 +700,12 @@ Determina:
 
 Usa el tool save_style_analysis con estos valores y el sessionId: ${context.sessionId}`;
 
-          await run(this.styleAnalyzerAgent, styleAnalysisPrompt);
-          logger.info('[HANDOFF] Style Analyzer completed successfully');
-        } catch (error) {
-          logger.error('[HANDOFF] Style Analyzer failed:', { error });
-        }
+            await run(this.styleAnalyzerAgent, styleAnalysisPrompt);
+            logger.info('[HANDOFF] Style Analyzer completed successfully (background)');
+          } catch (error) {
+            logger.error('[HANDOFF] Style Analyzer failed (background):', { error });
+          }
+        })();
       }
 
       // TODO: SAFETY NET - Implementar después de testing

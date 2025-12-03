@@ -7,7 +7,7 @@
 
 import { Request, Response } from 'express';
 import { prisma } from '../config/database';
-import { agentService } from '../services/agent.service';
+import { conversationalAssistant } from '../services/conversational-assistant.service';
 import { ValidationService } from '../services/openai/validation.service';
 import { DiscountService } from '../services/discount.service';
 import { wordPressSyncService } from '../services/wordpress-sync.service';
@@ -63,7 +63,7 @@ export class ChatController {
       }
 
       // 1. Crear conversación y obtener mensaje de bienvenida
-      const { conversationId, welcomeMessage } = await agentService.startConversation(
+      const { conversationId, welcomeMessage } = await conversationalAssistant.startConversation(
         session.userName || 'Usuario'
       );
 
@@ -269,7 +269,8 @@ export class ChatController {
       }
 
       // Procesar mensaje (con o sin imagen)
-      const response = await agentService.processMessage(
+      const response = await conversationalAssistant.processMessage(
+        conversationId,
         message,
         context,
         imageBuffer
@@ -344,7 +345,7 @@ export class ChatController {
         // y guardarlo en la base de datos para que el frontend lo recoja
         setImmediate(async () => {
           try {
-            const diagnosisContent = await agentService.generateDiagnosis(
+            const diagnosisContent = await conversationalAssistant.generateDiagnosis(
               conversationId,
               session.userName || 'Usuario'
             );
