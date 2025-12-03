@@ -135,7 +135,7 @@ export function ProgressView({ onSubscriptionExpired }: ProgressViewProps) {
   const currentPhase = PHASES[progress.phase as keyof typeof PHASES] || PHASES.BIENVENIDA;
 
   return (
-    <div className="h-full overflow-y-auto p-4 space-y-6 bg-brand-cream-50 dark:bg-neutral-900">
+    <div className="h-full overflow-y-auto p-4 pb-20 space-y-6 bg-brand-cream-50 dark:bg-neutral-900">
       {/* Phase indicator */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}

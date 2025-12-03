@@ -86,7 +86,7 @@ export function DiaryView({ onSubscriptionExpired }: DiaryViewProps) {
   };
 
   return (
-    <div className="h-full flex flex-col md:flex-row gap-4 p-4 overflow-y-auto">
+    <div className="h-full flex flex-col md:flex-row gap-4 p-4 pb-20 overflow-y-auto">
       {/* Left column: Calendar and Stats */}
       <div className="md:w-1/3 space-y-4">
         {/* Quick action */}
