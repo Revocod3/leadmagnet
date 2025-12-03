@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useAuthStore } from '../stores/authStore';
 
 // URLs de los Payment Links de Stripe (LIVE)
@@ -9,6 +10,14 @@ const PAYMENT_LINKS = {
 
 export const PricingPage = () => {
   const { user, isAuthenticated } = useAuthStore();
+
+  // Enable scrolling on this page
+  useEffect(() => {
+    document.documentElement.classList.add('allow-scroll');
+    return () => {
+      document.documentElement.classList.remove('allow-scroll');
+    };
+  }, []);
 
   // Pre-fill email if user is authenticated
   const getPaymentLink = (plan: 'monthly' | 'yearly' | 'lifetime') => {

@@ -59,13 +59,17 @@ export function ProPremiumContainer({ onSubscriptionExpired }: ProPremiumContain
 
   // Handle push notification subscription
   const handlePushToggle = async () => {
-    if (!isSubscribed) {
+    if (!isSubscribed && pushStatus !== 'loading') {
       setPushStatus('loading');
       try {
         const result = await subscribe();
         if (result) {
           setPushStatus('success');
-          setTimeout(() => setPushDismissed(true), 2000);
+          // Close modal after showing success briefly
+          setTimeout(() => {
+            setPushDismissed(true);
+            localStorage.setItem('push-prompt-dismissed', 'true');
+          }, 1500);
         } else {
           setPushStatus('error');
         }

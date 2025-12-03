@@ -80,6 +80,16 @@
     left: 0;
   }
 
+  /* Allow normal scrolling on specific pages */
+  html.allow-scroll,
+  html.allow-scroll body,
+  html.allow-scroll #root {
+    overflow: auto;
+    position: static;
+    height: auto;
+    min-height: 100vh;
+  }
+
   body {
     @apply bg-background text-foreground;
     @apply antialiased;
