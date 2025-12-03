@@ -192,8 +192,8 @@ export const ProChat = ({ onSubscriptionExpired, activeTab, onTabChange }: ProCh
             showConversationsOption={true}
             onToggleConversations={() => setShowSidebar(!showSidebar)}
             isConversationsSidebarOpen={showSidebar}
-            activeTab={activeTab}
-            onTabChange={onTabChange}
+            {...(activeTab && { activeTab })}
+            {...(onTabChange && { onTabChange })}
           />
 
           {/* Chat Content */}
