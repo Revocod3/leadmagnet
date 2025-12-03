@@ -9,9 +9,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { BookOpen, TrendingUp, Calendar as CalendarIcon, Plus, RefreshCw, Flame, Smile, Meh, Frown } from 'lucide-react';
 import { DiaryCalendar } from './DiaryCalendar';
 import { DiaryEditor } from './DiaryEditor';
-import { diaryService, DiaryEntry, DiaryStats } from '../../services/premium.service';
+import { diaryService, DiaryEntry, DiaryStats, SubscriptionRequiredError } from '../../services/premium.service';
 
-export function DiaryView() {
+interface DiaryViewProps {
+  onSubscriptionExpired?: (() => void) | undefined;
+}
+
+export function DiaryView({ onSubscriptionExpired }: DiaryViewProps) {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedEntry, setSelectedEntry] = useState<DiaryEntry | null>(null);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
@@ -31,10 +35,14 @@ export function DiaryView() {
       setRecentEntries(entriesData.entries);
     } catch (error) {
       console.error('Error loading diary data:', error);
+      // Check if subscription is required
+      if (error instanceof SubscriptionRequiredError) {
+        onSubscriptionExpired?.();
+      }
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [onSubscriptionExpired]);
 
   useEffect(() => {
     loadData();

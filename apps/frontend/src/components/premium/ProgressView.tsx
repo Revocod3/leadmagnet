@@ -23,7 +23,7 @@ import {
   UserCircle,
   Compass
 } from 'lucide-react';
-import { progressService, UserProgress } from '../../services/premium.service';
+import { progressService, UserProgress, SubscriptionRequiredError } from '../../services/premium.service';
 import { ChallengeCard } from './ChallengeCard';
 
 // Phase configuration - using brand-green and purple only
@@ -84,7 +84,11 @@ function StatCard({
   );
 }
 
-export function ProgressView() {
+interface ProgressViewProps {
+  onSubscriptionExpired?: (() => void) | undefined;
+}
+
+export function ProgressView({ onSubscriptionExpired }: ProgressViewProps) {
   const [progress, setProgress] = useState<UserProgress | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -98,13 +102,18 @@ export function ProgressView() {
         setProgress(data);
       } catch (err: any) {
         console.error('Error loading progress:', err);
+        // Check if subscription is required
+        if (err instanceof SubscriptionRequiredError) {
+          onSubscriptionExpired?.();
+          return;
+        }
         setError(err.message || 'Error al cargar el progreso');
       } finally {
         setIsLoading(false);
       }
     }
     loadProgress();
-  }, []);
+  }, [onSubscriptionExpired]);
 
   if (isLoading) {
     return (

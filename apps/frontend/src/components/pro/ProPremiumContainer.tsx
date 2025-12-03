@@ -137,7 +137,7 @@ export function ProPremiumContainer({ onSubscriptionExpired }: ProPremiumContain
                 onToggleConversations={() => handleTabChange('chat')}
               />
               <div className="flex-1 overflow-auto pt-16">
-                <DiaryView />
+                <DiaryView onSubscriptionExpired={onSubscriptionExpired} />
               </div>
             </motion.div>
           )}
@@ -159,7 +159,7 @@ export function ProPremiumContainer({ onSubscriptionExpired }: ProPremiumContain
                 onToggleConversations={() => handleTabChange('chat')}
               />
               <div className="flex-1 overflow-auto pt-16">
-                <ProgressView />
+                <ProgressView onSubscriptionExpired={onSubscriptionExpired} />
               </div>
             </motion.div>
           )}

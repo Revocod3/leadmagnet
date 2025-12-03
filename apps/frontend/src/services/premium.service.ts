@@ -12,6 +12,18 @@ const API_URL = import.meta.env.VITE_API_URL !== undefined
 
 const baseURL = API_URL === '' ? '/api' : `${API_URL}/api`;
 
+// Custom error class for subscription required
+export class SubscriptionRequiredError extends Error {
+  requiresSubscription = true;
+  subscriptionExpired: boolean;
+  
+  constructor(message: string, expired = false) {
+    super(message);
+    this.name = 'SubscriptionRequiredError';
+    this.subscriptionExpired = expired;
+  }
+}
+
 // Create authenticated axios instance
 function createAuthClient(): AxiosInstance {
   const client = axios.create({
@@ -39,6 +51,23 @@ function createAuthClient(): AxiosInstance {
     }
     return config;
   });
+
+  // Add response interceptor to handle 403 subscription errors
+  client.interceptors.response.use(
+    (response) => response,
+    (error) => {
+      if (error.response?.status === 403) {
+        const data = error.response.data;
+        if (data?.data?.requiresSubscription || data?.requiresSubscription) {
+          throw new SubscriptionRequiredError(
+            data.error || 'Necesitas una suscripción Pro',
+            data.data?.subscriptionExpired || false
+          );
+        }
+      }
+      throw error;
+    }
+  );
 
   return client;
 }
