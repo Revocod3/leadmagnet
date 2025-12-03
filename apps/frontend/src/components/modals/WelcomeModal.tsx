@@ -43,7 +43,7 @@ export const WelcomeModal = ({ isOpen, onClose }: WelcomeModalProps) => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="fixed inset-0 z-[9998] bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-[9998] bg-black/40 backdrop-blur-xs"
           />
 
           {/* Modal */}
@@ -70,25 +70,17 @@ export const WelcomeModal = ({ isOpen, onClose }: WelcomeModalProps) => {
               >
                 {/* Checkmark icon with subtle background - centered */}
                 <div className="flex justify-center pt-6 pb-3">
-                  <div
-                    className="w-12 h-12 rounded-full flex items-center justify-center"
-                    style={{
-                      background: 'rgba(153, 171, 117, 0.1)',
-                    }}
-                  >
-                    <svg
-                      className="w-6 h-6 text-[#99AB75]"
-                      fill="none"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2.5"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path d="M5 13l4 4L19 7"></path>
-                    </svg>
+
+                  <div className="w-16 h-16 rounded-full bg-white shadow-2xl flex items-center justify-center overflow-hidden border-4 border-white/30 ">
+                    <img
+                      src="/assets/images/favicon.webp"
+                      alt="OVP"
+                      className="w-full h-full object-cover"
+                    />
                   </div>
+
                 </div>
+
 
                 {/* Content */}
                 <div className="px-6 pb-6 text-center">
@@ -202,7 +194,7 @@ export const WelcomeModal = ({ isOpen, onClose }: WelcomeModalProps) => {
                         clipRule="evenodd"
                       />
                     </svg>
-                    <span>100% gratuito • Sin email requerido • Resultados inmediatos</span>
+                    <span>Sin email ni tarjetas requeridas</span>
                   </motion.div>
                 </div>
               </div>
