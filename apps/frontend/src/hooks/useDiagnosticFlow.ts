@@ -15,6 +15,7 @@ export type FlowStep =
 export interface FlowMessage {
   role: 'user' | 'assistant';
   content: string;
+  imageUrl?: string; // URL de imagen adjunta al mensaje
   type?:
   | 'welcome'
   | 'greeting'
@@ -256,7 +257,7 @@ export const useDiagnosticFlow = () => {
 
   // Process user message based on current step
   const processMessage = useCallback(
-    async (userMessage: string, imageFile?: File) => {
+    async (userMessage: string, imageFile?: File, imageUrl?: string) => {
       if (isProcessing) return;
       setIsProcessing(true);
 
@@ -270,10 +271,11 @@ export const useDiagnosticFlow = () => {
       }
 
       try {
-        // Add user message to UI immediately
+        // Add user message to UI immediately (with optional image)
         const userMsg: FlowMessage = {
           role: 'user',
           content: userMessage,
+          ...(imageUrl && { imageUrl }), // Only include imageUrl if provided
           timestamp: new Date().toISOString(),
         };
         setMessages((prev) => [...prev, userMsg]);

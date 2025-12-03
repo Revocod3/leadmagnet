@@ -549,7 +549,18 @@ Si insiste en que no tiene problema:
 
    if (hasImage) {
       instructions += `
-📸 El usuario compartió una imagen. Analízala brevemente y conecta con los síntomas que mencionó.
+📸 IMAGEN RECIBIDA - INSTRUCCIONES OBLIGATORIAS:
+El usuario ha compartido una imagen. DEBES:
+1. Describir brevemente lo que observas en la imagen (1-2 oraciones)
+2. Si es una foto del abdomen: comentar sobre lo que ves (hinchazón visible, etc.)
+3. Si es una foto de comida: relacionar con los síntomas digestivos
+4. Si es otra imagen: agradecer y preguntar cómo se relaciona con su situación
+5. Conectar la imagen con lo que el usuario ha mencionado
+
+Ejemplo de respuesta con imagen de abdomen:
+"Gracias por compartir la imagen, [nombre]. Puedo ver la zona que mencionas. Veo [descripción breve]. Esto es muy común en casos como el tuyo. ¿Esta hinchazón aparece más después de comer o también en ayunas?"
+
+NUNCA ignores la imagen ni digas solo "gracias por compartirlo" sin describirla.
 `;
    }
 

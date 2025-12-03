@@ -109,43 +109,48 @@ export const ChatFooter = ({
           )}
         </AnimatePresence>
 
-        {/* Selected Image Preview */}
+        {/* Selected Image Preview - Clean minimal design */}
         {selectedImage && (
           <motion.div
-            initial={{ opacity: 0, y: -10 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="mb-3 flex items-center gap-3 p-3 bg-gradient-to-r from-brand-green-50 to-green-100 dark:from-brand-green-900/20 dark:to-green-800/20 rounded-xl border-2 border-brand-green-300 dark:border-brand-green-700 shadow-md"
+            exit={{ opacity: 0, y: 10 }}
+            className="mb-3 p-2 bg-white dark:bg-neutral-800 rounded-2xl border border-neutral-200 dark:border-neutral-700 shadow-sm"
           >
-            <div className="relative">
-              <img
-                src={selectedImage}
-                alt="Preview"
-                className="w-16 h-16 object-cover rounded-lg cursor-pointer hover:opacity-75 transition-opacity"
-                onClick={() => onImageClick(selectedImage)}
-              />
-              {isUploadingImage && (
-                <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
-                  <div className="animate-spin text-white text-xl">⏳</div>
-                </div>
+            <div className="flex items-center gap-3">
+              <div className="relative flex-shrink-0">
+                <img
+                  src={selectedImage}
+                  alt="Preview"
+                  className="w-14 h-14 object-cover rounded-xl cursor-pointer hover:opacity-90 transition-opacity"
+                  onClick={() => onImageClick(selectedImage)}
+                />
+                {isUploadingImage && (
+                  <div className="absolute inset-0 bg-black/40 rounded-xl flex items-center justify-center">
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  </div>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-neutral-800 dark:text-neutral-200">
+                  {isUploadingImage ? 'Enviando...' : 'Imagen lista'}
+                </p>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                  {isUploadingImage ? 'Analizando imagen' : 'Toca enviar o añade un mensaje'}
+                </p>
+              </div>
+              {!isUploadingImage && (
+                <button
+                  onClick={() => setSelectedImage(null)}
+                  className="p-2 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors text-neutral-500 dark:text-neutral-400"
+                  aria-label="Eliminar imagen"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
               )}
             </div>
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-brand-green-900 dark:text-brand-green-200">
-                {isUploadingImage ? 'Enviando imagen...' : '📷 Imagen lista para enviar'}
-              </p>
-              <p className="text-xs text-brand-green-700 dark:text-brand-green-300">
-                {isUploadingImage ? 'Clara la está analizando...' : 'Escribe un mensaje y presiona enviar'}
-              </p>
-            </div>
-            {!isUploadingImage && (
-              <button
-                onClick={() => setSelectedImage(null)}
-                className="p-1.5 rounded-lg hover:bg-brand-green-200 dark:hover:bg-brand-green-800 transition-colors text-brand-green-700 dark:text-brand-green-300"
-              >
-                ✕
-              </button>
-            )}
           </motion.div>
         )}
 
@@ -171,8 +176,8 @@ export const ChatFooter = ({
               <Plus className="w-5 h-5" />
             </button>
             {isPlusMenuOpen && (
-              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 z-20">
-                <div className="flex items-center gap-2 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-full shadow-xl p-1">
+              <div className="absolute bottom-full left-0 mb-3 z-20">
+                <div className="flex items-center gap-2 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-full shadow-xl p-1.5">
                   <button
                     type="button"
                     className="p-2.5 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 transition-colors"
@@ -182,7 +187,7 @@ export const ChatFooter = ({
                       setIsPlusMenuOpen(false);
                     }}
                   >
-                    <Image className="w-5 h-5 text-neutral-700 dark:text-neutral-300" />
+                    <Image className="w-5 h-5" />
                   </button>
                   <button
                     type="button"
@@ -193,7 +198,7 @@ export const ChatFooter = ({
                       setIsPlusMenuOpen(false);
                     }}
                   >
-                    <Camera className="w-5 h-5 text-neutral-700 dark:text-neutral-300" />
+                    <Camera className="w-5 h-5" />
                   </button>
                 </div>
               </div>
@@ -232,11 +237,11 @@ export const ChatFooter = ({
                   </button>
                 )}
 
-                {/* Send Button - Green Circle like ChatGPT */}
+                {/* Send Button - Active when text OR image */}
                 <button
                   type="submit"
-                  disabled={!inputMessage.trim() || isProcessing}
-                  className={`p-2 rounded-full transition-all ${inputMessage.trim() && !isProcessing
+                  disabled={(!inputMessage.trim() && !selectedImage) || isProcessing}
+                  className={`p-2 rounded-full transition-all ${(inputMessage.trim() || selectedImage) && !isProcessing
                     ? 'text-white bg-neutral-900 dark:bg-white dark:text-black hover:bg-neutral-700 dark:hover:bg-neutral-200'
                     : 'text-neutral-400 bg-transparent cursor-not-allowed'
                     }`}

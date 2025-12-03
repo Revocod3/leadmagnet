@@ -80,20 +80,25 @@ export const ProChat = ({ onSubscriptionExpired, activeTab, onTabChange }: ProCh
   };
 
   // Handle send message
-  const handleSendMessage = async (e?: React.FormEvent) => {
+  const handleSendMessage = async (e?: React.FormEvent, overrideMessage?: string, overrideImage?: string) => {
     e?.preventDefault();
-    if (!inputMessage.trim() || isSending) return;
 
-    const messageToSend = inputMessage;
-    setInputMessage('');
+    const messageToSend = overrideMessage ?? inputMessage;
+    const imageToSend = overrideImage ?? selectedImage;
+
+    // Allow image-only or text (or both)
+    if (!messageToSend.trim() && !imageToSend) return;
+    if (isSending) return;
+
+    if (!overrideMessage) setInputMessage('');
 
     let imageFile: File | undefined;
 
-    // If there's a selected image, convert it to File
-    if (selectedImage) {
+    // If there's an image (selected or override), convert it to File
+    if (imageToSend) {
       try {
         setIsUploadingImage(true);
-        const response = await fetch(selectedImage);
+        const response = await fetch(imageToSend);
         const blob = await response.blob();
         imageFile = new File([blob], 'image.jpg', { type: 'image/jpeg' });
       } catch (error) {
@@ -103,10 +108,11 @@ export const ProChat = ({ onSubscriptionExpired, activeTab, onTabChange }: ProCh
       }
     }
 
-    await sendMessage(messageToSend, imageFile);
+    // Use messageToSend or empty string for image-only
+    await sendMessage(messageToSend.trim() || '', imageFile);
 
-    if (selectedImage) {
-      setSelectedImage(null);
+    if (imageToSend) {
+      if (!overrideImage) setSelectedImage(null);
       setIsUploadingImage(false);
     }
   };
@@ -121,8 +127,10 @@ export const ProChat = ({ onSubscriptionExpired, activeTab, onTabChange }: ProCh
   };
 
   // Camera capture - PRO has unlimited images
-  const handleCameraCapture = async (imageDataUrl: string) => {
-    setSelectedImage(imageDataUrl);
+  const handleCameraCapture = async (imageDataUrl: string, message?: string) => {
+    setIsCameraOpen(false);
+    // Send directly with optional message
+    await handleSendMessage(undefined, message || '', imageDataUrl);
   };
 
   // File select - PRO has unlimited images

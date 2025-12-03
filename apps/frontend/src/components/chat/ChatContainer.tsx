@@ -25,16 +25,6 @@ const ProgressIndicator = ({ turnCount, hasRealProblem }: { turnCount: number; h
   const maxTurns = 16;
   const progress = Math.min((turnCount / maxTurns) * 100, 90);
 
-  const milestones = {
-    25: { message: "🎯 Identificando tu problema...", reward: "" },
-    50: { message: "💡 Analizando patrones...", reward: "15% descuento desbloqueado" },
-    75: { message: "✨ Preparando diagnóstico...", reward: "30% descuento garantizado" },
-    90: { message: "🎁 ¡Casi listo!", reward: "Diagnóstico valorado en 30€" }
-  };
-
-  const currentMilestone = Object.entries(milestones)
-    .filter(([threshold]) => progress >= Number(threshold))
-    .pop();
 
   return (
     <motion.div
@@ -74,23 +64,6 @@ const ProgressIndicator = ({ turnCount, hasRealProblem }: { turnCount: number; h
             />
           ))}
         </div>
-
-        {currentMilestone && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="mt-2 flex items-center justify-between"
-          >
-            <span className="text-xs text-neutral-600 dark:text-neutral-400">
-              {currentMilestone[1].message}
-            </span>
-            {currentMilestone[1].reward && (
-              <span className="text-xs font-semibold text-brand-green-600 dark:text-brand-green-400 animate-pulse">
-                {currentMilestone[1].reward}
-              </span>
-            )}
-          </motion.div>
-        )}
       </div>
     </motion.div>
   );
@@ -230,10 +203,12 @@ export const ChatContainer = () => {
 
   const handleSendMessage = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    if (!inputMessage.trim() || isProcessing) return;
+    // Permitir enviar si hay texto O imagen
+    if ((!inputMessage.trim() && !selectedImage) || isProcessing) return;
 
-    const messageToSend = inputMessage;
+    const messageToSend = inputMessage.trim() || 'Imagen adjunta';
     const hasImage = !!selectedImage;
+    const imageToSend = selectedImage; // Guardar referencia para el mensaje
     setInputMessage('');
 
     let imageFile: File | undefined;
@@ -252,8 +227,8 @@ export const ChatContainer = () => {
       }
     }
 
-    // Send the message with optional image
-    await processMessage(messageToSend, imageFile);
+    // Send the message with optional image (pass imageUrl for display in chat)
+    await processMessage(messageToSend, imageFile, imageToSend || undefined);
 
     // Si se envió una imagen, incrementar contador y limpiar
     if (hasImage && imageFile) {
@@ -339,15 +314,36 @@ export const ChatContainer = () => {
     }
   };
 
-  const handleCameraCapture = async (imageDataUrl: string) => {
+  const handleCameraCapture = async (imageDataUrl: string, captureMessage?: string) => {
     // Verificar límite de imágenes
     if (imagesUploaded >= 1) {
       setShowImageLimitMessage(true);
       setTimeout(() => setShowImageLimitMessage(false), 5000);
       return;
     }
-    setSelectedImage(imageDataUrl);
-    // Image will be uploaded when user sends a message
+
+    // Si viene con mensaje, enviar directamente
+    if (captureMessage !== undefined) {
+      // Enviar imagen + mensaje directamente
+      try {
+        setIsUploadingImage(true);
+        const response = await fetch(imageDataUrl);
+        const blob = await response.blob();
+        const imageFile = new File([blob], 'image.jpg', { type: 'image/jpeg' });
+
+        const messageToSend = captureMessage.trim() || 'Imagen adjunta';
+        await processMessage(messageToSend, imageFile, imageDataUrl);
+
+        incrementImagesUploaded();
+        setIsUploadingImage(false);
+      } catch (error) {
+        console.error('Error sending camera image:', error);
+        setIsUploadingImage(false);
+      }
+    } else {
+      // Sin mensaje, solo seleccionar la imagen
+      setSelectedImage(imageDataUrl);
+    }
   };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
