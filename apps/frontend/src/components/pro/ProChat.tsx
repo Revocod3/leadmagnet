@@ -18,12 +18,15 @@ import { TypingIndicator } from '../animations/TypingIndicator';
 import { ConversationsSidebar } from './ConversationsSidebar';
 import { CameraModal } from '../modals/CameraModal';
 import { ImageViewerModal } from '../modals/ImageViewerModal';
+import type { Tab } from './ProPremiumContainer';
 
 interface ProChatProps {
   onSubscriptionExpired?: () => void;
+  activeTab?: Tab;
+  onTabChange?: (tab: Tab) => void;
 }
 
-export const ProChat = ({ onSubscriptionExpired }: ProChatProps) => {
+export const ProChat = ({ onSubscriptionExpired, activeTab, onTabChange }: ProChatProps) => {
   // Use the PRO chat hook
   const {
     conversations,
@@ -189,6 +192,8 @@ export const ProChat = ({ onSubscriptionExpired }: ProChatProps) => {
             showConversationsOption={true}
             onToggleConversations={() => setShowSidebar(!showSidebar)}
             isConversationsSidebarOpen={showSidebar}
+            activeTab={activeTab}
+            onTabChange={onTabChange}
           />
 
           {/* Chat Content */}

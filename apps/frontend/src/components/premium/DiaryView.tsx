@@ -6,7 +6,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BookOpen, TrendingUp, Calendar as CalendarIcon, Plus, RefreshCw } from 'lucide-react';
+import { BookOpen, TrendingUp, Calendar as CalendarIcon, Plus, RefreshCw, Flame, Smile, Meh, Frown } from 'lucide-react';
 import { DiaryCalendar } from './DiaryCalendar';
 import { DiaryEditor } from './DiaryEditor';
 import { diaryService, DiaryEntry, DiaryStats } from '../../services/premium.service';
@@ -86,7 +86,7 @@ export function DiaryView() {
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={openTodayEditor}
-          className="w-full py-3 px-4 bg-gradient-to-r from-green-500 to-emerald-500 
+          className="w-full py-3 px-4 bg-gradient-to-r from-brand-green-500 to-brand-green-600 
                      text-white rounded-xl font-medium shadow-lg flex items-center justify-center gap-2"
         >
           <Plus className="w-5 h-5" />
@@ -101,49 +101,58 @@ export function DiaryView() {
 
         {/* Stats */}
         {stats && (
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+          <div className="bg-white dark:bg-neutral-800 rounded-xl shadow-sm border border-neutral-200 dark:border-neutral-700 p-4">
             <h3 className="font-semibold mb-3 flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-green-500" />
+              <TrendingUp className="w-4 h-4 text-brand-green-500" />
               Estadísticas
             </h3>
 
             <div className="grid grid-cols-2 gap-3">
-              <div className="text-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                <div className="text-2xl font-bold text-green-500">{stats.totalEntries}</div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">Entradas</div>
+              <div className="text-center p-2 bg-neutral-50 dark:bg-neutral-700 rounded-lg">
+                <div className="text-2xl font-bold text-brand-green-500">{stats.totalEntries ?? 0}</div>
+                <div className="text-xs text-neutral-500 dark:text-neutral-400">Entradas</div>
               </div>
-              <div className="text-center p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                <div className="text-2xl font-bold text-amber-500">{stats.currentStreak}🔥</div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">Racha</div>
+              <div className="text-center p-2 bg-neutral-50 dark:bg-neutral-700 rounded-lg">
+                <div className="text-2xl font-bold text-purple-500 flex items-center justify-center gap-1">
+                  {stats.currentStreak ?? 0}
+                  <Flame className="w-5 h-5 text-purple-400" />
+                </div>
+                <div className="text-xs text-neutral-500 dark:text-neutral-400">Racha</div>
               </div>
             </div>
 
-            {stats.avgMood !== null && (
+            {stats.avgMood != null && (
               <div className="mt-3 flex items-center justify-between text-sm">
-                <span className="text-gray-600 dark:text-gray-400">Estado de ánimo promedio:</span>
-                <span className="font-medium">
-                  {stats.avgMood >= 4 ? '😊' : stats.avgMood >= 3 ? '🙂' : stats.avgMood >= 2 ? '😕' : '😣'}
-                  {' '}{stats.avgMood.toFixed(1)}/5
+                <span className="text-neutral-600 dark:text-neutral-400">Estado de ánimo promedio:</span>
+                <span className="font-medium flex items-center gap-1">
+                  {stats.avgMood >= 3.5 ? (
+                    <Smile className="w-4 h-4 text-brand-green-500" />
+                  ) : stats.avgMood >= 2.5 ? (
+                    <Meh className="w-4 h-4 text-purple-500" />
+                  ) : (
+                    <Frown className="w-4 h-4 text-neutral-500" />
+                  )}
+                  {Number(stats.avgMood).toFixed(1)}/5
                 </span>
               </div>
             )}
 
-            {stats.avgBloating !== null && (
+            {stats.avgBloating != null && (
               <div className="mt-2 flex items-center justify-between text-sm">
-                <span className="text-gray-600 dark:text-gray-400">Hinchazón promedio:</span>
-                <span className="font-medium">{stats.avgBloating.toFixed(1)}/5</span>
+                <span className="text-neutral-600 dark:text-neutral-400">Hinchazón promedio:</span>
+                <span className="font-medium">{Number(stats.avgBloating).toFixed(1)}/5</span>
               </div>
             )}
 
-            {stats.commonTriggers.length > 0 && (
+            {Array.isArray(stats.commonTriggers) && stats.commonTriggers.length > 0 && (
               <div className="mt-3">
-                <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Disparadores frecuentes:</div>
+                <div className="text-xs text-neutral-500 dark:text-neutral-400 mb-1">Disparadores frecuentes:</div>
                 <div className="flex flex-wrap gap-1">
                   {stats.commonTriggers.slice(0, 3).map(({ trigger, count }) => (
                     <span
                       key={trigger}
-                      className="px-2 py-0.5 text-xs bg-red-50 dark:bg-red-900/20 
-                                 text-red-600 dark:text-red-400 rounded-full"
+                      className="px-2 py-0.5 text-xs bg-purple-50 dark:bg-purple-900/20 
+                                 text-purple-600 dark:text-purple-400 rounded-full"
                     >
                       {trigger} ({count})
                     </span>
@@ -152,9 +161,9 @@ export function DiaryView() {
               </div>
             )}
 
-            <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
-              <div className="text-xs text-gray-500 dark:text-gray-400">
-                Tendencia semanal: <span className="font-medium">{stats.weeklyTrend}</span>
+            <div className="mt-3 pt-3 border-t border-neutral-200 dark:border-neutral-600">
+              <div className="text-xs text-neutral-500 dark:text-neutral-400">
+                Tendencia semanal: <span className="font-medium">{stats.weeklyTrend || 'Sin datos aún'}</span>
               </div>
             </div>
           </div>
@@ -184,12 +193,12 @@ export function DiaryView() {
               {/* Header */}
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold flex items-center gap-2">
-                  <BookOpen className="w-5 h-5 text-green-500" />
+                  <BookOpen className="w-5 h-5 text-brand-green-500" />
                   Entradas recientes
                 </h2>
                 <button
                   onClick={loadData}
-                  className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  className="p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
                 >
                   <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
                 </button>
@@ -198,17 +207,17 @@ export function DiaryView() {
               {/* Recent entries list */}
               {isLoading ? (
                 <div className="flex items-center justify-center py-8">
-                  <RefreshCw className="w-6 h-6 animate-spin text-gray-400" />
+                  <RefreshCw className="w-6 h-6 animate-spin text-neutral-400" />
                 </div>
               ) : recentEntries.length === 0 ? (
                 <div className="text-center py-12">
-                  <CalendarIcon className="w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-3" />
-                  <p className="text-gray-500 dark:text-gray-400 mb-4">
+                  <CalendarIcon className="w-12 h-12 mx-auto text-neutral-300 dark:text-neutral-600 mb-3" />
+                  <p className="text-neutral-500 dark:text-neutral-400 mb-4">
                     Aún no tienes entradas en tu diario
                   </p>
                   <button
                     onClick={openTodayEditor}
-                    className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                    className="px-4 py-2 bg-brand-green-500 text-white rounded-lg hover:bg-brand-green-600 transition-colors"
                   >
                     Crear primera entrada
                   </button>
@@ -224,9 +233,9 @@ export function DiaryView() {
                         setSelectedEntry(entry);
                         setIsEditorOpen(true);
                       }}
-                      className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 
-                                 dark:border-gray-700 p-4 cursor-pointer hover:border-green-300 
-                                 dark:hover:border-green-700 transition-colors"
+                      className="bg-white dark:bg-neutral-800 rounded-xl shadow-sm border border-neutral-200 
+                                 dark:border-neutral-700 p-4 cursor-pointer hover:border-brand-green-300 
+                                 dark:hover:border-brand-green-700 transition-colors"
                     >
                       <div className="flex items-start justify-between mb-2">
                         <div className="font-medium">
@@ -243,15 +252,15 @@ export function DiaryView() {
                             </span>
                           )}
                           {entry.bloating && entry.bloating >= 3 && (
-                            <span className="text-xs px-2 py-0.5 bg-amber-100 dark:bg-amber-900/50 
-                                           text-amber-700 dark:text-amber-300 rounded-full">
+                            <span className="text-xs px-2 py-0.5 bg-purple-100 dark:bg-purple-900/50 
+                                           text-purple-700 dark:text-purple-300 rounded-full">
                               Hinchazón {entry.bloating}/5
                             </span>
                           )}
                         </div>
                       </div>
 
-                      <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2">
+                      <p className="text-sm text-neutral-600 dark:text-neutral-300 line-clamp-2">
                         {entry.content}
                       </p>
 
@@ -260,14 +269,14 @@ export function DiaryView() {
                           {entry.triggers.slice(0, 3).map(trigger => (
                             <span
                               key={trigger}
-                              className="px-2 py-0.5 text-xs bg-red-50 dark:bg-red-900/20 
-                                         text-red-600 dark:text-red-400 rounded-full"
+                              className="px-2 py-0.5 text-xs bg-purple-50 dark:bg-purple-900/20 
+                                         text-purple-600 dark:text-purple-400 rounded-full"
                             >
                               {trigger}
                             </span>
                           ))}
                           {entry.triggers.length > 3 && (
-                            <span className="px-2 py-0.5 text-xs text-gray-500">
+                            <span className="px-2 py-0.5 text-xs text-neutral-500">
                               +{entry.triggers.length - 3}
                             </span>
                           )}

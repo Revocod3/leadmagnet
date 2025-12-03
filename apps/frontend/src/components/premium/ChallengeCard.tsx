@@ -15,7 +15,14 @@ import {
   Trophy,
   Target,
   Clock,
-  Loader2
+  Loader2,
+  Flame,
+  Brain,
+  Wind,
+  Activity,
+  Droplets,
+  UtensilsCrossed,
+  LucideIcon
 } from 'lucide-react';
 import {
   challengeService,
@@ -24,20 +31,20 @@ import {
   ChallengeStats
 } from '../../services/premium.service';
 
-// Category icons
-const CATEGORY_ICONS: Record<string, string> = {
-  'MINDFULNESS': '🧘',
-  'BREATHING': '🌬️',
-  'MOVEMENT': '🏃',
-  'HYDRATION': '💧',
-  'EATING': '🍽️'
+// Category icons - using Lucide components
+const CATEGORY_ICONS: Record<string, LucideIcon> = {
+  'MINDFULNESS': Brain,
+  'BREATHING': Wind,
+  'MOVEMENT': Activity,
+  'HYDRATION': Droplets,
+  'EATING': UtensilsCrossed
 };
 
 // Difficulty colors
 const DIFFICULTY_COLORS: Record<string, string> = {
-  'easy': 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300',
+  'easy': 'bg-brand-green-100 text-brand-green-700 dark:bg-brand-green-900/50 dark:text-green-300',
   'medium': 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300',
-  'hard': 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300'
+  'hard': 'bg-red-100 text-red-700 dark:bg-purple-900/50 dark:text-red-300'
 };
 
 export function ChallengeCard() {
@@ -159,9 +166,9 @@ export function ChallengeCard() {
 
   if (isLoading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 
-                      dark:border-gray-700 p-4 flex items-center justify-center">
-        <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+      <div className="bg-white dark:bg-neutral-800 rounded-xl shadow-sm border border-neutral-200 
+                      dark:border-neutral-700 p-4 flex items-center justify-center">
+        <Loader2 className="w-6 h-6 animate-spin text-neutral-400" />
       </div>
     );
   }
@@ -180,8 +187,8 @@ export function ChallengeCard() {
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             className={`px-4 py-2 text-sm ${message.type === 'success'
-                ? 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300'
-                : 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300'
+                ? 'bg-brand-green-100 text-brand-green-700 dark:bg-brand-green-900/50 dark:text-green-300'
+                : 'bg-red-100 text-red-700 dark:bg-purple-900/50 dark:text-red-300'
               }`}
           >
             {message.text}
@@ -205,7 +212,7 @@ export function ChallengeCard() {
                 {stats.completed}
               </span>
               <span className="flex items-center gap-1 text-purple-600 dark:text-purple-400">
-                🔥 {stats.streak}
+                <Flame className="w-4 h-4" /> {stats.streak}
               </span>
             </div>
           )}
@@ -216,12 +223,15 @@ export function ChallengeCard() {
             {/* Challenge info */}
             <div className="mb-3">
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-xl">{CATEGORY_ICONS[challenge.category] || '🎯'}</span>
-                <h4 className="font-medium text-gray-900 dark:text-white">
+                {(() => {
+                  const CategoryIcon = CATEGORY_ICONS[challenge.category] || Target;
+                  return <CategoryIcon className="w-5 h-5 text-purple-500" />;
+                })()}
+                <h4 className="font-medium text-neutral-900 dark:text-white">
                   {challenge.title}
                 </h4>
               </div>
-              <p className="text-sm text-gray-600 dark:text-gray-300">
+              <p className="text-sm text-neutral-600 dark:text-neutral-300">
                 {challenge.description}
               </p>
             </div>
@@ -231,7 +241,7 @@ export function ChallengeCard() {
               <span className={`px-2 py-0.5 text-xs rounded-full ${DIFFICULTY_COLORS[challenge.difficulty]}`}>
                 {challenge.difficulty === 'easy' ? 'Fácil' : challenge.difficulty === 'medium' ? 'Medio' : 'Difícil'}
               </span>
-              <span className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+              <span className="flex items-center gap-1 text-xs text-neutral-500 dark:text-neutral-400">
                 <Clock className="w-3 h-3" />
                 {challenge.durationDays} día{challenge.durationDays > 1 ? 's' : ''}
               </span>
@@ -255,8 +265,8 @@ export function ChallengeCard() {
                   exit={{ height: 0, opacity: 0 }}
                   className="overflow-hidden"
                 >
-                  <div className="py-3 text-sm text-gray-600 dark:text-gray-300 whitespace-pre-line 
-                                  bg-white/50 dark:bg-gray-800/50 rounded-lg p-3">
+                  <div className="py-3 text-sm text-neutral-600 dark:text-neutral-300 whitespace-pre-line 
+                                  bg-white/50 dark:bg-neutral-800/50 rounded-lg p-3">
                     {challenge.instructions}
                   </div>
                 </motion.div>
@@ -270,7 +280,7 @@ export function ChallengeCard() {
                   <button
                     onClick={handleComplete}
                     disabled={actionLoading}
-                    className="flex-1 py-2 px-3 bg-green-500 hover:bg-green-600 text-white 
+                    className="flex-1 py-2 px-3 bg-brand-green-500 hover:bg-brand-green-600 text-white 
                                rounded-lg font-medium flex items-center justify-center gap-2
                                disabled:opacity-50 transition-colors"
                   >
@@ -280,9 +290,9 @@ export function ChallengeCard() {
                   <button
                     onClick={handleSkip}
                     disabled={actionLoading}
-                    className="py-2 px-3 border border-gray-300 dark:border-gray-600 
-                               text-gray-600 dark:text-gray-400 rounded-lg hover:bg-gray-50
-                               dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+                    className="py-2 px-3 border border-neutral-300 dark:border-neutral-600 
+                               text-neutral-600 dark:text-neutral-400 rounded-lg hover:bg-neutral-50
+                               dark:hover:bg-neutral-700 transition-colors disabled:opacity-50"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -303,7 +313,7 @@ export function ChallengeCard() {
           </>
         ) : (
           <div className="text-center py-4">
-            <p className="text-gray-500 dark:text-gray-400 text-sm">
+            <p className="text-neutral-500 dark:text-neutral-400 text-sm">
               ¡Has completado todos los retos disponibles! 🎉
             </p>
           </div>

@@ -66,7 +66,7 @@ export const ConversationList = ({
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full p-4">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-green-500" />
       </div>
     );
   }
@@ -74,10 +74,10 @@ export const ConversationList = ({
   if (error) {
     return (
       <div className="p-4 text-center">
-        <p className="text-red-500 mb-2">{error}</p>
+        <p className="text-purple-500 mb-2">{error}</p>
         <button
           onClick={loadConversations}
-          className="text-emerald-600 hover:text-emerald-700 underline"
+          className="text-brand-green-600 hover:text-brand-green-700 underline"
         >
           Reintentar
         </button>
@@ -86,34 +86,34 @@ export const ConversationList = ({
   }
 
   return (
-    <div className="flex flex-col h-full bg-gray-50 dark:bg-gray-900">
+    <div className="flex flex-col h-full bg-neutral-50 dark:bg-neutral-900">
       {/* Conversations List */}
       <div className="flex-1 overflow-y-auto">
         {conversations.length === 0 ? (
-          <div className="p-4 text-center text-gray-500 dark:text-gray-400">
+          <div className="p-4 text-center text-neutral-500 dark:text-neutral-400">
             <p className="mb-2">No tienes conversaciones aún</p>
             <p className="text-sm">¡Inicia una nueva para hablar con Clara!</p>
           </div>
         ) : (
-          <div className="divide-y divide-gray-200 dark:divide-gray-700">
+          <div className="divide-y divide-neutral-200 dark:divide-neutral-700">
             {conversations.map((conversation) => (
               <div
                 key={conversation.id}
                 onClick={() => onSelectConversation(conversation.id)}
-                className={`p-4 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${selectedConversationId === conversation.id
-                  ? 'bg-emerald-50 dark:bg-emerald-900/20 border-l-4 border-emerald-500'
+                className={`p-4 cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors ${selectedConversationId === conversation.id
+                  ? 'bg-brand-green-50 dark:bg-brand-green-900/20 border-l-4 border-brand-green-500'
                   : ''
                   }`}
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-medium text-gray-900 dark:text-white truncate">
+                    <h3 className="font-medium text-neutral-900 dark:text-white truncate">
                       {conversation.title || 'Nueva conversación'}
                     </h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
                       {conversation.messageCount} mensajes
                     </p>
-                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                    <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-1">
                       {formatDistanceToNow(new Date(conversation.lastMessageAt), {
                         addSuffix: true,
                         locale: es,
@@ -124,7 +124,7 @@ export const ConversationList = ({
                   {/* Delete button */}
                   <button
                     onClick={(e) => handleDelete(e, conversation.id)}
-                    className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                    className="p-1 text-neutral-400 hover:text-purple-500 transition-colors"
                     title="Eliminar conversación"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

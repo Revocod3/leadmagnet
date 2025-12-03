@@ -22,10 +22,10 @@ const MONTHS = [
 
 // Get mood color based on value (1-5)
 function getMoodColor(mood: number | null): string {
-  if (mood === null) return 'bg-gray-100 dark:bg-gray-700';
-  if (mood >= 4) return 'bg-green-100 dark:bg-green-900/50';
+  if (mood === null) return 'bg-neutral-100 dark:bg-neutral-700';
+  if (mood >= 4) return 'bg-brand-green-100 dark:bg-brand-green-900/50';
   if (mood >= 3) return 'bg-yellow-100 dark:bg-yellow-900/50';
-  return 'bg-red-100 dark:bg-red-900/50';
+  return 'bg-red-100 dark:bg-purple-900/50';
 }
 
 // Get bloating indicator
@@ -93,7 +93,8 @@ export function DiaryCalendar({ selectedDate, onDateSelect }: DiaryCalendarProps
 
     // Days of the month
     for (let d = 1; d <= lastDay.getDate(); d++) {
-      const entryData = calendarData?.entries.find(e => e.day === d);
+      const entries = Array.isArray(calendarData?.entries) ? calendarData.entries : [];
+      const entryData = entries.find(e => e.day === d);
       days.push({
         day: d,
         hasEntry: entryData?.hasEntry || false,
@@ -113,12 +114,12 @@ export function DiaryCalendar({ selectedDate, onDateSelect }: DiaryCalendarProps
   const calendarDays = generateCalendarDays();
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
+    <div className="bg-white dark:bg-neutral-800 rounded-xl shadow-sm border border-neutral-200 dark:border-neutral-700 p-4">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <button
           onClick={prevMonth}
-          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          className="p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
@@ -131,7 +132,7 @@ export function DiaryCalendar({ selectedDate, onDateSelect }: DiaryCalendarProps
           onClick={nextMonth}
           disabled={!canGoNext}
           className={`p-2 rounded-lg transition-colors ${canGoNext
-              ? 'hover:bg-gray-100 dark:hover:bg-gray-700'
+              ? 'hover:bg-neutral-100 dark:hover:bg-neutral-700'
               : 'opacity-30 cursor-not-allowed'
             }`}
         >
@@ -142,7 +143,7 @@ export function DiaryCalendar({ selectedDate, onDateSelect }: DiaryCalendarProps
       {/* Day headers */}
       <div className="grid grid-cols-7 gap-1 mb-2">
         {DAYS.map(day => (
-          <div key={day} className="text-center text-xs font-medium text-gray-500 dark:text-gray-400 py-1">
+          <div key={day} className="text-center text-xs font-medium text-neutral-500 dark:text-neutral-400 py-1">
             {day}
           </div>
         ))}
@@ -171,12 +172,12 @@ export function DiaryCalendar({ selectedDate, onDateSelect }: DiaryCalendarProps
                 aspect-square rounded-lg flex flex-col items-center justify-center text-sm relative
                 transition-colors
                 ${isFuture ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'}
-                ${isSelected ? 'ring-2 ring-green-500' : ''}
+                ${isSelected ? 'ring-2 ring-brand-green-500' : ''}
                 ${isToday ? 'font-bold' : ''}
-                ${dayData.hasEntry ? getMoodColor(dayData.mood) : 'hover:bg-gray-50 dark:hover:bg-gray-700'}
+                ${dayData.hasEntry ? getMoodColor(dayData.mood) : 'hover:bg-neutral-50 dark:hover:bg-neutral-700'}
               `}
             >
-              <span className={isToday ? 'text-green-600 dark:text-green-400' : ''}>
+              <span className={isToday ? 'text-brand-green-600 dark:text-green-400' : ''}>
                 {dayData.day}
               </span>
               {dayData.hasEntry && (
@@ -190,9 +191,9 @@ export function DiaryCalendar({ selectedDate, onDateSelect }: DiaryCalendarProps
       </div>
 
       {/* Legend */}
-      <div className="mt-4 flex items-center justify-center gap-4 text-xs text-gray-500 dark:text-gray-400">
+      <div className="mt-4 flex items-center justify-center gap-4 text-xs text-neutral-500 dark:text-neutral-400">
         <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded bg-green-100 dark:bg-green-900/50" />
+          <div className="w-3 h-3 rounded bg-brand-green-100 dark:bg-brand-green-900/50" />
           <span>Bien</span>
         </div>
         <div className="flex items-center gap-1">
@@ -200,7 +201,7 @@ export function DiaryCalendar({ selectedDate, onDateSelect }: DiaryCalendarProps
           <span>Regular</span>
         </div>
         <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded bg-red-100 dark:bg-red-900/50" />
+          <div className="w-3 h-3 rounded bg-red-100 dark:bg-purple-900/50" />
           <span>Mal</span>
         </div>
       </div>
