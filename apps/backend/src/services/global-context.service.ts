@@ -232,7 +232,7 @@ REGLAS:
         extracted = JSON.parse(extractedText);
         logger.info(`[CONTEXT] Parsed extracted data: ${JSON.stringify(Object.keys(extracted))}`);
       } catch {
-        logger.error('[CONTEXT] Failed to parse extracted context JSON:', extractedText.substring(0, 200));
+        logger.error('[CONTEXT] Failed to parse extracted context JSON:', { preview: extractedText.substring(0, 200) });
         return;
       }
 
