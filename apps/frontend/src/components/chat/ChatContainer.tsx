@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 // Single-flow mode: no navigation needed here
 import { useDiagnosticFlow } from '../../hooks/useDiagnosticFlow';
 import { useSpeechToText } from '../../hooks/useSpeechToText';
@@ -16,57 +16,69 @@ import { ChatHeader } from './ChatHeader';
 import { ChatFooter } from './ChatFooter';
 import { TypingIndicator } from '../animations/TypingIndicator';
 import { DiagnosisGeneratingIndicator } from '../animations/DiagnosisGeneratingIndicator';
+import { BlockProgressBar } from './BlockProgressBar';
+import { QuickReplyChips } from './QuickReplyChips';
+import { InfoWedge } from './InfoWedge';
+import { getBlock, getQuestion } from '../../config/diagnostic-flow-config';
 import { apiClient } from '../../services/api';
 
-// Progress Indicator Component
-const ProgressIndicator = ({ turnCount, hasRealProblem }: { turnCount: number; hasRealProblem: boolean }) => {
-  if (!hasRealProblem || turnCount < 2) return null;
-
-  const maxTurns = 16;
-  const progress = Math.min((turnCount / maxTurns) * 100, 90);
-
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="bg-white/95 dark:bg-neutral-900/95 backdrop-blur-lg border-b border-neutral-200 dark:border-neutral-800 px-4 py-3"
-    >
-      <div className="max-w-2xl mx-auto">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-medium text-neutral-600 dark:text-neutral-400">
-            Tu diagnóstico
-          </span>
-          <span className="text-xs font-bold text-brand-green-600 dark:text-brand-green-400">
-            {Math.round(progress)}% completado
-          </span>
-        </div>
-
-        <div className="relative">
-          <div className="h-2 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden">
-            <motion.div
-              className="h-full bg-gradient-to-r from-brand-green-500 to-brand-green-600"
-              initial={{ width: 0 }}
-              animate={{ width: `${progress}%` }}
-              transition={{ duration: 0.5, ease: "easeOut" }}
-            />
-          </div>
-
-          {/* Milestone dots */}
-          {[25, 50, 75].map((threshold) => (
-            <div
-              key={threshold}
-              className={`absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-2 
-                ${progress >= threshold
-                  ? 'bg-brand-green-500 border-brand-green-500'
-                  : 'bg-white dark:bg-neutral-800 border-neutral-300 dark:border-neutral-600'}`}
-              style={{ left: `${threshold}%`, transform: 'translate(-50%, -50%)' }}
-            />
-          ))}
-        </div>
-      </div>
-    </motion.div>
-  );
+/**
+ * Calcula el bloque y pregunta actuales basándose en el turno
+ * Turno 1: Bienvenida
+ * Turno 2: Usuario confirma -> Pregunta 1
+ * Turnos 3-5: Preguntas 2-4 (Digestivo)
+ * Turno 6: Cuña + Pregunta 5 (Energía)
+ * Turnos 7-9: Preguntas 6-8
+ * Turno 10: Cuña + Pregunta 9 (Emocional)
+ * Turnos 11-13: Preguntas 10-12
+ * Turno 14: Cuña final + Diagnóstico
+ */
+const getFlowPosition = (turnCount: number): {
+  blockIndex: number;
+  questionIndex: number;
+  showWedge: boolean;
+  isComplete: boolean;
+} => {
+  // Antes de empezar preguntas
+  if (turnCount < 2) {
+    return { blockIndex: 0, questionIndex: -1, showWedge: false, isComplete: false };
+  }
+  
+  // Mapeo de turno a pregunta (turno 2 = pregunta 0, turno 3 = pregunta 1, etc.)
+  const questionNumber = turnCount - 2; // 0-11 para las 12 preguntas
+  
+  // Bloque Digestivo: preguntas 0-3 (turnos 2-5)
+  if (questionNumber < 4) {
+    return { 
+      blockIndex: 0, 
+      questionIndex: questionNumber, 
+      showWedge: questionNumber === 3, // Mostrar cuña después de pregunta 4
+      isComplete: false 
+    };
+  }
+  
+  // Bloque Energía: preguntas 4-7 (turnos 6-9)
+  if (questionNumber < 8) {
+    return { 
+      blockIndex: 1, 
+      questionIndex: questionNumber - 4, 
+      showWedge: questionNumber === 7, // Mostrar cuña después de pregunta 8
+      isComplete: false 
+    };
+  }
+  
+  // Bloque Emocional: preguntas 8-11 (turnos 10-13)
+  if (questionNumber < 12) {
+    return { 
+      blockIndex: 2, 
+      questionIndex: questionNumber - 8, 
+      showWedge: questionNumber === 11, // Mostrar cuña después de pregunta 12
+      isComplete: false 
+    };
+  }
+  
+  // Flujo completado
+  return { blockIndex: 2, questionIndex: 3, showWedge: false, isComplete: true };
 };
 
 export const ChatContainer = () => {
@@ -105,6 +117,22 @@ export const ChatContainer = () => {
   const { isListening, transcript, startListening, stopListening, isSupported: isSpeechSupported } = useSpeechToText();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Calcular posición del flujo estructurado basado en el número de mensajes del usuario
+  const userMessageCount = messages.filter(m => m.role === 'user').length;
+  const flowPosition = useMemo(() => getFlowPosition(userMessageCount + 1), [userMessageCount]);
+  const currentBlock = useMemo(() => getBlock(flowPosition.blockIndex), [flowPosition.blockIndex]);
+  const currentQuestion = useMemo(
+    () => getQuestion(flowPosition.blockIndex, flowPosition.questionIndex),
+    [flowPosition.blockIndex, flowPosition.questionIndex]
+  );
+
+  // Handler para selección de chip de respuesta rápida
+  const handleChipSelect = (option: { value: string; label: string }) => {
+    if (!isProcessing) {
+      processMessage(option.label);
+    }
+  };
 
   // Actualizar hasRated cuando cambie la sesión
   useEffect(() => {
@@ -425,10 +453,14 @@ export const ChatContainer = () => {
         {/* Header flotante transparente */}
         <ChatHeader isDarkMode={isDarkMode} onToggleDarkMode={toggleDarkMode} />
 
-        {/* Progress Indicator - Fixed debajo del header */}
-        {state.step === 'asking_questions' && (
+        {/* Block Progress Bar - Fixed debajo del header */}
+        {state.step === 'asking_questions' && currentBlock && flowPosition.questionIndex >= 0 && !flowPosition.isComplete && (
           <div className="fixed top-16 left-0 right-0 z-20">
-            <ProgressIndicator turnCount={state.currentQuestionIndex} hasRealProblem={true} />
+            <BlockProgressBar
+              currentBlock={currentBlock}
+              currentQuestionIndex={flowPosition.questionIndex}
+              totalQuestionsInBlock={currentBlock.questions.length}
+            />
           </div>
         )}
 
@@ -480,6 +512,30 @@ export const ChatContainer = () => {
                     );
                   })}
                 </AnimatePresence>
+
+                {/* Quick Reply Chips - mostrar si la pregunta actual tiene opciones */}
+                {state.step === 'asking_questions' && 
+                 !isProcessing && 
+                 currentQuestion?.type === 'multiple_choice' && 
+                 currentQuestion?.options && 
+                 currentBlock && (
+                  <QuickReplyChips
+                    options={currentQuestion.options}
+                    onSelect={handleChipSelect}
+                    disabled={isProcessing}
+                    blockColor={currentBlock.color}
+                  />
+                )}
+
+                {/* Info Wedge - mostrar cuña informativa cuando se completa un bloque */}
+                {flowPosition.showWedge && currentBlock && !isProcessing && (
+                  <InfoWedge
+                    content={currentBlock.infoWedge}
+                    blockColor={currentBlock.color}
+                    blockColorLight={currentBlock.colorLight}
+                    blockEmoji={currentBlock.emoji}
+                  />
+                )}
 
                 {/* Diagnosis Generating Indicator - Special state */}
                 {state.step === 'generating_diagnosis' && !isProcessing && (
