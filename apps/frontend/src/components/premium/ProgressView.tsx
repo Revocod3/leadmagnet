@@ -281,7 +281,7 @@ export function ProgressView({ onSubscriptionExpired }: ProgressViewProps) {
 
               {/* Goals */}
               {progress.context.digestiveGoals && (
-                Array.isArray(progress.context.digestiveGoals) 
+                Array.isArray(progress.context.digestiveGoals)
                   ? progress.context.digestiveGoals.length > 0 && (
                     <div>
                       <div className="text-neutral-500 dark:text-neutral-400 mb-1">Objetivos</div>

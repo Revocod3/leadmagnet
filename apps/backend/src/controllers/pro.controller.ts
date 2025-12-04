@@ -19,7 +19,7 @@ const SUMMARY_GENERATION_THRESHOLD = 10;
  */
 function formatHabitsProfile(habits: Record<string, unknown>): string | null {
   const parts: string[] = [];
-  
+
   if (habits.eatingSpeed) parts.push(`Come ${habits.eatingSpeed}`);
   if (habits.mealsLocation) parts.push(`Comidas: ${habits.mealsLocation}`);
   if (habits.hydration) parts.push(`Hidratación: ${habits.hydration}`);
@@ -27,7 +27,7 @@ function formatHabitsProfile(habits: Record<string, unknown>): string | null {
   if (habits.alcohol) parts.push(`Alcohol: ${habits.alcohol}`);
   if (habits.processedFood) parts.push(`Procesados: ${habits.processedFood}`);
   if (habits.cookingAbility) parts.push(`Cocina: ${habits.cookingAbility}`);
-  
+
   return parts.length > 0 ? parts.join(' • ') : null;
 }
 
@@ -462,19 +462,19 @@ export class ProController {
           },
           context: context ? (() => {
             const mainSymptoms = context.digestiveProfile ? (context.digestiveProfile as Record<string, unknown>).symptoms as string | null : null;
-            const dietaryProfile = context.habitsProfile && Object.keys(context.habitsProfile as object).length > 0 
-              ? formatHabitsProfile(context.habitsProfile as Record<string, unknown>) 
+            const dietaryProfile = context.habitsProfile && Object.keys(context.habitsProfile as object).length > 0
+              ? formatHabitsProfile(context.habitsProfile as Record<string, unknown>)
               : null;
             const stressLevel = context.emotionalProfile ? (context.emotionalProfile as Record<string, unknown>).stressLevel as string | null : null;
             const digestiveGoals = Array.isArray(context.goals) && context.goals.length > 0 ? context.goals : null;
             const knownTriggers = Array.isArray(context.identifiedTriggers) && context.identifiedTriggers.length > 0 ? context.identifiedTriggers : [];
             const improvements = Array.isArray(context.strengths) && context.strengths.length > 0 ? context.strengths : [];
-            
+
             // Return null if no useful data
             if (!mainSymptoms && !dietaryProfile && !stressLevel && !digestiveGoals && knownTriggers.length === 0 && improvements.length === 0) {
               return null;
             }
-            
+
             return { mainSymptoms, dietaryProfile, stressLevel, digestiveGoals, knownTriggers, improvements };
           })() : null
         }

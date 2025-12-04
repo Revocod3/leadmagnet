@@ -16,7 +16,7 @@ const baseURL = API_URL === '' ? '/api' : `${API_URL}/api`;
 export class SubscriptionRequiredError extends Error {
   requiresSubscription = true;
   subscriptionExpired: boolean;
-  
+
   constructor(message: string, expired = false) {
     super(message);
     this.name = 'SubscriptionRequiredError';

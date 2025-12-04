@@ -59,7 +59,7 @@ export function DiaryView({ onSubscriptionExpired }: DiaryViewProps) {
       const month = String(date.getMonth() + 1).padStart(2, '0');
       const day = String(date.getDate()).padStart(2, '0');
       const dateStr = `${year}-${month}-${day}`;
-      
+
       const entry = await diaryService.getEntryByDate(dateStr);
       setSelectedEntry(entry);
     } catch (error) {

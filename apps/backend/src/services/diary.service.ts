@@ -598,11 +598,11 @@ Máximo 1 emoji. Tono cálido pero profesional.`;
     const validMoods = recentEntries.filter(e => e.mood !== null).map(e => e.mood!);
     const validBloating = recentEntries.filter(e => e.bloating !== null).map(e => e.bloating!);
 
-    const avgMood = validMoods.length > 0 
-      ? validMoods.reduce((a, b) => a + b, 0) / validMoods.length 
+    const avgMood = validMoods.length > 0
+      ? validMoods.reduce((a, b) => a + b, 0) / validMoods.length
       : null;
-    const avgBloating = validBloating.length > 0 
-      ? validBloating.reduce((a, b) => a + b, 0) / validBloating.length 
+    const avgBloating = validBloating.length > 0
+      ? validBloating.reduce((a, b) => a + b, 0) / validBloating.length
       : null;
 
     // Get common triggers
