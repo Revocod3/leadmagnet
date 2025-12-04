@@ -89,7 +89,7 @@ export function ChallengeCard() {
 
     setActionLoading(true);
     try {
-      const result = await challengeService.complete(currentChallenge.id);
+      const result = await challengeService.complete(currentChallenge.challenge.id);
       if (result.success) {
         setMessage({ type: 'success', text: result.message });
         setCurrentChallenge(null);
@@ -117,7 +117,7 @@ export function ChallengeCard() {
 
     setActionLoading(true);
     try {
-      const result = await challengeService.skip(currentChallenge.id, reason || undefined);
+      const result = await challengeService.skip(currentChallenge.challenge.id, reason || undefined);
       if (result.success) {
         setMessage({ type: 'success', text: result.message });
         setCurrentChallenge(null);

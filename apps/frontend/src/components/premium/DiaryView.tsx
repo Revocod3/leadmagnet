@@ -54,7 +54,12 @@ export function DiaryView({ onSubscriptionExpired }: DiaryViewProps) {
 
     // Try to load existing entry for this date
     try {
-      const dateStr = date.toISOString().split('T')[0] as string;
+      // Format date in local timezone (YYYY-MM-DD)
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const dateStr = `${year}-${month}-${day}`;
+      
       const entry = await diaryService.getEntryByDate(dateStr);
       setSelectedEntry(entry);
     } catch (error) {
@@ -272,7 +277,20 @@ export function DiaryView({ onSubscriptionExpired }: DiaryViewProps) {
                         {entry.content}
                       </p>
 
-                      {entry.triggers.length > 0 && (
+                      {/* Clara's note preview */}
+                      {entry.claraNotes && (
+                        <div className="mt-2 p-2 bg-brand-green-50 dark:bg-brand-green-900/20 rounded-lg">
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <span className="text-xs">💚</span>
+                            <span className="text-xs font-medium text-brand-green-700 dark:text-green-400">Clara</span>
+                          </div>
+                          <p className="text-xs text-neutral-600 dark:text-neutral-300 line-clamp-2">
+                            {entry.claraNotes}
+                          </p>
+                        </div>
+                      )}
+
+                      {entry.triggers && entry.triggers.length > 0 && (
                         <div className="mt-2 flex flex-wrap gap-1">
                           {entry.triggers.slice(0, 3).map(trigger => (
                             <span
@@ -283,7 +301,7 @@ export function DiaryView({ onSubscriptionExpired }: DiaryViewProps) {
                               {trigger}
                             </span>
                           ))}
-                          {entry.triggers.length > 3 && (
+                          {entry.triggers && entry.triggers.length > 3 && (
                             <span className="px-2 py-0.5 text-xs text-neutral-500">
                               +{entry.triggers.length - 3}
                             </span>

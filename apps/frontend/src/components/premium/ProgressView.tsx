@@ -281,12 +281,23 @@ export function ProgressView({ onSubscriptionExpired }: ProgressViewProps) {
 
               {/* Goals */}
               {progress.context.digestiveGoals && (
-                <div>
-                  <div className="text-neutral-500 dark:text-neutral-400 mb-1">Objetivos</div>
-                  <div className="text-neutral-900 dark:text-white">
-                    {progress.context.digestiveGoals}
-                  </div>
-                </div>
+                Array.isArray(progress.context.digestiveGoals) 
+                  ? progress.context.digestiveGoals.length > 0 && (
+                    <div>
+                      <div className="text-neutral-500 dark:text-neutral-400 mb-1">Objetivos</div>
+                      <div className="text-neutral-900 dark:text-white">
+                        {progress.context.digestiveGoals.join(', ')}
+                      </div>
+                    </div>
+                  )
+                  : (
+                    <div>
+                      <div className="text-neutral-500 dark:text-neutral-400 mb-1">Objetivos</div>
+                      <div className="text-neutral-900 dark:text-white">
+                        {progress.context.digestiveGoals}
+                      </div>
+                    </div>
+                  )
               )}
 
               {/* Known triggers */}

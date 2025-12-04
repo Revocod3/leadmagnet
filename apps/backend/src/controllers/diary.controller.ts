@@ -20,7 +20,7 @@ export async function createDiaryEntry(req: AuthenticatedRequest, res: Response)
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const { content, mood, bloating, energy, stress, symptoms, meals, date } = req.body;
+    const { content, mood, bloating, energy, stress, symptoms, meals, date, triggers, improvements } = req.body;
 
     if (!content || typeof content !== 'string') {
       return res.status(400).json({ error: 'Content is required' });
@@ -35,10 +35,12 @@ export async function createDiaryEntry(req: AuthenticatedRequest, res: Response)
       ...(stress != null && { stress: parseInt(stress) }),
       ...(Array.isArray(symptoms) && { symptoms }),
       ...(Array.isArray(meals) && { meals }),
-      ...(date && { date: new Date(date) })
+      ...(Array.isArray(triggers) && { triggers }),
+      ...(Array.isArray(improvements) && { improvements }),
+      ...(date && { date })  // Pass as string, service will parse it correctly
     });
 
-    return res.status(201).json(entry);
+    return res.status(201).json({ entry });
   } catch (error) {
     logger.error('Error creating diary entry:', { error });
     return res.status(500).json({ error: 'Failed to create diary entry' });
@@ -90,13 +92,14 @@ export async function getDiaryEntryByDate(req: AuthenticatedRequest, res: Respon
       return res.status(400).json({ error: 'Date is required' });
     }
 
-    const entry = await diaryService.getEntryByDate(userId, new Date(date));
+    // Pass the date string directly - the service will parse it correctly
+    const entry = await diaryService.getEntryByDate(userId, date);
 
     if (!entry) {
       return res.status(404).json({ error: 'Entry not found' });
     }
 
-    return res.json(entry);
+    return res.json({ entry });
   } catch (error) {
     logger.error('Error getting diary entry by date:', { error });
     return res.status(500).json({ error: 'Failed to get diary entry' });
@@ -239,11 +242,7 @@ export async function getDiaryStats(req: AuthenticatedRequest, res: Response) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const { days } = req.query;
-    const stats = await diaryService.getStats(
-      userId,
-      days ? parseInt(days as string) : 14
-    );
+    const stats = await diaryService.getSummaryStats(userId);
 
     return res.json(stats);
   } catch (error) {

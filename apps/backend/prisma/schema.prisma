@@ -354,6 +354,8 @@ model DiaryEntry {
   // Detailed tracking
   symptoms    Json     @default("[]") // Array of symptoms experienced
   meals       Json     @default("[]") // What they ate today
+  triggers    Json     @default("[]") // Digestive triggers identified
+  improvements Json    @default("[]") // Improvements noted
   
   // Clara's response/notes on the entry
   claraNotes  String?  @db.Text

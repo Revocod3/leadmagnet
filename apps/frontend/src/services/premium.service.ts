@@ -80,8 +80,8 @@ export interface DiaryEntry {
   content: string;
   mood: number | null;
   bloating: number | null;
-  triggers: string[];
-  improvements: string[];
+  triggers: string[] | null;
+  improvements: string[] | null;
   claraNotes: string | null;
   createdAt: string;
   updatedAt: string;
@@ -122,8 +122,16 @@ export const diaryService = {
 
   async getEntryByDate(date: string): Promise<DiaryEntry | null> {
     const client = createAuthClient();
-    const response = await client.get('/diary/date', { params: { date } });
-    return response.data.entry;
+    try {
+      const response = await client.get(`/diary/date/${date}`);
+      return response.data.entry;
+    } catch (error: any) {
+      // 404 means no entry for this date - return null instead of throwing
+      if (error.response?.status === 404) {
+        return null;
+      }
+      throw error;
+    }
   },
 
   async createEntry(data: {
@@ -360,17 +368,17 @@ export interface UserProgress {
     mainSymptoms: string | null;
     dietaryProfile: string | null;
     stressLevel: string | null;
-    digestiveGoals: string | null;
+    digestiveGoals: string[] | null;
     knownTriggers: string[];
     improvements: string[];
-  };
+  } | null;
 }
 
 export const progressService = {
   async getProgress(): Promise<UserProgress> {
     const client = createAuthClient();
     const response = await client.get('/pro/progress');
-    return response.data;
+    return response.data.data;
   }
 };
 

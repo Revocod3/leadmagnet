@@ -20,7 +20,9 @@ export interface CreateDiaryEntryInput {
   stress?: number;
   symptoms?: string[];
   meals?: string[];
-  date?: Date;
+  triggers?: string[];
+  improvements?: string[];
+  date?: Date | string;  // Can be Date object or YYYY-MM-DD string
 }
 
 export interface UpdateDiaryEntryInput {
@@ -31,6 +33,8 @@ export interface UpdateDiaryEntryInput {
   stress?: number;
   symptoms?: string[];
   meals?: string[];
+  triggers?: string[];
+  improvements?: string[];
 }
 
 export interface DiaryEntryResponse {
@@ -41,6 +45,8 @@ export interface DiaryEntryResponse {
   bloating: number | null;
   energy: number | null;
   stress: number | null;
+  triggers: string[] | null;
+  improvements: string[] | null;
   symptoms: string[];
   meals: string[];
   claraNotes: string | null;
@@ -52,15 +58,36 @@ export interface DiaryEntryResponse {
 export class DiaryService {
 
   /**
+   * Parse a date string (YYYY-MM-DD) to a Date object at midnight UTC
+   * This ensures consistent date handling regardless of timezone
+   */
+  private parseDateString(dateStr: string): Date {
+    const parts = dateStr.split('-').map(Number);
+    const year = parts[0] ?? 2025;
+    const month = parts[1] ?? 1;
+    const day = parts[2] ?? 1;
+    // Create date at midnight UTC
+    return new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
+  }
+
+  /**
    * Create a new diary entry
    */
   async createEntry(input: CreateDiaryEntryInput): Promise<DiaryEntryResponse> {
-    const { userId, content, mood, bloating, energy, stress, symptoms, meals, date } = input;
+    const { userId, content, mood, bloating, energy, stress, symptoms, meals, triggers, improvements, date } = input;
 
-    // Use provided date or today
-    const entryDate = date || new Date();
-    // Normalize to start of day
-    entryDate.setHours(0, 0, 0, 0);
+    // Parse date - if it's a string, parse it correctly to avoid timezone issues
+    let entryDate: Date;
+    if (typeof date === 'string') {
+      entryDate = this.parseDateString(date);
+    } else if (date instanceof Date) {
+      // If it's already a Date, normalize to midnight UTC
+      entryDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0));
+    } else {
+      // Default to today at midnight UTC
+      const now = new Date();
+      entryDate = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0));
+    }
 
     // Check if entry already exists for this date
     const existingEntry = await prisma.diaryEntry.findUnique({
@@ -81,6 +108,8 @@ export class DiaryService {
       if (stress !== undefined) updateData.stress = stress;
       if (symptoms !== undefined) updateData.symptoms = symptoms;
       if (meals !== undefined) updateData.meals = meals;
+      if (triggers !== undefined) updateData.triggers = triggers;
+      if (improvements !== undefined) updateData.improvements = improvements;
 
       return this.updateEntry(existingEntry.id, userId, updateData);
     }
@@ -96,6 +125,8 @@ export class DiaryService {
         ...(stress !== undefined && { stress }),
         symptoms: symptoms || [],
         meals: meals || [],
+        triggers: triggers || [],
+        improvements: improvements || [],
         date: entryDate
       }
     });
@@ -133,10 +164,14 @@ export class DiaryService {
   /**
    * Get diary entry for a specific date
    */
-  async getEntryByDate(userId: string, date: Date): Promise<DiaryEntryResponse | null> {
-    // Normalize to start of day
-    const entryDate = new Date(date);
-    entryDate.setHours(0, 0, 0, 0);
+  async getEntryByDate(userId: string, date: Date | string): Promise<DiaryEntryResponse | null> {
+    // Parse date correctly to avoid timezone issues
+    let entryDate: Date;
+    if (typeof date === 'string') {
+      entryDate = this.parseDateString(date);
+    } else {
+      entryDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0));
+    }
 
     const entry = await prisma.diaryEntry.findUnique({
       where: {
@@ -524,6 +559,181 @@ Máximo 1 emoji. Tono cálido pero profesional.`;
   }
 
   /**
+   * Get summary stats for the diary view
+   * Returns: totalEntries, currentStreak, avgMood, avgBloating, commonTriggers, weeklyTrend
+   */
+  async getSummaryStats(userId: string): Promise<{
+    totalEntries: number;
+    currentStreak: number;
+    avgMood: number | null;
+    avgBloating: number | null;
+    commonTriggers: Array<{ trigger: string; count: number }>;
+    weeklyTrend: string;
+  }> {
+    // Get total entries
+    const totalEntries = await prisma.diaryEntry.count({
+      where: { userId }
+    });
+
+    // Calculate current streak
+    const currentStreak = await this.calculateStreak(userId);
+
+    // Get entries from last 30 days for averages
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const recentEntries = await prisma.diaryEntry.findMany({
+      where: {
+        userId,
+        date: { gte: thirtyDaysAgo }
+      },
+      select: {
+        mood: true,
+        bloating: true,
+        triggers: true
+      }
+    });
+
+    // Calculate averages
+    const validMoods = recentEntries.filter(e => e.mood !== null).map(e => e.mood!);
+    const validBloating = recentEntries.filter(e => e.bloating !== null).map(e => e.bloating!);
+
+    const avgMood = validMoods.length > 0 
+      ? validMoods.reduce((a, b) => a + b, 0) / validMoods.length 
+      : null;
+    const avgBloating = validBloating.length > 0 
+      ? validBloating.reduce((a, b) => a + b, 0) / validBloating.length 
+      : null;
+
+    // Get common triggers
+    const triggerCounts: Record<string, number> = {};
+    for (const entry of recentEntries) {
+      const triggers = entry.triggers as string[] | null;
+      if (triggers && Array.isArray(triggers)) {
+        for (const trigger of triggers) {
+          triggerCounts[trigger] = (triggerCounts[trigger] || 0) + 1;
+        }
+      }
+    }
+
+    const commonTriggers = Object.entries(triggerCounts)
+      .map(([trigger, count]) => ({ trigger, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+
+    // Calculate weekly trend
+    const weeklyTrend = this.calculateWeeklyTrend(validMoods, validBloating);
+
+    return {
+      totalEntries,
+      currentStreak,
+      avgMood,
+      avgBloating,
+      commonTriggers,
+      weeklyTrend
+    };
+  }
+
+  /**
+   * Calculate current writing streak
+   */
+  private async calculateStreak(userId: string): Promise<number> {
+    const entries = await prisma.diaryEntry.findMany({
+      where: { userId },
+      orderBy: { date: 'desc' },
+      select: { date: true },
+      take: 60 // Check up to 60 days back
+    });
+
+    if (entries.length === 0) return 0;
+
+    // Normalize to dates without time
+    const entryDates = new Set(
+      entries.map(e => e.date.toISOString().split('T')[0])
+    );
+
+    let streak = 0;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Check if there's an entry for today or yesterday to start the streak
+    const todayStr = today.toISOString().split('T')[0];
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+    // Start from today if there's an entry, or from yesterday
+    let checkDate = new Date(today);
+    if (!entryDates.has(todayStr)) {
+      if (!entryDates.has(yesterdayStr)) {
+        return 0; // No recent entries, streak is 0
+      }
+      checkDate = yesterday;
+    }
+
+    // Count consecutive days
+    while (true) {
+      const dateStr = checkDate.toISOString().split('T')[0];
+      if (entryDates.has(dateStr)) {
+        streak++;
+        checkDate.setDate(checkDate.getDate() - 1);
+      } else {
+        break;
+      }
+    }
+
+    return streak;
+  }
+
+  /**
+   * Calculate weekly trend description
+   */
+  private calculateWeeklyTrend(moods: number[], bloating: number[]): string {
+    if (moods.length < 3 && bloating.length < 3) {
+      return 'Sin datos aún';
+    }
+
+    const halfMoods = Math.floor(moods.length / 2);
+    const halfBloating = Math.floor(bloating.length / 2);
+
+    let moodTrend = 'estable';
+    let bloatingTrend = 'estable';
+
+    if (moods.length >= 4) {
+      const firstHalfMood = moods.slice(0, halfMoods);
+      const secondHalfMood = moods.slice(halfMoods);
+      const avgFirst = firstHalfMood.reduce((a, b) => a + b, 0) / firstHalfMood.length;
+      const avgSecond = secondHalfMood.reduce((a, b) => a + b, 0) / secondHalfMood.length;
+      const diff = avgSecond - avgFirst;
+      if (diff > 0.5) moodTrend = 'mejorando';
+      else if (diff < -0.5) moodTrend = 'bajando';
+    }
+
+    if (bloating.length >= 4) {
+      const firstHalfBloat = bloating.slice(0, halfBloating);
+      const secondHalfBloat = bloating.slice(halfBloating);
+      const avgFirst = firstHalfBloat.reduce((a, b) => a + b, 0) / firstHalfBloat.length;
+      const avgSecond = secondHalfBloat.reduce((a, b) => a + b, 0) / secondHalfBloat.length;
+      const diff = avgSecond - avgFirst;
+      // For bloating, lower is better
+      if (diff < -0.5) bloatingTrend = 'mejorando';
+      else if (diff > 0.5) bloatingTrend = 'empeorando';
+    }
+
+    if (moodTrend === 'mejorando' && bloatingTrend === 'mejorando') {
+      return '🌟 Mejorando en ánimo y digestión';
+    } else if (moodTrend === 'mejorando') {
+      return '😊 Ánimo en ascenso';
+    } else if (bloatingTrend === 'mejorando') {
+      return '💪 Hinchazón reduciendo';
+    } else if (moodTrend === 'bajando' || bloatingTrend === 'empeorando') {
+      return '🌱 Sigamos trabajando';
+    }
+
+    return '📊 Estable';
+  }
+
+  /**
    * Format entry for response
    */
   private formatEntry(entry: {
@@ -536,6 +746,8 @@ Máximo 1 emoji. Tono cálido pero profesional.`;
     stress: number | null;
     symptoms: unknown;
     meals: unknown;
+    triggers?: unknown;
+    improvements?: unknown;
     claraNotes: string | null;
     date: Date;
     createdAt: Date;
@@ -551,6 +763,8 @@ Máximo 1 emoji. Tono cálido pero profesional.`;
       stress: entry.stress,
       symptoms: (entry.symptoms as string[]) || [],
       meals: (entry.meals as string[]) || [],
+      triggers: (entry.triggers as string[]) || null,
+      improvements: (entry.improvements as string[]) || null,
       claraNotes: entry.claraNotes,
       date: entry.date,
       createdAt: entry.createdAt,
