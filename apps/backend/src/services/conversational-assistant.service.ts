@@ -300,10 +300,8 @@ export class ConversationalAssistantService {
     turnCount: number,
     hasRealProblem?: boolean
   ): boolean {
-    // No generar diagnóstico si no hay problema real
-    if (!hasRealProblem) return false;
-
-    // Si ya hay muchos turnos (14+), generar diagnóstico
+    // FLUJO ESTRUCTURADO: En turno 14+ siempre generar diagnóstico
+    // (turno 14 = después de responder las 12 preguntas + bienvenida + confirmación)
     if (turnCount >= 14) return true;
 
     // Si el mensaje contiene señales de diagnóstico (ampliado para instrucciones Ulises)

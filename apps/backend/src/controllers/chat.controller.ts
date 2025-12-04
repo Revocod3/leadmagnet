@@ -316,10 +316,11 @@ export class ChatController {
       });
 
       // Generar diagnóstico si está listo
+      // FLUJO ESTRUCTURADO: isDiagnosisReady se activa en turno 14+ o con señales de diagnóstico
       let diagnosisContent: string | null = null;
       let discountCode: { code: string; percentage: number } | null = null;
 
-      if (response.isDiagnosisReady && hasRealProblem) {
+      if (response.isDiagnosisReady) {
         // PASO 1: Primero respondemos con un mensaje de "generando diagnóstico"
         // sin esperar a que se genere el diagnóstico completo
         const generatingMessage = session.language === 'es'
