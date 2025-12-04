@@ -305,15 +305,37 @@ class ApiClient {
   }
 
   // Send message in PRO conversation
-  async sendProMessage(conversationId: string, message: string): Promise<{
+  async sendProMessage(conversationId: string, message: string, imageFile?: File): Promise<{
     role: string;
     content: string;
   }> {
-    const response = await this.client.post<ApiResponse<any>>(
-      `/pro/conversations/${conversationId}/message`,
-      { message },
-      { headers: this.getAuthHeaders() }
-    );
+    let response;
+
+    if (imageFile) {
+      // Send as FormData with image (same as free flow)
+      const formData = new FormData();
+      formData.append('message', message);
+      formData.append('image', imageFile);
+
+      response = await this.client.post<ApiResponse<any>>(
+        `/pro/conversations/${conversationId}/message`,
+        formData,
+        {
+          headers: {
+            ...this.getAuthHeaders(),
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+    } else {
+      // Send as JSON without image
+      response = await this.client.post<ApiResponse<any>>(
+        `/pro/conversations/${conversationId}/message`,
+        { message },
+        { headers: this.getAuthHeaders() }
+      );
+    }
+
     if (!response.data.success || !response.data.data) {
       // Check for subscription expired
       if ((response.data as any).code === 'SUBSCRIPTION_EXPIRED') {

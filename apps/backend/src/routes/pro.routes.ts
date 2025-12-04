@@ -6,7 +6,7 @@
  */
 
 import { Router } from 'express';
-import { proController } from '../controllers/pro.controller';
+import { proController, proUploadMiddleware } from '../controllers/pro.controller';
 import { authenticateJWT } from '../middleware/jwt.middleware';
 import { requireProSubscription } from '../middleware/subscription.middleware';
 
@@ -31,8 +31,8 @@ router.post('/conversations', requireProSubscription, proController.createConver
 // GET /api/pro/conversations/:id - Get conversation with messages
 router.get('/conversations/:id', proController.getConversation.bind(proController));
 
-// POST /api/pro/conversations/:id/message - Send message in conversation
-router.post('/conversations/:id/message', requireProSubscription, proController.sendMessage.bind(proController));
+// POST /api/pro/conversations/:id/message - Send message in conversation (with optional image upload)
+router.post('/conversations/:id/message', requireProSubscription, proUploadMiddleware, proController.sendMessage.bind(proController));
 
 // DELETE /api/pro/conversations/:id - Delete conversation
 router.delete('/conversations/:id', proController.deleteConversation.bind(proController));

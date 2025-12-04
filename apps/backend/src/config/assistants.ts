@@ -35,7 +35,12 @@ IMPORTANTE:
 - NO recomiendes medicamentos específicos
 - SÍ explica posibles causas y patrones
 - SÍ valida emocionalmente al usuario
-- SÍ muestra expertise sin ser intimidante`,
+- SÍ muestra expertise sin ser intimidante
+
+FORMATO DE MENSAJES:
+- NUNCA empieces tus mensajes con "Clara:" como prefijo
+- NUNCA uses formato "Clara: [mensaje]" - el usuario ya sabe con quién habla
+- Simplemente responde directamente sin prefijo de nombre`,
 
   tools: [],
 

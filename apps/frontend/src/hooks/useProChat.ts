@@ -187,30 +187,39 @@ export const useProChat = (onSubscriptionExpired?: () => void): UseProChatReturn
   }, [selectedConversationId]);
 
   // Send a message
-  const sendMessage = useCallback(async (content: string, _imageFile?: File) => {
-    if (!content.trim() || !selectedConversationId || isSending) return;
+  const sendMessage = useCallback(async (content: string, imageFile?: File) => {
+    // Allow empty content if there's an image
+    if (!content.trim() && !imageFile) return;
+    if (!selectedConversationId || isSending) return;
 
-    const userMessage = content.trim();
+    const userMessage = content.trim() || (imageFile ? 'Imagen adjunta' : '');
     setIsSending(true);
     setError(null);
 
-    // Add user message immediately for optimistic UI
+    // Get image data URL for display in chat (if image provided)
+    let imageDataUrl: string | undefined;
+    if (imageFile) {
+      const reader = new FileReader();
+      imageDataUrl = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(imageFile);
+      });
+    }
+
+    // Add user message immediately for optimistic UI (with optional image)
     const newUserMessage: FlowMessage = {
       role: 'user',
       content: userMessage,
+      ...(imageDataUrl && { imageUrl: imageDataUrl }), // Include imageUrl for display in chat
       timestamp: new Date().toISOString(),
     };
 
     setMessages((prev) => [...prev, newUserMessage]);
 
     try {
-      // TODO: Handle image upload for PRO (unlimited images)
-      // if (imageFile) {
-      //   const imageUrl = await apiClient.uploadImage(imageFile);
-      //   userMessage = `${userMessage}\n[Imagen adjunta: ${imageUrl}]`;
-      // }
-
-      const response = await apiClient.sendProMessage(selectedConversationId, userMessage);
+      // Send message with File (same as free flow - uses FormData)
+      const response = await apiClient.sendProMessage(selectedConversationId, userMessage, imageFile);
 
       // Add assistant response
       const assistantMessage: FlowMessage = {

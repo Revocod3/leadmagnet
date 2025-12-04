@@ -6,6 +6,7 @@
  */
 
 import { Request, Response } from 'express';
+import multer from 'multer';
 import { prisma } from '../config/database';
 import { agentProService } from '../services/agent-pro.service';
 import type { ApiResponse } from '../types';
@@ -13,6 +14,24 @@ import { logger } from '../utils/logger';
 
 // Summary generation threshold (every N messages)
 const SUMMARY_GENERATION_THRESHOLD = 10;
+
+// Configure multer for memory storage (same as free flow)
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Solo se permiten archivos de imagen'));
+    }
+  },
+});
+
+// Export multer middleware
+export const proUploadMiddleware: any = upload.single('image');
 
 /**
  * Format habits profile into readable string
@@ -234,11 +253,15 @@ export class ProController {
 
       const userName = user?.name || 'Usuario';
 
+      // Get image buffer from multer (same as free flow)
+      const imageBuffer = (req as any).file?.buffer;
+
       const result = await agentProService.processMessage(
         conversationId,
         userId,
         userName,
-        message
+        message,
+        imageBuffer
       );
 
       // Generate title if needed (async, don't wait)
