@@ -18,10 +18,7 @@ import {
   CheckCircle2,
   Hand,
   Search,
-  BarChart3,
   Star,
-  UserCircle,
-  Compass,
   Target,
   Sparkles,
   Rocket
@@ -168,7 +165,9 @@ export function ProgressView({ onSubscriptionExpired }: ProgressViewProps) {
             </div>
           </div>
           {progress.radiographyComplete && (
-            <CheckCircle2 className="w-5 h-5 flex-shrink-0 opacity-90" title="Radiografía completada" />
+            <div title="Radiografía completada">
+              <CheckCircle2 className="w-5 h-5 flex-shrink-0 opacity-90" />
+            </div>
           )}
         </div>
 
@@ -186,7 +185,7 @@ export function ProgressView({ onSubscriptionExpired }: ProgressViewProps) {
 
         {/* Phase timeline - simplified for mobile */}
         <div className="flex justify-between mt-4 text-xs opacity-80">
-          {Object.entries(PHASES).map(([key, phase], index) => {
+          {Object.entries(PHASES).map(([key, phase]) => {
             const PhaseIcon = phase.Icon;
             const isActive = key === progress.phase;
             const isPast = Object.keys(PHASES).indexOf(key) < Object.keys(PHASES).indexOf(progress.phase);
