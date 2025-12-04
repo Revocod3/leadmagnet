@@ -166,7 +166,7 @@ export const EmailCaptureModal = ({ isOpen, onClose, onSubmit, userName }: Email
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full py-4 px-6 rounded-xl bg-gradient-to-r from-brand-green-500 to-brand-green-600 hover:from-brand-green-600 hover:to-brand-green-700 text-white font-bold text-base flex items-center justify-center gap-2 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transform hover:-translate-y-0.5 active:scale-95"
+              className="w-full py-4 px-6 rounded-xl bg-gradient-to-r from-brand-green-500 to-brand-green-600 hover:from-brand-green-600 hover:to-brand-green-700 text-white font-bold text-base flex items-center justify-center gap-2 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transform hover:-translate-y-0.5 active:scale-95 whitespace-nowrap"
             >
               {isSubmitting ? (
                 <>
@@ -175,7 +175,7 @@ export const EmailCaptureModal = ({ isOpen, onClose, onSubmit, userName }: Email
                 </>
               ) : (
                 <>
-                  <span>Descargar mi diagnóstico</span>
+                  <span>Descargar diagnóstico</span>
                   <span>→</span>
                 </>
               )}

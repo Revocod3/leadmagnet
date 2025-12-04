@@ -249,12 +249,14 @@ export class ChatController {
         sessionId?: string;
         hasImage?: boolean;
         hasOfferedImage?: boolean;
+        hasCompletedDiagnosis?: boolean;
       } = {
         turnCount: turnCount + 1,
         hasRealProblem,
         sessionId,
         hasImage: !!imageBuffer, // Indicar si hay imagen en este mensaje
         hasOfferedImage: flowState?.hasOfferedImage || false,
+        hasCompletedDiagnosis, // Indicar si ya se completó el diagnóstico
       };
 
       if (session.userName) context.userName = session.userName;
@@ -317,10 +319,11 @@ export class ChatController {
 
       // Generar diagnóstico si está listo
       // FLUJO ESTRUCTURADO: isDiagnosisReady se activa en turno 14+ o con señales de diagnóstico
+      // IMPORTANTE: NO generar si ya existe diagnóstico (hasCompletedDiagnosis)
       let diagnosisContent: string | null = null;
       let discountCode: { code: string; percentage: number } | null = null;
 
-      if (response.isDiagnosisReady) {
+      if (response.isDiagnosisReady && !hasCompletedDiagnosis) {
         // PASO 1: Primero respondemos con un mensaje de "generando diagnóstico"
         // sin esperar a que se genere el diagnóstico completo
         const generatingMessage = session.language === 'es'

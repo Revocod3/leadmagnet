@@ -16,7 +16,6 @@ import { ChatHeader } from './ChatHeader';
 import { ChatFooter } from './ChatFooter';
 import { TypingIndicator } from '../animations/TypingIndicator';
 import { DiagnosisGeneratingIndicator } from '../animations/DiagnosisGeneratingIndicator';
-import { BlockProgressBar } from './BlockProgressBar';
 import { QuickReplyChips } from './QuickReplyChips';
 import { InfoWedge } from './InfoWedge';
 import { getBlock, getQuestion, type FlowBlock, type FlowQuestion } from '../../config/diagnostic-flow-config';
@@ -471,25 +470,21 @@ export const ChatContainer = () => {
     <>
       {/* Wrapper con dark mode */}
       <div className={`${isDarkMode ? 'dark' : ''}`}>
-        {/* Header flotante transparente */}
-        <ChatHeader isDarkMode={isDarkMode} onToggleDarkMode={toggleDarkMode} />
-
-        {/* Block Progress Bar - Fixed debajo del header */}
-        {/* Se muestra cuando detectamos una pregunta del flujo estructurado */}
-        {showProgressBar && currentBlock && currentQuestionInfo && (
-          <div className="fixed top-16 left-0 right-0 z-20">
-            <BlockProgressBar
-              currentBlock={currentBlock}
-              currentQuestionIndex={currentQuestionInfo.questionIndex}
-              totalQuestionsInBlock={currentBlock.questions.length}
-            />
-          </div>
-        )}
+        {/* Header flotante transparente con Progress Chip integrado */}
+        <ChatHeader
+          isDarkMode={isDarkMode}
+          onToggleDarkMode={toggleDarkMode}
+          progressInfo={showProgressBar && currentBlock && currentQuestionInfo ? {
+            currentBlock,
+            currentQuestionIndex: currentQuestionInfo.questionIndex,
+            totalQuestionsInBlock: currentBlock.questions.length,
+          } : null}
+        />
 
         {/* Main content - Chat Messages */}
         <div className="mobile-chat-container bg-neutral-50 dark:bg-neutral-900 bg-chat-lighting transition-colors duration-200">
           {/* Messages Area */}
-          <main className={`mobile-chat-main smooth-scroll scroll-pt-4 pt-20 pb-32 ${showProgressBar ? 'pt-32' : 'pt-20'}`}>
+          <main className="mobile-chat-main smooth-scroll scroll-pt-4 pt-20 pb-32">
             <div className="container-narrow pt-4 pb-4">
               {/* Empty State - Loading state while initializing */}
               {messages.length === 0 && !isProcessing && (
@@ -608,7 +603,8 @@ export const ChatContainer = () => {
                 {/* Info Wedge REMOVIDO - Clara ya incluye la cuña informativa en su mensaje */}
 
                 {/* Diagnosis Generating Indicator - Special state */}
-                {state.step === 'generating_diagnosis' && !isProcessing && (
+                {/* Solo mostrar después de que el typewriter termine para mantener jerarquía visual */}
+                {state.step === 'generating_diagnosis' && !isProcessing && isTypewriterComplete && (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}

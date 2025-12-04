@@ -321,7 +321,7 @@ export const useDiagnosticFlow = () => {
 
         // Handle diagnosis generation - show special state
         if (isGeneratingDiagnosis) {
-          // First show a quick acknowledgment - INMEDIATO
+          // First show a quick acknowledgment message
           setTimeout(() => {
             setMessages((prev) => [
               ...prev,
@@ -330,12 +330,14 @@ export const useDiagnosticFlow = () => {
                 content: response.content,
                 type: 'comment',
                 timestamp: new Date().toISOString(),
-                isNew: true, // Animate new message
+                isNew: true, // Animate new message with typewriter
               },
             ]);
-          }, 500);
+          }, 400);
 
-          // Then show generating state
+          // Change to generating state after message is added
+          // The DiagnosisGeneratingIndicator will wait for typewriter to complete
+          // due to isTypewriterComplete check in ChatContainer
           setTimeout(() => {
             setState((prev) => ({ ...prev, step: 'generating_diagnosis' }));
             setIsProcessing(false);

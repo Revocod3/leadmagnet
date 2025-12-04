@@ -13,7 +13,9 @@ export const INTERACTION_LIMITS = {
   MAX_MESSAGES_WITHOUT_PHOTO: 20,
 
   // Maximum messages allowed after diagnosis is delivered
-  POST_DIAGNOSIS_LIMIT: 1,
+  // Usuario puede enviar 1 mensaje después del diagnóstico y Clara responde,
+  // al segundo mensaje aparece el límite de suscripción
+  POST_DIAGNOSIS_LIMIT: 2,
 
   // Maximum photos per session
   MAX_PHOTOS: 1,
