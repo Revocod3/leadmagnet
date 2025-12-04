@@ -19,66 +19,83 @@ import { DiagnosisGeneratingIndicator } from '../animations/DiagnosisGeneratingI
 import { BlockProgressBar } from './BlockProgressBar';
 import { QuickReplyChips } from './QuickReplyChips';
 import { InfoWedge } from './InfoWedge';
-import { getBlock, getQuestion } from '../../config/diagnostic-flow-config';
+import { getBlock, getQuestion, type FlowBlock, type FlowQuestion } from '../../config/diagnostic-flow-config';
 import { apiClient } from '../../services/api';
 
 /**
- * Calcula el bloque y pregunta actuales basándose en el turno
- * Turno 1: Bienvenida
- * Turno 2: Usuario confirma -> Pregunta 1
- * Turnos 3-5: Preguntas 2-4 (Digestivo)
- * Turno 6: Cuña + Pregunta 5 (Energía)
- * Turnos 7-9: Preguntas 6-8
- * Turno 10: Cuña + Pregunta 9 (Emocional)
- * Turnos 11-13: Preguntas 10-12
- * Turno 14: Cuña final + Diagnóstico
+ * Patrones de texto para detectar cada pregunta en el mensaje de Clara.
+ * Usamos frases clave que son únicas de cada pregunta.
  */
-const getFlowPosition = (turnCount: number): {
+const QUESTION_PATTERNS: { blockIndex: number; questionIndex: number; patterns: RegExp[] }[] = [
+  // BLOQUE DIGESTIVO (0)
+  { blockIndex: 0, questionIndex: 0, patterns: [/momento del día.*barriga.*inflamada/i, /qué momento.*sientes.*inflamada/i] },
+  { blockIndex: 0, questionIndex: 1, patterns: [/gases.*pesadez.*digestiones lentas/i, /sueles tener gases/i] },
+  { blockIndex: 0, questionIndex: 2, patterns: [/hinchas.*comidas ligeras/i, /notas que te hinchas/i] },
+  { blockIndex: 0, questionIndex: 3, patterns: [/inflamas.*tarda.*en bajar/i, /sensación tarda mucho/i] },
+  // BLOQUE ENERGÍA (1)
+  { blockIndex: 1, questionIndex: 0, patterns: [/energía después de comer/i, /cómo sientes tu energía/i] },
+  { blockIndex: 1, questionIndex: 1, patterns: [/dependes de café.*azúcar/i, /café.*snacks.*rendir/i] },
+  { blockIndex: 1, questionIndex: 2, patterns: [/momento del día.*más activo.*más cansado/i, /activo.*cansado/i] },
+  { blockIndex: 1, questionIndex: 3, patterns: [/falta de energía.*día a día/i, /cómo te afecta la falta/i] },
+  // BLOQUE EMOCIONAL (2)
+  { blockIndex: 2, questionIndex: 0, patterns: [/estrés.*más presente.*últimamente/i, /sientes que el estrés/i] },
+  { blockIndex: 2, questionIndex: 1, patterns: [/menos motivación.*constancia/i, /cuesta mantener la constancia/i] },
+  { blockIndex: 2, questionIndex: 2, patterns: [/preocupaciones.*ansiedad.*afectan/i, /ansiedad te afectan/i] },
+  { blockIndex: 2, questionIndex: 3, patterns: [/aspecto emocional.*mejorar/i, /emocional.*gustaría mejorar/i] },
+];
+
+/**
+ * Patrones para detectar cuñas informativas en el mensaje de Clara
+ */
+const WEDGE_PATTERNS: { blockIndex: number; pattern: RegExp }[] = [
+  { blockIndex: 0, pattern: /no es normal vivir con la barriga inflamada/i },
+  { blockIndex: 1, pattern: /no es normal vivir con la energía por los suelos/i },
+  { blockIndex: 2, pattern: /la parte emocional.*no.*aislado/i },
+];
+
+/**
+ * Detecta la pregunta actual basándose en el contenido del último mensaje de Clara.
+ * Retorna null si no se detecta ninguna pregunta (ej: mensaje de bienvenida, diagnóstico, etc.)
+ */
+const detectCurrentQuestion = (lastAssistantMessage: string): {
   blockIndex: number;
   questionIndex: number;
-  showWedge: boolean;
-  isComplete: boolean;
-} => {
-  // Antes de empezar preguntas
-  if (turnCount < 2) {
-    return { blockIndex: 0, questionIndex: -1, showWedge: false, isComplete: false };
+  block: FlowBlock;
+  question: FlowQuestion;
+} | null => {
+  if (!lastAssistantMessage) return null;
+  
+  for (const { blockIndex, questionIndex, patterns } of QUESTION_PATTERNS) {
+    for (const pattern of patterns) {
+      if (pattern.test(lastAssistantMessage)) {
+        const block = getBlock(blockIndex);
+        const question = getQuestion(blockIndex, questionIndex);
+        if (block && question) {
+          return { blockIndex, questionIndex, block, question };
+        }
+      }
+    }
   }
   
-  // Mapeo de turno a pregunta (turno 2 = pregunta 0, turno 3 = pregunta 1, etc.)
-  const questionNumber = turnCount - 2; // 0-11 para las 12 preguntas
+  return null;
+};
+
+/**
+ * Detecta si el mensaje contiene una cuña informativa y retorna el bloque correspondiente
+ */
+const detectWedgeInMessage = (message: string): { blockIndex: number; block: FlowBlock } | null => {
+  if (!message) return null;
   
-  // Bloque Digestivo: preguntas 0-3 (turnos 2-5)
-  if (questionNumber < 4) {
-    return { 
-      blockIndex: 0, 
-      questionIndex: questionNumber, 
-      showWedge: questionNumber === 3, // Mostrar cuña después de pregunta 4
-      isComplete: false 
-    };
+  for (const { blockIndex, pattern } of WEDGE_PATTERNS) {
+    if (pattern.test(message)) {
+      const block = getBlock(blockIndex);
+      if (block) {
+        return { blockIndex, block };
+      }
+    }
   }
   
-  // Bloque Energía: preguntas 4-7 (turnos 6-9)
-  if (questionNumber < 8) {
-    return { 
-      blockIndex: 1, 
-      questionIndex: questionNumber - 4, 
-      showWedge: questionNumber === 7, // Mostrar cuña después de pregunta 8
-      isComplete: false 
-    };
-  }
-  
-  // Bloque Emocional: preguntas 8-11 (turnos 10-13)
-  if (questionNumber < 12) {
-    return { 
-      blockIndex: 2, 
-      questionIndex: questionNumber - 8, 
-      showWedge: questionNumber === 11, // Mostrar cuña después de pregunta 12
-      isComplete: false 
-    };
-  }
-  
-  // Flujo completado
-  return { blockIndex: 2, questionIndex: 3, showWedge: false, isComplete: true };
+  return null;
 };
 
 export const ChatContainer = () => {
@@ -117,21 +134,57 @@ export const ChatContainer = () => {
   const { isListening, transcript, startListening, stopListening, isSupported: isSpeechSupported } = useSpeechToText();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  // Estado para controlar si el typewriter terminó
+  const [isTypewriterComplete, setIsTypewriterComplete] = useState(true);
 
-  // Calcular posición del flujo estructurado basado en el número de mensajes del usuario
-  const userMessageCount = messages.filter(m => m.role === 'user').length;
-  const flowPosition = useMemo(() => getFlowPosition(userMessageCount + 1), [userMessageCount]);
-  const currentBlock = useMemo(() => getBlock(flowPosition.blockIndex), [flowPosition.blockIndex]);
-  const currentQuestion = useMemo(
-    () => getQuestion(flowPosition.blockIndex, flowPosition.questionIndex),
-    [flowPosition.blockIndex, flowPosition.questionIndex]
-  );
+  // Detectar pregunta actual basándose en el último mensaje de Clara
+  const lastAssistantMessage = useMemo(() => {
+    const assistantMessages = messages.filter(m => m.role === 'assistant');
+    return assistantMessages[assistantMessages.length - 1]?.content || '';
+  }, [messages]);
+
+  // Detectar pregunta actual parseando el contenido del mensaje
+  const currentQuestionInfo = useMemo(() => {
+    return detectCurrentQuestion(lastAssistantMessage);
+  }, [lastAssistantMessage]);
+
+  // Detectar si hay cuña informativa en el último mensaje
+  const wedgeInfo = useMemo(() => {
+    return detectWedgeInMessage(lastAssistantMessage);
+  }, [lastAssistantMessage]);
+
+  // Bloque y pregunta actuales (si estamos en flujo de preguntas)
+  const currentBlock = currentQuestionInfo?.block || null;
+  const currentQuestion = currentQuestionInfo?.question || null;
+
+  // ¿Mostrar barra de progreso? Solo si detectamos una pregunta válida
+  const showProgressBar = currentQuestionInfo !== null && state.step !== 'diagnosis_ready';
 
   // Handler para selección de chip de respuesta rápida
   const handleChipSelect = (option: { value: string; label: string }) => {
-    if (!isProcessing) {
+    if (!isProcessing && isTypewriterComplete) {
       processMessage(option.label);
     }
+  };
+
+  // Cuando llega un nuevo mensaje de asistente, resetear el estado del typewriter
+  useEffect(() => {
+    const lastMessage = messages[messages.length - 1];
+    if (lastMessage?.role === 'assistant') {
+      // Si el mensaje es nuevo (isNew !== false), el typewriter empezará
+      if (lastMessage.isNew !== false) {
+        setIsTypewriterComplete(false);
+      } else {
+        // Mensaje restaurado, ya está completo
+        setIsTypewriterComplete(true);
+      }
+    }
+  }, [messages]);
+
+  // Callback para cuando el typewriter termina
+  const handleTypewriterComplete = () => {
+    setIsTypewriterComplete(true);
   };
 
   // Actualizar hasRated cuando cambie la sesión
@@ -454,12 +507,12 @@ export const ChatContainer = () => {
         <ChatHeader isDarkMode={isDarkMode} onToggleDarkMode={toggleDarkMode} />
 
         {/* Block Progress Bar - Fixed debajo del header */}
-        {/* Se muestra cuando hay preguntas activas (no solo cuando state.step === 'asking_questions') */}
-        {currentBlock && flowPosition.questionIndex >= 0 && !flowPosition.isComplete && messages.length > 0 && (
+        {/* Se muestra cuando detectamos una pregunta del flujo estructurado */}
+        {showProgressBar && currentBlock && currentQuestionInfo && (
           <div className="fixed top-16 left-0 right-0 z-20">
             <BlockProgressBar
               currentBlock={currentBlock}
-              currentQuestionIndex={flowPosition.questionIndex}
+              currentQuestionIndex={currentQuestionInfo.questionIndex}
               totalQuestionsInBlock={currentBlock.questions.length}
             />
           </div>
@@ -468,7 +521,7 @@ export const ChatContainer = () => {
         {/* Main content - Chat Messages */}
         <div className="mobile-chat-container bg-neutral-50 dark:bg-neutral-900 bg-chat-lighting transition-colors duration-200">
           {/* Messages Area */}
-          <main className={`mobile-chat-main smooth-scroll scroll-pt-4 pt-20 pb-32 ${(currentBlock && flowPosition.questionIndex >= 0 && !flowPosition.isComplete) ? 'pt-32' : 'pt-20'}`}>
+          <main className={`mobile-chat-main smooth-scroll scroll-pt-4 pt-20 pb-32 ${showProgressBar ? 'pt-32' : 'pt-20'}`}>
             <div className="container-narrow pt-4 pb-4">
               {/* Empty State - Loading state while initializing */}
               {messages.length === 0 && !isProcessing && (
@@ -508,18 +561,20 @@ export const ChatContainer = () => {
                         isLatest={index === messages.length - 1}
                         onDownloadPDF={handleDownloadPDF}
                         isGeneratingPDF={isGeneratingPDF}
+                        onTypewriterComplete={index === messages.length - 1 ? handleTypewriterComplete : undefined}
                         {...(rateHandler && { onRateExperience: rateHandler })}
                       />
                     );
                   })}
                 </AnimatePresence>
 
-                {/* Quick Reply Chips - mostrar si la pregunta actual tiene opciones */}
+                {/* Quick Reply Chips - mostrar después de que el typewriter termine */}
                 {!isProcessing && 
-                 !flowPosition.isComplete &&
+                 isTypewriterComplete &&
                  currentQuestion?.type === 'multiple_choice' && 
                  currentQuestion?.options && 
-                 currentBlock && (
+                 currentBlock && 
+                 state.step !== 'diagnosis_ready' && (
                   <QuickReplyChips
                     options={currentQuestion.options}
                     onSelect={handleChipSelect}
@@ -528,13 +583,13 @@ export const ChatContainer = () => {
                   />
                 )}
 
-                {/* Info Wedge - mostrar cuña informativa cuando se completa un bloque */}
-                {flowPosition.showWedge && currentBlock && !isProcessing && (
+                {/* Info Wedge - mostrar cuña informativa cuando se detecta en el mensaje */}
+                {wedgeInfo && !isProcessing && isTypewriterComplete && (
                   <InfoWedge
-                    content={currentBlock.infoWedge}
-                    blockColor={currentBlock.color}
-                    blockColorLight={currentBlock.colorLight}
-                    blockEmoji={currentBlock.emoji}
+                    content={wedgeInfo.block.infoWedge}
+                    blockColor={wedgeInfo.block.color}
+                    blockColorLight={wedgeInfo.block.colorLight}
+                    blockEmoji={wedgeInfo.block.emoji}
                   />
                 )}
 

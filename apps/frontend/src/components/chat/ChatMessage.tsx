@@ -12,6 +12,7 @@ interface ChatMessageProps {
   onDownloadPDF?: () => void;
   isGeneratingPDF?: boolean;
   onRateExperience?: () => void;
+  onTypewriterComplete?: (() => void) | undefined;
 }
 
 export const ChatMessage = forwardRef<HTMLDivElement, ChatMessageProps>(({
@@ -20,7 +21,8 @@ export const ChatMessage = forwardRef<HTMLDivElement, ChatMessageProps>(({
   isLatest,
   onDownloadPDF,
   isGeneratingPDF = false,
-  onRateExperience
+  onRateExperience,
+  onTypewriterComplete
 }, ref) => {
   const isUser = message.role === 'user';
 
@@ -88,6 +90,7 @@ export const ChatMessage = forwardRef<HTMLDivElement, ChatMessageProps>(({
                     speed={20}
                     className="font-semibold"
                     shouldAnimate={isLatest && message.isNew !== false}
+                    onComplete={onTypewriterComplete}
                   />
                 ) : (
                   /* Mensajes de usuario */

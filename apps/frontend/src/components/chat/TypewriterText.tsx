@@ -4,7 +4,7 @@ import ReactMarkdown from 'react-markdown';
 interface TypewriterTextProps {
   text: string;
   speed?: number;
-  onComplete?: () => void;
+  onComplete?: (() => void) | undefined;
   className?: string;
   shouldAnimate?: boolean; // Si es false, mostrar texto completo inmediatamente
 }
