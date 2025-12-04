@@ -21,7 +21,9 @@ import {
   Star,
   Target,
   Sparkles,
-  Rocket
+  Rocket,
+  UserCircle,
+  Compass
 } from 'lucide-react';
 import { progressService, UserProgress, SubscriptionRequiredError } from '../../services/premium.service';
 import { ChallengeCard } from './ChallengeCard';
