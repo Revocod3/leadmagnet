@@ -23,7 +23,8 @@ export interface FlowMessage {
   | 'comment'
   | 'diagnosis_ready'
   | 'validation_error'
-  | 'completed';
+  | 'completed'
+  | 'limit_exceeded';
   question?: DiagnosticQuestion;
   timestamp?: string;
   isNew?: boolean; // True if message just arrived, should animate
@@ -332,30 +333,16 @@ export const useDiagnosticFlow = () => {
                 isNew: true, // Animate new message
               },
             ]);
-          }, 500); // Reducido de 500ms a 200ms
+          }, 500);
 
-          // Then show generating state - MÁS RÁPIDO
+          // Then show generating state
           setTimeout(() => {
             setState((prev) => ({ ...prev, step: 'generating_diagnosis' }));
-          }, 500); // Reducido de 1200ms a 600ms
-
-          // Finally, add the diagnosis after a realistic delay
-          setTimeout(() => {
-            if (metadata.diagnosisContent) {
-              setMessages((prev) => [
-                ...prev,
-                {
-                  role: 'assistant',
-                  content: metadata.diagnosisContent,
-                  type: 'diagnosis_ready',
-                  timestamp: new Date().toISOString(),
-                  isNew: true, // Animate diagnosis
-                },
-              ]);
-              setState((prev) => ({ ...prev, step: 'diagnosis_ready' }));
-            }
             setIsProcessing(false);
-          }, 6700); // Ajustado: 600ms + 6100ms de animación + 200ms buffer
+          }, 600);
+
+          // El diagnóstico será agregado por el polling, no aquí
+          // Esto evita duplicación
 
           return; // Don't execute the normal flow
         }

@@ -113,7 +113,6 @@ export const ChatMessage = forwardRef<HTMLDivElement, ChatMessageProps>(({
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -skew-x-12 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000"></div>
 
                   <div className="relative z-10 flex items-center gap-2 sm:gap-3">
-                    <span className="hidden sm:inline">✨</span>
                     <span className="text-center leading-tight">
                       <span className="hidden sm:inline">Transforma tu salud digestiva</span>
                       <span className="sm:hidden">Comenzar ahora</span>
@@ -130,7 +129,6 @@ export const ChatMessage = forwardRef<HTMLDivElement, ChatMessageProps>(({
                 >
                   {isGeneratingPDF ? (
                     <div className="flex items-center gap-2">
-                      <span className="animate-spin">⏳</span>
                       <span className="hidden xs:inline">Generando PDF...</span>
                       <span className="xs:hidden">Generando...</span>
                     </div>
@@ -154,6 +152,22 @@ export const ChatMessage = forwardRef<HTMLDivElement, ChatMessageProps>(({
                     <span>Valorar mi experiencia</span>
                   </button>
                 )}
+              </div>
+            )}
+
+            {/* Show subscription CTA when limit is exceeded */}
+            {message.type === 'limit_exceeded' && (
+              <div className="mt-6">
+                <a
+                  href="/pricing"
+                  className="group w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-purple-600 via-purple-700 to-indigo-700 hover:from-purple-700 hover:via-purple-800 hover:to-indigo-800 text-white font-bold text-base flex items-center justify-center gap-3 transition-all duration-300 shadow-2xl hover:shadow-purple-500/50 transform hover:-translate-y-1 hover:scale-[1.02] relative overflow-hidden"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -skew-x-12 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000"></div>
+                  <div className="relative z-10 flex items-center gap-3">
+                    <span>Quiero continuar con Clara 24/7</span>
+                    <span className="text-xl group-hover:translate-x-1 transition-transform">→</span>
+                  </div>
+                </a>
               </div>
             )}
 

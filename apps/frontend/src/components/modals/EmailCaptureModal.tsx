@@ -144,7 +144,7 @@ export const EmailCaptureModal = ({ isOpen, onClose, onSubmit, userName }: Email
             {/* Benefits */}
             <div className="mb-6 p-4 bg-gradient-to-br from-brand-green-50 to-green-100 dark:from-brand-green-900/20 dark:to-green-800/20 rounded-xl border border-brand-green-200 dark:border-brand-green-700">
               <p className="text-xs font-semibold text-brand-green-900 dark:text-brand-green-200 mb-2">
-                ✨ Recibirás:
+                Recibirás:
               </p>
               <ul className="text-xs text-brand-green-800 dark:text-brand-green-300 space-y-1">
                 <li className="flex items-center gap-2">

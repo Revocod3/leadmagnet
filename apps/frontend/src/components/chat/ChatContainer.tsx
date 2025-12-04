@@ -45,15 +45,6 @@ const QUESTION_PATTERNS: { blockIndex: number; questionIndex: number; patterns: 
 ];
 
 /**
- * Patrones para detectar cuñas informativas en el mensaje de Clara
- */
-const WEDGE_PATTERNS: { blockIndex: number; pattern: RegExp }[] = [
-  { blockIndex: 0, pattern: /no es normal vivir con la barriga inflamada/i },
-  { blockIndex: 1, pattern: /no es normal vivir con la energía por los suelos/i },
-  { blockIndex: 2, pattern: /la parte emocional.*no.*aislado/i },
-];
-
-/**
  * Detecta la pregunta actual basándose en el contenido del último mensaje de Clara.
  * Retorna null si no se detecta ninguna pregunta (ej: mensaje de bienvenida, diagnóstico, etc.)
  */
@@ -64,7 +55,7 @@ const detectCurrentQuestion = (lastAssistantMessage: string): {
   question: FlowQuestion;
 } | null => {
   if (!lastAssistantMessage) return null;
-  
+
   for (const { blockIndex, questionIndex, patterns } of QUESTION_PATTERNS) {
     for (const pattern of patterns) {
       if (pattern.test(lastAssistantMessage)) {
@@ -76,25 +67,7 @@ const detectCurrentQuestion = (lastAssistantMessage: string): {
       }
     }
   }
-  
-  return null;
-};
 
-/**
- * Detecta si el mensaje contiene una cuña informativa y retorna el bloque correspondiente
- */
-const detectWedgeInMessage = (message: string): { blockIndex: number; block: FlowBlock } | null => {
-  if (!message) return null;
-  
-  for (const { blockIndex, pattern } of WEDGE_PATTERNS) {
-    if (pattern.test(message)) {
-      const block = getBlock(blockIndex);
-      if (block) {
-        return { blockIndex, block };
-      }
-    }
-  }
-  
   return null;
 };
 
@@ -134,7 +107,7 @@ export const ChatContainer = () => {
   const { isListening, transcript, startListening, stopListening, isSupported: isSpeechSupported } = useSpeechToText();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  
+
   // Estado para controlar si el typewriter terminó
   const [isTypewriterComplete, setIsTypewriterComplete] = useState(true);
 
@@ -147,11 +120,6 @@ export const ChatContainer = () => {
   // Detectar pregunta actual parseando el contenido del mensaje
   const currentQuestionInfo = useMemo(() => {
     return detectCurrentQuestion(lastAssistantMessage);
-  }, [lastAssistantMessage]);
-
-  // Detectar si hay cuña informativa en el último mensaje
-  const wedgeInfo = useMemo(() => {
-    return detectWedgeInMessage(lastAssistantMessage);
   }, [lastAssistantMessage]);
 
   // Bloque y pregunta actuales (si estamos en flujo de preguntas)
@@ -553,45 +521,91 @@ export const ChatContainer = () => {
                 <AnimatePresence mode="popLayout">
                   {messages.map((message, index) => {
                     const rateHandler = user && !hasRated ? () => setIsRatingModalOpen(true) : undefined;
+
+                    // Detectar si este mensaje inicia un nuevo bloque (para mostrar InfoWedge)
+                    let showInfoWedgeBefore = false;
+                    let wedgeBlock: FlowBlock | null = null;
+
+                    if (message.role === 'assistant' && index > 0) {
+                      const currentMsgQuestion = detectCurrentQuestion(message.content);
+
+                      // Detectar si es mensaje de diagnóstico (generando o listo)
+                      const isDiagnosisMessage = message.type === 'diagnosis_ready' ||
+                        message.type === 'comment' ||
+                        /diagnóstico personalizado|toda la información que necesito/i.test(message.content);
+
+                      // Buscar la pregunta del mensaje de asistente anterior
+                      let prevAssistantIndex = index - 1;
+                      while (prevAssistantIndex >= 0 && messages[prevAssistantIndex]?.role !== 'assistant') {
+                        prevAssistantIndex--;
+                      }
+
+                      if (prevAssistantIndex >= 0 && messages[prevAssistantIndex]) {
+                        const prevMsgQuestion = detectCurrentQuestion(messages[prevAssistantIndex]!.content);
+
+                        // Si cambiamos de bloque, mostrar el InfoWedge del bloque anterior
+                        if (currentMsgQuestion && prevMsgQuestion &&
+                          currentMsgQuestion.blockIndex !== prevMsgQuestion.blockIndex) {
+                          showInfoWedgeBefore = true;
+                          wedgeBlock = prevMsgQuestion.block;
+                        }
+
+                        // Si el mensaje anterior era la última pregunta del bloque emocional (pregunta 12)
+                        // y el actual es el diagnóstico, mostrar el InfoWedge del bloque emocional
+                        if (prevMsgQuestion &&
+                          prevMsgQuestion.blockIndex === 2 &&
+                          prevMsgQuestion.questionIndex === 3 &&
+                          isDiagnosisMessage) {
+                          showInfoWedgeBefore = true;
+                          wedgeBlock = prevMsgQuestion.block;
+                        }
+                      }
+                    }
+
                     return (
-                      <ChatMessage
-                        key={index}
-                        message={message}
-                        state={state}
-                        isLatest={index === messages.length - 1}
-                        onDownloadPDF={handleDownloadPDF}
-                        isGeneratingPDF={isGeneratingPDF}
-                        onTypewriterComplete={index === messages.length - 1 ? handleTypewriterComplete : undefined}
-                        {...(rateHandler && { onRateExperience: rateHandler })}
-                      />
+                      <div key={index}>
+                        {/* InfoWedge antes del mensaje si cambiamos de bloque */}
+                        {showInfoWedgeBefore && wedgeBlock && (
+                          <div className="mb-4">
+                            <InfoWedge
+                              content={wedgeBlock.infoWedge}
+                              blockColor={wedgeBlock.color}
+                              blockColorLight={wedgeBlock.colorLight}
+                              blockEmoji={wedgeBlock.emoji}
+                            />
+                          </div>
+                        )}
+
+                        <ChatMessage
+                          message={message}
+                          state={state}
+                          isLatest={index === messages.length - 1}
+                          onDownloadPDF={handleDownloadPDF}
+                          isGeneratingPDF={isGeneratingPDF}
+                          onTypewriterComplete={index === messages.length - 1 ? handleTypewriterComplete : undefined}
+                          {...(rateHandler && { onRateExperience: rateHandler })}
+                        />
+                      </div>
                     );
                   })}
                 </AnimatePresence>
 
                 {/* Quick Reply Chips - mostrar después de que el typewriter termine */}
-                {!isProcessing && 
-                 isTypewriterComplete &&
-                 currentQuestion?.type === 'multiple_choice' && 
-                 currentQuestion?.options && 
-                 currentBlock && 
-                 state.step !== 'diagnosis_ready' && (
-                  <QuickReplyChips
-                    options={currentQuestion.options}
-                    onSelect={handleChipSelect}
-                    disabled={isProcessing}
-                    blockColor={currentBlock.color}
-                  />
-                )}
+                {!isProcessing &&
+                  isTypewriterComplete &&
+                  currentQuestion?.type === 'multiple_choice' &&
+                  currentQuestion?.options &&
+                  currentBlock &&
+                  state.step !== 'diagnosis_ready' && (
+                    <QuickReplyChips
+                      options={currentQuestion.options}
+                      onSelect={handleChipSelect}
+                      disabled={isProcessing}
+                      blockColor={currentBlock.color}
+                    />
+                  )}
 
-                {/* Info Wedge - mostrar cuña informativa cuando se detecta en el mensaje */}
-                {wedgeInfo && !isProcessing && isTypewriterComplete && (
-                  <InfoWedge
-                    content={wedgeInfo.block.infoWedge}
-                    blockColor={wedgeInfo.block.color}
-                    blockColorLight={wedgeInfo.block.colorLight}
-                    blockEmoji={wedgeInfo.block.emoji}
-                  />
-                )}
+                {/* Info Wedge REMOVIDO - Clara ya incluye la cuña informativa en su mensaje */}
 
                 {/* Diagnosis Generating Indicator - Special state */}
                 {state.step === 'generating_diagnosis' && !isProcessing && (

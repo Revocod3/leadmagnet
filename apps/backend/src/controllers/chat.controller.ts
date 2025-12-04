@@ -180,8 +180,8 @@ export class ChatController {
           if (session.postDiagnosisMessageCount >= INTERACTION_LIMITS.POST_DIAGNOSIS_LIMIT) {
             // Exceeded post-diagnosis limit - Show subscription CTA
             const limitMessage = language === 'es'
-              ? '🌟 Has alcanzado el límite de mensajes gratuitos.\n\n¿Quieres continuar con Clara 24/7, planes personalizados, seguimiento diario y toda la comunidad?\n\n✨ **Suscríbete al Método Objetivo Vientre Plano** y transforma tu salud digestiva.'
-              : '🌟 You have reached the free message limit.\n\n Want to continue with Clara 24/7, personalized plans, daily tracking, and the entire community?\n\n✨ **Subscribe to the Flat Belly Method** and transform your digestive health.';
+              ? 'Has alcanzado el límite de mensajes gratuitos.\n\n¿Quieres continuar con Clara 24/7, planes personalizados, seguimiento diario y toda la comunidad?\n\n **Suscríbete al Método Objetivo Vientre Plano** y transforma tu salud digestiva.'
+              : 'You have reached the free message limit.\n\n Want to continue with Clara 24/7, personalized plans, daily tracking, and the entire community?\n\n **Subscribe to the Flat Belly Method** and transform your digestive health.';
 
             res.json({
               success: true,
