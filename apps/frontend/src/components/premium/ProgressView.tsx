@@ -21,39 +21,56 @@ import {
   BarChart3,
   Star,
   UserCircle,
-  Compass
+  Compass,
+  Target,
+  Sparkles,
+  Rocket
 } from 'lucide-react';
 import { progressService, UserProgress, SubscriptionRequiredError } from '../../services/premium.service';
 import { ChallengeCard } from './ChallengeCard';
 
 // Phase configuration - using brand-green and purple only
 const PHASES = {
-  BIENVENIDA: {
-    name: 'Bienvenida',
+  onboarding: {
+    name: 'Inicio',
     Icon: Hand,
     color: 'from-brand-green-400 to-brand-green-600',
-    description: 'Conociéndonos',
+    description: 'Conociéndonos mejor',
     progress: 10
   },
-  RADIOGRAFIA: {
-    name: 'Radiografía',
+  week1: {
+    name: 'Semana 1',
     Icon: Search,
     color: 'from-purple-400 to-purple-600',
-    description: 'Evaluación inicial',
+    description: 'Explorando tu situación',
     progress: 30
   },
-  SEGUIMIENTO: {
-    name: 'Seguimiento',
-    Icon: BarChart3,
+  week2: {
+    name: 'Semana 2',
+    Icon: Target,
     color: 'from-brand-green-500 to-brand-green-700',
-    description: 'Acompañamiento diario',
-    progress: 60
+    description: 'Seguimiento activo',
+    progress: 50
   },
-  AVANZADO: {
-    name: 'Avanzado',
+  week3: {
+    name: 'Semana 3',
+    Icon: Rocket,
+    color: 'from-purple-500 to-purple-600',
+    description: 'Consolidando hábitos',
+    progress: 70
+  },
+  week4: {
+    name: 'Semana 4',
+    Icon: Sparkles,
+    color: 'from-brand-green-600 to-brand-green-700',
+    description: 'Optimización final',
+    progress: 90
+  },
+  maintenance: {
+    name: 'Pro',
     Icon: Star,
     color: 'from-purple-500 to-purple-700',
-    description: 'Optimización continua',
+    description: 'Modo crucero activado',
     progress: 100
   }
 };
@@ -132,7 +149,7 @@ export function ProgressView({ onSubscriptionExpired }: ProgressViewProps) {
     );
   }
 
-  const currentPhase = PHASES[progress.phase as keyof typeof PHASES] || PHASES.BIENVENIDA;
+  const currentPhase = PHASES[progress.phase as keyof typeof PHASES] || PHASES.onboarding;
 
   return (
     <div className="h-full overflow-y-auto p-4 pb-20 space-y-6 bg-brand-cream-50 dark:bg-neutral-900">
@@ -140,25 +157,22 @@ export function ProgressView({ onSubscriptionExpired }: ProgressViewProps) {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className={`bg-gradient-to-r ${currentPhase.color} rounded-2xl p-6 text-white shadow-lg`}
+        className={`bg-gradient-to-r ${currentPhase.color} rounded-2xl p-5 text-white shadow-lg`}
       >
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <div className="text-sm opacity-80">Tu fase actual</div>
-            <div className="text-2xl font-bold flex items-center gap-2">
-              <currentPhase.Icon className="w-6 h-6" />
-              <span>{currentPhase.name}</span>
+        <div className="flex items-start justify-between gap-2 mb-3">
+          <div className="flex items-center gap-2">
+            <currentPhase.Icon className="w-6 h-6 flex-shrink-0" />
+            <div>
+              <div className="text-xs opacity-80">Fase actual</div>
+              <div className="text-xl font-bold whitespace-nowrap">{currentPhase.name}</div>
             </div>
           </div>
           {progress.radiographyComplete && (
-            <div className="flex items-center gap-1 bg-white/20 px-3 py-1 rounded-full text-sm">
-              <CheckCircle2 className="w-4 h-4" />
-              Radiografía completada
-            </div>
+            <CheckCircle2 className="w-5 h-5 flex-shrink-0 opacity-90" title="Radiografía completada" />
           )}
         </div>
 
-        <div className="text-sm opacity-80 mb-2">{currentPhase.description}</div>
+        <div className="text-sm opacity-80 mb-3">{currentPhase.description}</div>
 
         {/* Progress bar */}
         <div className="w-full bg-white/30 rounded-full h-2">
@@ -170,18 +184,22 @@ export function ProgressView({ onSubscriptionExpired }: ProgressViewProps) {
           />
         </div>
 
-        {/* Phase timeline */}
+        {/* Phase timeline - simplified for mobile */}
         <div className="flex justify-between mt-4 text-xs opacity-80">
-          {Object.entries(PHASES).map(([key, phase]) => {
+          {Object.entries(PHASES).map(([key, phase], index) => {
             const PhaseIcon = phase.Icon;
+            const isActive = key === progress.phase;
+            const isPast = Object.keys(PHASES).indexOf(key) < Object.keys(PHASES).indexOf(progress.phase);
+
             return (
               <div
                 key={key}
-                className={`flex flex-col items-center ${key === progress.phase ? 'opacity-100' : 'opacity-50'
+                className={`flex flex-col items-center transition-opacity ${isActive ? 'opacity-100 scale-110' : isPast ? 'opacity-70' : 'opacity-40'
                   }`}
               >
-                <PhaseIcon className="w-5 h-5" />
-                <span className="hidden sm:block mt-1">{phase.name}</span>
+                <div className={`p-1.5 rounded-full ${isActive ? 'bg-white/30' : ''}`}>
+                  <PhaseIcon className="w-4 h-4" />
+                </div>
               </div>
             );
           })}

@@ -9,6 +9,7 @@ import { Request, Response } from 'express';
 import multer from 'multer';
 import { prisma } from '../config/database';
 import { agentProService } from '../services/agent-pro.service';
+import { globalContextService } from '../services/global-context.service';
 import type { ApiResponse } from '../types';
 import { logger } from '../utils/logger';
 
@@ -484,17 +485,53 @@ export class ProController {
             daysActive
           },
           context: context ? (() => {
-            const mainSymptoms = context.digestiveProfile ? (context.digestiveProfile as Record<string, unknown>).symptoms as string | null : null;
-            const dietaryProfile = context.habitsProfile && Object.keys(context.habitsProfile as object).length > 0
-              ? formatHabitsProfile(context.habitsProfile as Record<string, unknown>)
-              : null;
-            const stressLevel = context.emotionalProfile ? (context.emotionalProfile as Record<string, unknown>).stressLevel as string | null : null;
-            const digestiveGoals = Array.isArray(context.goals) && context.goals.length > 0 ? context.goals : null;
-            const knownTriggers = Array.isArray(context.identifiedTriggers) && context.identifiedTriggers.length > 0 ? context.identifiedTriggers : [];
-            const improvements = Array.isArray(context.strengths) && context.strengths.length > 0 ? context.strengths : [];
+            const dp = context.digestiveProfile as Record<string, unknown> | null;
+            const ep = context.emotionalProfile as Record<string, unknown> | null;
+            const hp = context.habitsProfile as Record<string, unknown> | null;
 
-            // Return null if no useful data
-            if (!mainSymptoms && !dietaryProfile && !stressLevel && !digestiveGoals && knownTriggers.length === 0 && improvements.length === 0) {
+            // Extract symptoms - can be array or string
+            let mainSymptoms: string | null = null;
+            if (dp?.symptoms) {
+              mainSymptoms = Array.isArray(dp.symptoms)
+                ? (dp.symptoms as string[]).join(', ')
+                : String(dp.symptoms);
+            }
+            // Also check patterns and triggers from digestiveProfile
+            if (!mainSymptoms && dp?.patterns) {
+              mainSymptoms = Array.isArray(dp.patterns)
+                ? (dp.patterns as string[]).join(', ')
+                : String(dp.patterns);
+            }
+
+            // Extract dietary profile
+            const dietaryProfile = hp && Object.keys(hp).length > 0
+              ? formatHabitsProfile(hp)
+              : null;
+
+            // Extract stress level
+            const stressLevel = ep?.stressLevel ? String(ep.stressLevel) : null;
+
+            // Extract goals
+            const digestiveGoals = Array.isArray(context.goals) && context.goals.length > 0
+              ? context.goals
+              : null;
+
+            // Extract triggers - from digestiveProfile or identifiedTriggers
+            let knownTriggers: string[] = [];
+            if (Array.isArray(context.identifiedTriggers) && context.identifiedTriggers.length > 0) {
+              knownTriggers = context.identifiedTriggers as string[];
+            } else if (dp?.triggers && Array.isArray(dp.triggers)) {
+              knownTriggers = dp.triggers as string[];
+            }
+
+            // Extract improvements/strengths
+            const improvements = Array.isArray(context.strengths) && context.strengths.length > 0
+              ? context.strengths as string[]
+              : [];
+
+            // Return null only if ALL fields are empty
+            if (!mainSymptoms && !dietaryProfile && !stressLevel && !digestiveGoals &&
+              knownTriggers.length === 0 && improvements.length === 0) {
               return null;
             }
 

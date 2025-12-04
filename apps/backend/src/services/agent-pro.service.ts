@@ -357,20 +357,38 @@ export class AgentProService {
         content: m.content,
       }));
 
-      // Determine if we should extract context (every N messages)
-      const shouldExtractContext = newMessageCount % CONTEXT_EXTRACTION_INTERVAL === 0;
+      // Always include current messages in history
+      const fullMessageHistory = [
+        ...messageHistory,
+        { role: 'user', content: userMessage },
+        { role: 'assistant', content: assistantMessage }
+      ];
 
-      // If we should extract, do it asynchronously (don't block response)
-      if (shouldExtractContext) {
-        this.extractContextAsync(userId, [
-          ...messageHistory,
-          { role: 'user', content: userMessage },
-          { role: 'assistant', content: assistantMessage }
-        ]);
-      }
+      // Check if context is empty (no profile data yet)
+      const globalContext = await globalContextService.getOrCreateContext(userId);
+      const hasContextData = globalContext.digestiveProfile &&
+        Object.keys(globalContext.digestiveProfile as object).length > 0;
 
       // Check if this looks like a radiography response (long, structured message)
-      if (this.isRadiographyMessage(assistantMessage)) {
+      const isRadiography = this.isRadiographyMessage(assistantMessage);
+
+      // Extract context:
+      // - Always if radiography is detected (most important!)
+      // - Always if context is empty
+      // - First 6 messages of conversation
+      // - Every N messages after that
+      const shouldExtractContext = isRadiography ||
+        !hasContextData ||
+        newMessageCount <= 6 ||
+        newMessageCount % CONTEXT_EXTRACTION_INTERVAL === 0;
+
+      if (shouldExtractContext) {
+        logger.info(`Extracting context for user ${userId}: radiography=${isRadiography}, hasContext=${hasContextData}, msgCount=${newMessageCount}`);
+        this.extractContextAsync(userId, fullMessageHistory);
+      }
+
+      // Mark radiography as completed if detected
+      if (isRadiography) {
         await globalContextService.completeRadiography(userId, assistantMessage);
       }
 
@@ -397,9 +415,19 @@ export class AgentProService {
     userId: string,
     messages: Array<{ role: string; content: string }>
   ): void {
+    logger.info(`Starting async context extraction for user ${userId}, messages: ${messages.length}`);
+
     globalContextService.extractAndUpdateContext(userId, messages)
-      .then(() => logger.info(`Context extracted for user ${userId}`))
-      .catch(err => logger.error('Error extracting context:', { error: err, userId }));
+      .then(() => {
+        logger.info(`✅ Context extracted successfully for user ${userId}`);
+      })
+      .catch(err => {
+        logger.error('❌ Error extracting context:', {
+          error: err instanceof Error ? err.message : String(err),
+          userId,
+          messageCount: messages.length
+        });
+      });
   }
 
   /**

@@ -129,6 +129,8 @@ export class GlobalContextService {
     messages: Array<{ role: string; content: string }>
   ): Promise<void> {
     try {
+      logger.info(`[CONTEXT] Starting extraction for user ${userId} with ${messages.length} messages`);
+
       // Get current context
       const currentContext = await this.getOrCreateContext(userId);
 
@@ -136,6 +138,8 @@ export class GlobalContextService {
       const conversationText = messages
         .map(m => `${m.role === 'user' ? 'Usuario' : 'Clara'}: ${m.content}`)
         .join('\n\n');
+
+      logger.info(`[CONTEXT] Conversation text length: ${conversationText.length} chars`);
 
       // Use GPT to extract structured information
       const extractionPrompt = `Analiza esta conversación entre Clara (asistente de salud digestiva) y un usuario.
@@ -217,20 +221,24 @@ REGLAS:
 
       const extractedText = completion.choices[0]?.message?.content;
       if (!extractedText) {
-        logger.warn('No content extracted from conversation');
+        logger.warn('[CONTEXT] No content extracted from conversation');
         return;
       }
+
+      logger.info(`[CONTEXT] Extracted text length: ${extractedText.length} chars`);
 
       let extracted: ExtractedContext;
       try {
         extracted = JSON.parse(extractedText);
+        logger.info(`[CONTEXT] Parsed extracted data: ${JSON.stringify(Object.keys(extracted))}`);
       } catch {
-        logger.error('Failed to parse extracted context JSON');
+        logger.error('[CONTEXT] Failed to parse extracted context JSON:', extractedText.substring(0, 200));
         return;
       }
 
       // Merge extracted data with existing context
       const updatedData = this.mergeContextData(currentContext, extracted);
+      logger.info(`[CONTEXT] Merged data keys: ${JSON.stringify(Object.keys(updatedData))}`);
 
       // Update in database - only pass known update fields
       const updatePayload: Record<string, unknown> = {
@@ -248,12 +256,14 @@ REGLAS:
       if (updatedData.communicationStyle) updatePayload.communicationStyle = updatedData.communicationStyle;
       if (updatedData.personalityType) updatePayload.personalityType = updatedData.personalityType;
 
+      logger.info(`[CONTEXT] Update payload keys: ${JSON.stringify(Object.keys(updatePayload))}`);
+
       await prisma.userGlobalContext.update({
         where: { userId },
         data: updatePayload
       });
 
-      logger.info(`Updated global context for user ${userId}`);
+      logger.info(`[CONTEXT] ✅ Successfully updated global context for user ${userId}`);
 
     } catch (error) {
       logger.error('Error extracting and updating context:', { error, userId });
