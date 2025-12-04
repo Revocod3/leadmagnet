@@ -144,7 +144,7 @@ export const EmailCaptureModal = ({ isOpen, onClose, onSubmit, userName }: Email
             {/* Benefits */}
             <div className="mb-6 p-4 bg-gradient-to-br from-brand-green-50 to-green-100 dark:from-brand-green-900/20 dark:to-green-800/20 rounded-xl border border-brand-green-200 dark:border-brand-green-700">
               <p className="text-xs font-semibold text-brand-green-900 dark:text-brand-green-200 mb-2">
-                ✨ Recibirás:
+                Recibirás:
               </p>
               <ul className="text-xs text-brand-green-800 dark:text-brand-green-300 space-y-1">
                 <li className="flex items-center gap-2">
@@ -166,7 +166,7 @@ export const EmailCaptureModal = ({ isOpen, onClose, onSubmit, userName }: Email
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full py-4 px-6 rounded-xl bg-gradient-to-r from-brand-green-500 to-brand-green-600 hover:from-brand-green-600 hover:to-brand-green-700 text-white font-bold text-base flex items-center justify-center gap-2 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transform hover:-translate-y-0.5 active:scale-95"
+              className="w-full py-4 px-6 rounded-xl bg-gradient-to-r from-brand-green-500 to-brand-green-600 hover:from-brand-green-600 hover:to-brand-green-700 text-white font-bold text-base flex items-center justify-center gap-2 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transform hover:-translate-y-0.5 active:scale-95 whitespace-nowrap"
             >
               {isSubmitting ? (
                 <>
@@ -175,7 +175,7 @@ export const EmailCaptureModal = ({ isOpen, onClose, onSubmit, userName }: Email
                 </>
               ) : (
                 <>
-                  <span>Descargar mi diagnóstico</span>
+                  <span>Descargar diagnóstico</span>
                   <span>→</span>
                 </>
               )}

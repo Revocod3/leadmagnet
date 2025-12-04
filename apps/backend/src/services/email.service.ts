@@ -180,7 +180,7 @@ export class EmailService {
     ${accessSection}
     
     <div style="background: #f0f7e6; border-radius: 8px; padding: 20px; margin-top: 24px;">
-      <h3 style="color: #5a7a2d; margin: 0 0 12px 0; font-size: 16px;">✨ Tu membresía PRO incluye:</h3>
+      <h3 style="color: #5a7a2d; margin: 0 0 12px 0; font-size: 16px;">Tu membresía PRO incluye:</h3>
       <ul style="color: #555; margin: 0; padding-left: 20px;">
         <li>Conversaciones ilimitadas con Clara, tu asistente de salud digestiva</li>
         <li>Análisis de imágenes sin límite</li>

@@ -23,7 +23,8 @@ export interface FlowMessage {
   | 'comment'
   | 'diagnosis_ready'
   | 'validation_error'
-  | 'completed';
+  | 'completed'
+  | 'limit_exceeded';
   question?: DiagnosticQuestion;
   timestamp?: string;
   isNew?: boolean; // True if message just arrived, should animate
@@ -320,7 +321,7 @@ export const useDiagnosticFlow = () => {
 
         // Handle diagnosis generation - show special state
         if (isGeneratingDiagnosis) {
-          // First show a quick acknowledgment - INMEDIATO
+          // First show a quick acknowledgment message
           setTimeout(() => {
             setMessages((prev) => [
               ...prev,
@@ -329,33 +330,21 @@ export const useDiagnosticFlow = () => {
                 content: response.content,
                 type: 'comment',
                 timestamp: new Date().toISOString(),
-                isNew: true, // Animate new message
+                isNew: true, // Animate new message with typewriter
               },
             ]);
-          }, 500); // Reducido de 500ms a 200ms
+          }, 400);
 
-          // Then show generating state - MÁS RÁPIDO
+          // Change to generating state after message is added
+          // The DiagnosisGeneratingIndicator will wait for typewriter to complete
+          // due to isTypewriterComplete check in ChatContainer
           setTimeout(() => {
             setState((prev) => ({ ...prev, step: 'generating_diagnosis' }));
-          }, 500); // Reducido de 1200ms a 600ms
-
-          // Finally, add the diagnosis after a realistic delay
-          setTimeout(() => {
-            if (metadata.diagnosisContent) {
-              setMessages((prev) => [
-                ...prev,
-                {
-                  role: 'assistant',
-                  content: metadata.diagnosisContent,
-                  type: 'diagnosis_ready',
-                  timestamp: new Date().toISOString(),
-                  isNew: true, // Animate diagnosis
-                },
-              ]);
-              setState((prev) => ({ ...prev, step: 'diagnosis_ready' }));
-            }
             setIsProcessing(false);
-          }, 6700); // Ajustado: 600ms + 6100ms de animación + 200ms buffer
+          }, 600);
+
+          // El diagnóstico será agregado por el polling, no aquí
+          // Esto evita duplicación
 
           return; // Don't execute the normal flow
         }

@@ -180,8 +180,8 @@ export class ChatController {
           if (session.postDiagnosisMessageCount >= INTERACTION_LIMITS.POST_DIAGNOSIS_LIMIT) {
             // Exceeded post-diagnosis limit - Show subscription CTA
             const limitMessage = language === 'es'
-              ? '🌟 Has alcanzado el límite de mensajes gratuitos.\n\n¿Quieres continuar con Clara 24/7, planes personalizados, seguimiento diario y toda la comunidad?\n\n✨ **Suscríbete al Método Objetivo Vientre Plano** y transforma tu salud digestiva.'
-              : '🌟 You have reached the free message limit.\n\n Want to continue with Clara 24/7, personalized plans, daily tracking, and the entire community?\n\n✨ **Subscribe to the Flat Belly Method** and transform your digestive health.';
+              ? 'Has alcanzado el límite de mensajes gratuitos.\n\n¿Quieres continuar con Clara 24/7, planes personalizados, seguimiento diario y toda la comunidad?\n\n **Suscríbete al Método Objetivo Vientre Plano** y transforma tu salud digestiva.'
+              : 'You have reached the free message limit.\n\n Want to continue with Clara 24/7, personalized plans, daily tracking, and the entire community?\n\n **Subscribe to the Flat Belly Method** and transform your digestive health.';
 
             res.json({
               success: true,
@@ -249,12 +249,14 @@ export class ChatController {
         sessionId?: string;
         hasImage?: boolean;
         hasOfferedImage?: boolean;
+        hasCompletedDiagnosis?: boolean;
       } = {
         turnCount: turnCount + 1,
         hasRealProblem,
         sessionId,
         hasImage: !!imageBuffer, // Indicar si hay imagen en este mensaje
         hasOfferedImage: flowState?.hasOfferedImage || false,
+        hasCompletedDiagnosis, // Indicar si ya se completó el diagnóstico
       };
 
       if (session.userName) context.userName = session.userName;
@@ -316,10 +318,12 @@ export class ChatController {
       });
 
       // Generar diagnóstico si está listo
+      // FLUJO ESTRUCTURADO: isDiagnosisReady se activa en turno 14+ o con señales de diagnóstico
+      // IMPORTANTE: NO generar si ya existe diagnóstico (hasCompletedDiagnosis)
       let diagnosisContent: string | null = null;
       let discountCode: { code: string; percentage: number } | null = null;
 
-      if (response.isDiagnosisReady && hasRealProblem) {
+      if (response.isDiagnosisReady && !hasCompletedDiagnosis) {
         // PASO 1: Primero respondemos con un mensaje de "generando diagnóstico"
         // sin esperar a que se genere el diagnóstico completo
         const generatingMessage = session.language === 'es'

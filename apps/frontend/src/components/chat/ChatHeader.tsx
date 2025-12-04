@@ -3,8 +3,16 @@ import { Moon, Sun, Menu, LogOut, BookOpen, MessageSquare, X, TrendingUp, Messag
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ProgressChip } from './ProgressChip';
+import type { FlowBlock } from '../../config/diagnostic-flow-config';
 
 type Tab = 'chat' | 'diario' | 'progreso';
+
+interface ProgressInfo {
+  currentBlock: FlowBlock;
+  currentQuestionIndex: number;
+  totalQuestionsInBlock: number;
+}
 
 interface ChatHeaderProps {
   isDarkMode: boolean;
@@ -14,6 +22,7 @@ interface ChatHeaderProps {
   isConversationsSidebarOpen?: boolean;
   activeTab?: Tab;
   onTabChange?: (tab: Tab) => void;
+  progressInfo?: ProgressInfo | null;
 }
 
 export const ChatHeader = ({
@@ -24,6 +33,7 @@ export const ChatHeader = ({
   isConversationsSidebarOpen = false,
   activeTab,
   onTabChange,
+  progressInfo,
 }: ChatHeaderProps) => {
   const navigate = useNavigate();
   const { isAuthenticated, user, logout } = useAuthStore();
@@ -59,6 +69,17 @@ export const ChatHeader = ({
             </span>
           </div>
         </div>
+
+        {/* Center: Progress Chip - Solo visible durante el flujo de preguntas */}
+        <AnimatePresence>
+          {progressInfo && (
+            <ProgressChip
+              currentBlock={progressInfo.currentBlock}
+              currentQuestionIndex={progressInfo.currentQuestionIndex}
+              totalQuestionsInBlock={progressInfo.totalQuestionsInBlock}
+            />
+          )}
+        </AnimatePresence>
 
         {/* Right: Actions */}
         <div className="flex items-center gap-2">
@@ -133,8 +154,8 @@ export const ChatHeader = ({
                               <button
                                 onClick={() => handleTabClick('chat')}
                                 className={`w-full p-4 flex items-center gap-4 rounded-xl transition-colors ${activeTab === 'chat'
-                                    ? 'bg-brand-green-50 dark:bg-brand-green-900/20 text-brand-green-600 dark:text-brand-green-400'
-                                    : 'hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-200'
+                                  ? 'bg-brand-green-50 dark:bg-brand-green-900/20 text-brand-green-600 dark:text-brand-green-400'
+                                  : 'hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-200'
                                   }`}
                               >
                                 <MessageCircle className="w-6 h-6" />
@@ -144,8 +165,8 @@ export const ChatHeader = ({
                               <button
                                 onClick={() => handleTabClick('diario')}
                                 className={`w-full p-4 flex items-center gap-4 rounded-xl transition-colors ${activeTab === 'diario'
-                                    ? 'bg-brand-green-50 dark:bg-brand-green-900/20 text-brand-green-600 dark:text-brand-green-400'
-                                    : 'hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-200'
+                                  ? 'bg-brand-green-50 dark:bg-brand-green-900/20 text-brand-green-600 dark:text-brand-green-400'
+                                  : 'hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-200'
                                   }`}
                               >
                                 <BookOpen className="w-6 h-6" />
@@ -155,8 +176,8 @@ export const ChatHeader = ({
                               <button
                                 onClick={() => handleTabClick('progreso')}
                                 className={`w-full p-4 flex items-center gap-4 rounded-xl transition-colors ${activeTab === 'progreso'
-                                    ? 'bg-brand-green-50 dark:bg-brand-green-900/20 text-brand-green-600 dark:text-brand-green-400'
-                                    : 'hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-200'
+                                  ? 'bg-brand-green-50 dark:bg-brand-green-900/20 text-brand-green-600 dark:text-brand-green-400'
+                                  : 'hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-200'
                                   }`}
                               >
                                 <TrendingUp className="w-6 h-6" />
@@ -237,8 +258,8 @@ export const ChatHeader = ({
                             <button
                               onClick={() => handleTabClick('chat')}
                               className={`w-full px-4 py-2.5 flex items-center gap-3 transition-colors text-left ${activeTab === 'chat'
-                                  ? 'bg-brand-green-50 dark:bg-brand-green-900/20 text-brand-green-600'
-                                  : 'hover:bg-neutral-100 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200'
+                                ? 'bg-brand-green-50 dark:bg-brand-green-900/20 text-brand-green-600'
+                                : 'hover:bg-neutral-100 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200'
                                 }`}
                             >
                               <MessageCircle className="w-4 h-4" />
@@ -247,8 +268,8 @@ export const ChatHeader = ({
                             <button
                               onClick={() => handleTabClick('diario')}
                               className={`w-full px-4 py-2.5 flex items-center gap-3 transition-colors text-left ${activeTab === 'diario'
-                                  ? 'bg-brand-green-50 dark:bg-brand-green-900/20 text-brand-green-600'
-                                  : 'hover:bg-neutral-100 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200'
+                                ? 'bg-brand-green-50 dark:bg-brand-green-900/20 text-brand-green-600'
+                                : 'hover:bg-neutral-100 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200'
                                 }`}
                             >
                               <BookOpen className="w-4 h-4" />
@@ -257,8 +278,8 @@ export const ChatHeader = ({
                             <button
                               onClick={() => handleTabClick('progreso')}
                               className={`w-full px-4 py-2.5 flex items-center gap-3 transition-colors text-left ${activeTab === 'progreso'
-                                  ? 'bg-brand-green-50 dark:bg-brand-green-900/20 text-brand-green-600'
-                                  : 'hover:bg-neutral-100 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200'
+                                ? 'bg-brand-green-50 dark:bg-brand-green-900/20 text-brand-green-600'
+                                : 'hover:bg-neutral-100 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200'
                                 }`}
                             >
                               <TrendingUp className="w-4 h-4" />

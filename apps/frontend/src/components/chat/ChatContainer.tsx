@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 // Single-flow mode: no navigation needed here
 import { useDiagnosticFlow } from '../../hooks/useDiagnosticFlow';
 import { useSpeechToText } from '../../hooks/useSpeechToText';
@@ -16,57 +16,58 @@ import { ChatHeader } from './ChatHeader';
 import { ChatFooter } from './ChatFooter';
 import { TypingIndicator } from '../animations/TypingIndicator';
 import { DiagnosisGeneratingIndicator } from '../animations/DiagnosisGeneratingIndicator';
+import { QuickReplyChips } from './QuickReplyChips';
+import { InfoWedge } from './InfoWedge';
+import { getBlock, getQuestion, type FlowBlock, type FlowQuestion } from '../../config/diagnostic-flow-config';
 import { apiClient } from '../../services/api';
 
-// Progress Indicator Component
-const ProgressIndicator = ({ turnCount, hasRealProblem }: { turnCount: number; hasRealProblem: boolean }) => {
-  if (!hasRealProblem || turnCount < 2) return null;
+/**
+ * Patrones de texto para detectar cada pregunta en el mensaje de Clara.
+ * Usamos frases clave que son únicas de cada pregunta.
+ */
+const QUESTION_PATTERNS: { blockIndex: number; questionIndex: number; patterns: RegExp[] }[] = [
+  // BLOQUE DIGESTIVO (0)
+  { blockIndex: 0, questionIndex: 0, patterns: [/momento del día.*barriga.*inflamada/i, /qué momento.*sientes.*inflamada/i] },
+  { blockIndex: 0, questionIndex: 1, patterns: [/gases.*pesadez.*digestiones lentas/i, /sueles tener gases/i] },
+  { blockIndex: 0, questionIndex: 2, patterns: [/hinchas.*comidas ligeras/i, /notas que te hinchas/i] },
+  { blockIndex: 0, questionIndex: 3, patterns: [/inflamas.*tarda.*en bajar/i, /sensación tarda mucho/i] },
+  // BLOQUE ENERGÍA (1)
+  { blockIndex: 1, questionIndex: 0, patterns: [/energía después de comer/i, /cómo sientes tu energía/i] },
+  { blockIndex: 1, questionIndex: 1, patterns: [/dependes de café.*azúcar/i, /café.*snacks.*rendir/i] },
+  { blockIndex: 1, questionIndex: 2, patterns: [/momento del día.*más activo.*más cansado/i, /activo.*cansado/i] },
+  { blockIndex: 1, questionIndex: 3, patterns: [/falta de energía.*día a día/i, /cómo te afecta la falta/i] },
+  // BLOQUE EMOCIONAL (2)
+  { blockIndex: 2, questionIndex: 0, patterns: [/estrés.*más presente.*últimamente/i, /sientes que el estrés/i] },
+  { blockIndex: 2, questionIndex: 1, patterns: [/menos motivación.*constancia/i, /cuesta mantener la constancia/i] },
+  { blockIndex: 2, questionIndex: 2, patterns: [/preocupaciones.*ansiedad.*afectan/i, /ansiedad te afectan/i] },
+  { blockIndex: 2, questionIndex: 3, patterns: [/aspecto emocional.*mejorar/i, /emocional.*gustaría mejorar/i] },
+];
 
-  const maxTurns = 16;
-  const progress = Math.min((turnCount / maxTurns) * 100, 90);
+/**
+ * Detecta la pregunta actual basándose en el contenido del último mensaje de Clara.
+ * Retorna null si no se detecta ninguna pregunta (ej: mensaje de bienvenida, diagnóstico, etc.)
+ */
+const detectCurrentQuestion = (lastAssistantMessage: string): {
+  blockIndex: number;
+  questionIndex: number;
+  block: FlowBlock;
+  question: FlowQuestion;
+} | null => {
+  if (!lastAssistantMessage) return null;
 
+  for (const { blockIndex, questionIndex, patterns } of QUESTION_PATTERNS) {
+    for (const pattern of patterns) {
+      if (pattern.test(lastAssistantMessage)) {
+        const block = getBlock(blockIndex);
+        const question = getQuestion(blockIndex, questionIndex);
+        if (block && question) {
+          return { blockIndex, questionIndex, block, question };
+        }
+      }
+    }
+  }
 
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: -20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="bg-white/95 dark:bg-neutral-900/95 backdrop-blur-lg border-b border-neutral-200 dark:border-neutral-800 px-4 py-3"
-    >
-      <div className="max-w-2xl mx-auto">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-medium text-neutral-600 dark:text-neutral-400">
-            Tu diagnóstico
-          </span>
-          <span className="text-xs font-bold text-brand-green-600 dark:text-brand-green-400">
-            {Math.round(progress)}% completado
-          </span>
-        </div>
-
-        <div className="relative">
-          <div className="h-2 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden">
-            <motion.div
-              className="h-full bg-gradient-to-r from-brand-green-500 to-brand-green-600"
-              initial={{ width: 0 }}
-              animate={{ width: `${progress}%` }}
-              transition={{ duration: 0.5, ease: "easeOut" }}
-            />
-          </div>
-
-          {/* Milestone dots */}
-          {[25, 50, 75].map((threshold) => (
-            <div
-              key={threshold}
-              className={`absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-2 
-                ${progress >= threshold
-                  ? 'bg-brand-green-500 border-brand-green-500'
-                  : 'bg-white dark:bg-neutral-800 border-neutral-300 dark:border-neutral-600'}`}
-              style={{ left: `${threshold}%`, transform: 'translate(-50%, -50%)' }}
-            />
-          ))}
-        </div>
-      </div>
-    </motion.div>
-  );
+  return null;
 };
 
 export const ChatContainer = () => {
@@ -105,6 +106,53 @@ export const ChatContainer = () => {
   const { isListening, transcript, startListening, stopListening, isSupported: isSpeechSupported } = useSpeechToText();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Estado para controlar si el typewriter terminó
+  const [isTypewriterComplete, setIsTypewriterComplete] = useState(true);
+
+  // Detectar pregunta actual basándose en el último mensaje de Clara
+  const lastAssistantMessage = useMemo(() => {
+    const assistantMessages = messages.filter(m => m.role === 'assistant');
+    return assistantMessages[assistantMessages.length - 1]?.content || '';
+  }, [messages]);
+
+  // Detectar pregunta actual parseando el contenido del mensaje
+  const currentQuestionInfo = useMemo(() => {
+    return detectCurrentQuestion(lastAssistantMessage);
+  }, [lastAssistantMessage]);
+
+  // Bloque y pregunta actuales (si estamos en flujo de preguntas)
+  const currentBlock = currentQuestionInfo?.block || null;
+  const currentQuestion = currentQuestionInfo?.question || null;
+
+  // ¿Mostrar barra de progreso? Solo si detectamos una pregunta válida
+  const showProgressBar = currentQuestionInfo !== null && state.step !== 'diagnosis_ready';
+
+  // Handler para selección de chip de respuesta rápida
+  const handleChipSelect = (option: { value: string; label: string }) => {
+    if (!isProcessing && isTypewriterComplete) {
+      processMessage(option.label);
+    }
+  };
+
+  // Cuando llega un nuevo mensaje de asistente, resetear el estado del typewriter
+  useEffect(() => {
+    const lastMessage = messages[messages.length - 1];
+    if (lastMessage?.role === 'assistant') {
+      // Si el mensaje es nuevo (isNew !== false), el typewriter empezará
+      if (lastMessage.isNew !== false) {
+        setIsTypewriterComplete(false);
+      } else {
+        // Mensaje restaurado, ya está completo
+        setIsTypewriterComplete(true);
+      }
+    }
+  }, [messages]);
+
+  // Callback para cuando el typewriter termina
+  const handleTypewriterComplete = () => {
+    setIsTypewriterComplete(true);
+  };
 
   // Actualizar hasRated cuando cambie la sesión
   useEffect(() => {
@@ -422,20 +470,21 @@ export const ChatContainer = () => {
     <>
       {/* Wrapper con dark mode */}
       <div className={`${isDarkMode ? 'dark' : ''}`}>
-        {/* Header flotante transparente */}
-        <ChatHeader isDarkMode={isDarkMode} onToggleDarkMode={toggleDarkMode} />
-
-        {/* Progress Indicator - Fixed debajo del header */}
-        {state.step === 'asking_questions' && (
-          <div className="fixed top-16 left-0 right-0 z-20">
-            <ProgressIndicator turnCount={state.currentQuestionIndex} hasRealProblem={true} />
-          </div>
-        )}
+        {/* Header flotante transparente con Progress Chip integrado */}
+        <ChatHeader
+          isDarkMode={isDarkMode}
+          onToggleDarkMode={toggleDarkMode}
+          progressInfo={showProgressBar && currentBlock && currentQuestionInfo ? {
+            currentBlock,
+            currentQuestionIndex: currentQuestionInfo.questionIndex,
+            totalQuestionsInBlock: currentBlock.questions.length,
+          } : null}
+        />
 
         {/* Main content - Chat Messages */}
         <div className="mobile-chat-container bg-neutral-50 dark:bg-neutral-900 bg-chat-lighting transition-colors duration-200">
           {/* Messages Area */}
-          <main className={`mobile-chat-main smooth-scroll scroll-pt-4 pt-20 pb-32 ${state.step === 'asking_questions' ? 'pt-32' : 'pt-20'}`}>
+          <main className="mobile-chat-main smooth-scroll scroll-pt-4 pt-20 pb-32">
             <div className="container-narrow pt-4 pb-4">
               {/* Empty State - Loading state while initializing */}
               {messages.length === 0 && !isProcessing && (
@@ -467,22 +516,95 @@ export const ChatContainer = () => {
                 <AnimatePresence mode="popLayout">
                   {messages.map((message, index) => {
                     const rateHandler = user && !hasRated ? () => setIsRatingModalOpen(true) : undefined;
+
+                    // Detectar si este mensaje inicia un nuevo bloque (para mostrar InfoWedge)
+                    let showInfoWedgeBefore = false;
+                    let wedgeBlock: FlowBlock | null = null;
+
+                    if (message.role === 'assistant' && index > 0) {
+                      const currentMsgQuestion = detectCurrentQuestion(message.content);
+
+                      // Detectar si es mensaje de diagnóstico (generando o listo)
+                      const isDiagnosisMessage = message.type === 'diagnosis_ready' ||
+                        message.type === 'comment' ||
+                        /diagnóstico personalizado|toda la información que necesito/i.test(message.content);
+
+                      // Buscar la pregunta del mensaje de asistente anterior
+                      let prevAssistantIndex = index - 1;
+                      while (prevAssistantIndex >= 0 && messages[prevAssistantIndex]?.role !== 'assistant') {
+                        prevAssistantIndex--;
+                      }
+
+                      if (prevAssistantIndex >= 0 && messages[prevAssistantIndex]) {
+                        const prevMsgQuestion = detectCurrentQuestion(messages[prevAssistantIndex]!.content);
+
+                        // Si cambiamos de bloque, mostrar el InfoWedge del bloque anterior
+                        if (currentMsgQuestion && prevMsgQuestion &&
+                          currentMsgQuestion.blockIndex !== prevMsgQuestion.blockIndex) {
+                          showInfoWedgeBefore = true;
+                          wedgeBlock = prevMsgQuestion.block;
+                        }
+
+                        // Si el mensaje anterior era la última pregunta del bloque emocional (pregunta 12)
+                        // y el actual es el diagnóstico, mostrar el InfoWedge del bloque emocional
+                        if (prevMsgQuestion &&
+                          prevMsgQuestion.blockIndex === 2 &&
+                          prevMsgQuestion.questionIndex === 3 &&
+                          isDiagnosisMessage) {
+                          showInfoWedgeBefore = true;
+                          wedgeBlock = prevMsgQuestion.block;
+                        }
+                      }
+                    }
+
                     return (
-                      <ChatMessage
-                        key={index}
-                        message={message}
-                        state={state}
-                        isLatest={index === messages.length - 1}
-                        onDownloadPDF={handleDownloadPDF}
-                        isGeneratingPDF={isGeneratingPDF}
-                        {...(rateHandler && { onRateExperience: rateHandler })}
-                      />
+                      <div key={index}>
+                        {/* InfoWedge antes del mensaje si cambiamos de bloque */}
+                        {showInfoWedgeBefore && wedgeBlock && (
+                          <div className="mb-4">
+                            <InfoWedge
+                              content={wedgeBlock.infoWedge}
+                              blockColor={wedgeBlock.color}
+                              blockColorLight={wedgeBlock.colorLight}
+                              blockEmoji={wedgeBlock.emoji}
+                            />
+                          </div>
+                        )}
+
+                        <ChatMessage
+                          message={message}
+                          state={state}
+                          isLatest={index === messages.length - 1}
+                          onDownloadPDF={handleDownloadPDF}
+                          isGeneratingPDF={isGeneratingPDF}
+                          onTypewriterComplete={index === messages.length - 1 ? handleTypewriterComplete : undefined}
+                          {...(rateHandler && { onRateExperience: rateHandler })}
+                        />
+                      </div>
                     );
                   })}
                 </AnimatePresence>
 
+                {/* Quick Reply Chips - mostrar después de que el typewriter termine */}
+                {!isProcessing &&
+                  isTypewriterComplete &&
+                  currentQuestion?.type === 'multiple_choice' &&
+                  currentQuestion?.options &&
+                  currentBlock &&
+                  state.step !== 'diagnosis_ready' && (
+                    <QuickReplyChips
+                      options={currentQuestion.options}
+                      onSelect={handleChipSelect}
+                      disabled={isProcessing}
+                      blockColor={currentBlock.color}
+                    />
+                  )}
+
+                {/* Info Wedge REMOVIDO - Clara ya incluye la cuña informativa en su mensaje */}
+
                 {/* Diagnosis Generating Indicator - Special state */}
-                {state.step === 'generating_diagnosis' && !isProcessing && (
+                {/* Solo mostrar después de que el typewriter termine para mantener jerarquía visual */}
+                {state.step === 'generating_diagnosis' && !isProcessing && isTypewriterComplete && (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
