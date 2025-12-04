@@ -454,7 +454,8 @@ export const ChatContainer = () => {
         <ChatHeader isDarkMode={isDarkMode} onToggleDarkMode={toggleDarkMode} />
 
         {/* Block Progress Bar - Fixed debajo del header */}
-        {state.step === 'asking_questions' && currentBlock && flowPosition.questionIndex >= 0 && !flowPosition.isComplete && (
+        {/* Se muestra cuando hay preguntas activas (no solo cuando state.step === 'asking_questions') */}
+        {currentBlock && flowPosition.questionIndex >= 0 && !flowPosition.isComplete && messages.length > 0 && (
           <div className="fixed top-16 left-0 right-0 z-20">
             <BlockProgressBar
               currentBlock={currentBlock}
@@ -467,7 +468,7 @@ export const ChatContainer = () => {
         {/* Main content - Chat Messages */}
         <div className="mobile-chat-container bg-neutral-50 dark:bg-neutral-900 bg-chat-lighting transition-colors duration-200">
           {/* Messages Area */}
-          <main className={`mobile-chat-main smooth-scroll scroll-pt-4 pt-20 pb-32 ${state.step === 'asking_questions' ? 'pt-32' : 'pt-20'}`}>
+          <main className={`mobile-chat-main smooth-scroll scroll-pt-4 pt-20 pb-32 ${(currentBlock && flowPosition.questionIndex >= 0 && !flowPosition.isComplete) ? 'pt-32' : 'pt-20'}`}>
             <div className="container-narrow pt-4 pb-4">
               {/* Empty State - Loading state while initializing */}
               {messages.length === 0 && !isProcessing && (
@@ -514,8 +515,8 @@ export const ChatContainer = () => {
                 </AnimatePresence>
 
                 {/* Quick Reply Chips - mostrar si la pregunta actual tiene opciones */}
-                {state.step === 'asking_questions' && 
-                 !isProcessing && 
+                {!isProcessing && 
+                 !flowPosition.isComplete &&
                  currentQuestion?.type === 'multiple_choice' && 
                  currentQuestion?.options && 
                  currentBlock && (
