@@ -65,6 +65,20 @@
 <body>
   <div id="root"></div>
   <script type="module" src="/src/main.tsx"></script>
+
+  <!-- Eruda: Mobile console for debugging (only in dev mode) -->
+  <script>
+    // Only load Eruda in development
+    if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/eruda';
+      script.onload = function() {
+        eruda.init();
+        console.log('📱 Eruda console loaded - tap the icon in bottom right');
+      };
+      document.body.appendChild(script);
+    }
+  </script>
 </body>
 
 </html>

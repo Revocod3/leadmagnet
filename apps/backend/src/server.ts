@@ -35,9 +35,10 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' }
 }));
 
-// CORS configuration
+// CORS configuration - Parse comma-separated origins
+const corsOrigins = env.CORS_ORIGIN.split(',').map(origin => origin.trim());
 app.use(cors({
-  origin: env.CORS_ORIGIN,
+  origin: corsOrigins,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -131,11 +132,12 @@ process.on('unhandledRejection', (reason, promise) => {
   process.exit(1);
 });
 
-// Start server
-const server = app.listen(env.PORT, () => {
+// Start server - Listen on 0.0.0.0 to accept connections from mobile devices
+const server = app.listen(env.PORT, '0.0.0.0', () => {
   logger.info(`🚀 Server running on port ${env.PORT}`);
   logger.info(`📝 Environment: ${env.NODE_ENV}`);
   logger.info(`🔗 API URL: http://localhost:${env.PORT}`);
+  logger.info(`📱 Mobile testing: http://0.0.0.0:${env.PORT}`);
   logger.info(`🗄️  Database: ${env.DATABASE_URL ? 'Connected' : 'Not configured'}`);
   logger.info(`🤖 OpenAI: ${env.OPENAI_API_KEY ? 'Configured' : 'Not configured'}`);
   logger.info(`🔴 Redis: ${redis ? 'Connected' : 'Not configured'}`);

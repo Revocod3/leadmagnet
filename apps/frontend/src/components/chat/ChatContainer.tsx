@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 // Single-flow mode: no navigation needed here
 import { useDiagnosticFlow } from '../../hooks/useDiagnosticFlow';
 import { useSpeechToText } from '../../hooks/useSpeechToText';
@@ -20,6 +20,7 @@ import { QuickReplyChips } from './QuickReplyChips';
 import { InfoWedge } from './InfoWedge';
 import { getBlock, getQuestion, type FlowBlock, type FlowQuestion } from '../../config/diagnostic-flow-config';
 import { apiClient } from '../../services/api';
+import { useMobileKeyboard } from '../../hooks/useMobileKeyboard';
 
 /**
  * Patrones de texto para detectar cada pregunta en el mensaje de Clara.
@@ -106,9 +107,39 @@ export const ChatContainer = () => {
   const { isListening, transcript, startListening, stopListening, isSupported: isSpeechSupported } = useSpeechToText();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   // Estado para controlar si el typewriter terminó
   const [isTypewriterComplete, setIsTypewriterComplete] = useState(true);
+
+  // Hook para manejar el teclado móvil
+  const { isKeyboardOpen } = useMobileKeyboard({
+    onKeyboardShow: () => {
+      // Scroll al final cuando se abre el teclado
+      scrollToBottom('instant');
+    },
+  });
+
+  // Función mejorada de scroll al final
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
+    // Método 1: Usar el ref del final de mensajes
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({
+        behavior,
+        block: 'end',
+      });
+    }
+
+    // Método 2: Backup - scroll del contenedor directamente
+    if (messagesContainerRef.current) {
+      const container = messagesContainerRef.current;
+      // Pequeño delay para asegurar que el DOM se actualizó
+      requestAnimationFrame(() => {
+        container.scrollTop = container.scrollHeight;
+      });
+    }
+  }, []);
 
   // Detectar pregunta actual basándose en el último mensaje de Clara
   const lastAssistantMessage = useMemo(() => {
@@ -225,10 +256,30 @@ export const ChatContainer = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.id]);
 
-  // Auto-scroll
+  // Auto-scroll cuando cambian los mensajes
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-  }, [messages]);
+    scrollToBottom('smooth');
+  }, [messages, scrollToBottom]);
+
+  // Auto-scroll cuando el typewriter termina (para que los QuickReplies sean visibles)
+  useEffect(() => {
+    if (isTypewriterComplete) {
+      // Pequeño delay para que los QuickReplyChips se rendericen
+      const timer = setTimeout(() => {
+        scrollToBottom('smooth');
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+    return undefined;
+  }, [isTypewriterComplete, scrollToBottom]);
+
+  // Auto-scroll cuando cambia isProcessing (cuando se envía/recibe mensaje)
+  useEffect(() => {
+    if (isProcessing) {
+      // Scroll inmediato cuando empieza a procesar (mensaje enviado)
+      scrollToBottom('smooth');
+    }
+  }, [isProcessing, scrollToBottom]);
 
   // Sincronizar idioma de i18next con sessionStore
   useEffect(() => {
@@ -482,9 +533,15 @@ export const ChatContainer = () => {
         />
 
         {/* Main content - Chat Messages */}
-        <div className="mobile-chat-container bg-neutral-50 dark:bg-neutral-900 bg-chat-lighting transition-colors duration-200">
+        <div
+          ref={chatContainerRef}
+          className="mobile-chat-container bg-neutral-50 dark:bg-neutral-900 bg-chat-lighting transition-colors duration-200"
+        >
           {/* Messages Area */}
-          <main className="mobile-chat-main smooth-scroll scroll-pt-4 pt-20 pb-32">
+          <main
+            ref={messagesContainerRef}
+            className="mobile-chat-main smooth-scroll scroll-pt-4 pt-20 pb-32"
+          >
             <div className="container-narrow pt-4 pb-4">
               {/* Empty State - Loading state while initializing */}
               {messages.length === 0 && !isProcessing && (
@@ -650,6 +707,8 @@ export const ChatContainer = () => {
           isUploadingImage={isUploadingImage}
           onImageClick={handleImageClick}
           showImageLimitMessage={showImageLimitMessage}
+          isKeyboardOpen={isKeyboardOpen}
+          onInputFocus={scrollToBottom}
         />
       </div>
 

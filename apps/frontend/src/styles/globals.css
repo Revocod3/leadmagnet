@@ -666,6 +666,28 @@
     position: relative;
   }
 
+  /* ===============================================
+     CSS Variables para el teclado móvil
+     =============================================== */
+  :root {
+    --keyboard-height: 0px;
+    --keyboard-offset: 0px;
+    --viewport-height: 100vh;
+  }
+
+  /* Clase para cuando el teclado está abierto */
+  .keyboard-open .mobile-chat-container {
+    height: calc(var(--viewport-height) - var(--keyboard-height));
+    transition: height 0.15s ease-out;
+  }
+
+  /* Asegurar que el footer se posicione correctamente con el teclado */
+  @supports (height: 100dvh) {
+    .mobile-chat-container {
+      height: 100dvh;
+    }
+  }
+
   /* Animated Gradient */
   .animate-gradient {
     background-size: 200% 200%;
