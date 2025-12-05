@@ -14,6 +14,12 @@ export default defineConfig({
     port: 5173,
     host: true,
     allowedHosts: ['dev.objetivovientreplano.com', 'chat.objetivovientreplano.com', 'localhost'],
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      },
+    },
   },
   preview: {
     port: 5174,

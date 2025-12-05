@@ -53,8 +53,8 @@ export const ChatHeader = ({
   };
   return (
     <header className="fixed top-0 left-0 right-0 z-30 pointer-events-none">
-      {/* Gradiente sutil de arriba hacia abajo */}
-      <div className="absolute inset-0 bg-gradient-to-b from-neutral-50/95 via-neutral-50/60 to-transparent dark:from-neutral-900/95 dark:via-neutral-900/60 dark:to-transparent pointer-events-none" />
+      {/* Gradiente de arriba hacia abajo */}
+      <div className="absolute inset-0 bg-gradient-to-b from-neutral-50 via-neutral-50/80 via-75% to-transparent dark:from-neutral-900 dark:via-neutral-900/80 dark:via-75% dark:to-transparent pointer-events-none" />
 
       <div className="container-narrow py-3 flex items-center justify-between pointer-events-auto relative z-10">
         {/* Left: ChatOVP + "En Línea" Bubble */}

@@ -83,31 +83,31 @@ export const TypewriterText = ({
         <ReactMarkdown
           components={{
             p: ({ children }) => (
-              <p className="mb-2 last:mb-0 whitespace-pre-wrap break-words font-semibold leading-tight">
+              <p className="mb-2 last:mb-0 whitespace-pre-wrap break-words font-normal leading-relaxed">
                 {children}
               </p>
             ),
             strong: ({ children }) => (
-              <strong className="font-bold text-foreground">
+              <strong className="!font-bold" style={{ fontWeight: 700 }}>
                 {children}
               </strong>
             ),
             em: ({ children }) => (
-              <em className="italic font-semibold">{children}</em>
+              <em className="italic font-normal">{children}</em>
             ),
             br: () => null, // Eliminar todos los <br> para mantener compacto
             ul: ({ children }) => (
-              <ul className="list-disc list-inside mb-2 space-y-0.5 font-semibold leading-tight">
+              <ul className="list-disc list-inside mb-2 space-y-0.5 font-normal leading-relaxed">
                 {children}
               </ul>
             ),
             ol: ({ children }) => (
-              <ol className="list-decimal list-inside mb-2 space-y-0.5 font-semibold leading-tight">
+              <ol className="list-decimal list-inside mb-2 space-y-0.5 font-normal leading-relaxed">
                 {children}
               </ol>
             ),
             li: ({ children }) => (
-              <li className="ml-2 font-semibold leading-tight">{children}</li>
+              <li className="ml-2 font-normal leading-relaxed">{children}</li>
             ),
             a: ({ href, children }) => (
               <a
@@ -126,7 +126,7 @@ export const TypewriterText = ({
         </ReactMarkdown>
       ) : (
         // Durante el typing, mostrar texto plano con cursor
-        <span className="whitespace-pre-wrap break-words font-semibold leading-tight">
+        <span className="whitespace-pre-wrap break-words font-normal leading-relaxed">
           {displayedText}
           <span className="inline-block w-[2px] h-4 ml-0.5 bg-current animate-pulse" />
         </span>

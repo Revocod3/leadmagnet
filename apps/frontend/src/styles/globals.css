@@ -737,6 +737,16 @@
     }
   }
 
+  /* Shimmer effect for button shine */
+  @keyframes shimmer {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
   /* Ring Offset Background */
   .ring-offset-background {
     --tw-ring-offset-color: rgb(var(--color-background));

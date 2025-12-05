@@ -28,6 +28,33 @@ export const WelcomeAnimation = ({
   const [nameInputValue, setNameInputValue] = useState('');
   const [progress, setProgress] = useState(0);
   const [showProgressBar, setShowProgressBar] = useState(false);
+  const [userCount, setUserCount] = useState(18452);
+
+  // Obtener e incrementar contador de usuarios desde el backend
+  useEffect(() => {
+    const updateUserCount = async () => {
+      try {
+        // Incrementar el contador en el backend
+        const response = await fetch('/api/stats/user-count/increment', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setUserCount(data.count);
+        }
+      } catch (error) {
+        console.error('Error updating user count:', error);
+        // Fallback to showing initial value if API fails
+        setUserCount(18452);
+      }
+    };
+
+    updateUserCount();
+  }, []);
 
   // Determinar si necesitamos pedir el nombre
   // 1. Si alwaysAskName=true y no hay nombre → pedir nombre
@@ -110,11 +137,11 @@ export const WelcomeAnimation = ({
     return () => timers.forEach(timer => clearTimeout(timer));
   }, [etymology, initialQuery, queryResponse, userName]);
 
-  // Barra de progreso automática de 7-8 segundos
+  // Barra de progreso automática de 12 segundos
   useEffect(() => {
     if (!showProgressBar) return;
 
-    const duration = 7500; // 7.5 segundos
+    const duration = 12000; // 12 segundos
     const intervalTime = 50; // Actualizar cada 50ms
     const steps = duration / intervalTime;
     let currentStep = 0;
@@ -257,181 +284,195 @@ export const WelcomeAnimation = ({
 
       {/* Content - Solo se muestra cuando tenemos nombre */}
       <AnimatePresence>
-      {!showNameInput && userName && (
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        transition={{
-          duration: 0.5,
-          ease: "easeOut",
-          delay: 0.2
-        }}
-        className="relative text-center px-6 max-w-2xl z-10"
-      >
-        {/* Logo Circular con efecto de respiración */}
-        <motion.div
-          initial={{ scale: 0, opacity: 0, rotate: -180 }}
-          animate={{ scale: 1, opacity: 1, rotate: 0 }}
-          transition={{
-            type: 'spring',
-            stiffness: 200,
-            damping: 15,
-            delay: 0.3,
-          }}
-          className="inline-block mb-6"
-        >
+        {!showNameInput && userName && (
           <motion.div
-            animate={{
-              boxShadow: [
-                '0 0 0 0 rgba(255, 255, 255, 0.4)',
-                '0 0 0 20px rgba(255, 255, 255, 0)',
-                '0 0 0 0 rgba(255, 255, 255, 0)',
-              ],
-            }}
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={{
-              duration: 2,
-              repeat: Infinity,
-              repeatDelay: 0.5,
+              duration: 0.5,
+              ease: "easeOut",
+              delay: 0.2
             }}
-            className="relative border-4 border-white w-24 h-24 bg-white rounded-full flex items-center justify-center overflow-hidden"
+            className="relative text-center px-6 max-w-2xl z-10"
           >
-            <img
-              src="/assets/images/favicon.webp"
-              alt="OVP"
-              className="w-full h-full object-cover"
-            />
-          </motion.div>
-        </motion.div>
-
-        {/* Greeting con efecto de texto */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4, duration: 0.8, ease: 'easeOut' }}
-        >
-          <h1 className="text-4xl sm:text-5xl font-bold text-white mb-4 tracking-tight">
-            {content.greeting}
-          </h1>
-        </motion.div>
-
-        {/* Subtitle con línea decorativa */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6, duration: 0.7 }}
-          className="mb-8"
-        >
-          <div className="flex items-center justify-center gap-3 mb-3">
+            {/* Validación Social - arriba del logo */}
             <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: 30 }}
-              transition={{ delay: 0.8, duration: 0.5 }}
-              className="h-[2px] bg-white/60"
-            />
-            <p className="text-base sm:text-lg text-white/95 font-light">
-              {content.subtitle}
-            </p>
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: 30 }}
-              transition={{ delay: 0.8, duration: 0.5 }}
-              className="h-[2px] bg-white/60"
-            />
-          </div>
-        </motion.div>
-
-        {/* Etymology Box o Query Message con diseño mejorado */}
-        <AnimatePresence>
-          {showEtymology && (etymology || (initialQuery && queryResponse)) && (
-            <motion.div
-              initial={{ opacity: 0, y: 30, scale: 0.9 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -20, scale: 0.95 }}
-              transition={{
-                type: 'spring',
-                stiffness: 200,
-                damping: 20
-              }}
-              className="mb-6 mx-auto max-w-xl"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, duration: 0.6 }}
+              className="mb-10"
             >
-              <div
-                className="relative px-6 py-5 rounded-2xl shadow-2xl border border-white/30"
-                style={{
-                  background: 'rgba(255, 255, 255, 0.15)',
-                  backdropFilter: 'blur(20px)',
-                  WebkitBackdropFilter: 'blur(20px)',
-                }}
-              >
-                <div
-                  className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 pb-1 bg-[#6B6C44] rounded-full shadow-lg"
-                  style={{
-                    boxShadow: '0 0 20px rgba(107, 108, 68, 0.4), 0 4px 10px rgba(0, 0, 0, 0.2)',
-                  }}
-                >
-                  <span className="text-[10px] font-semibold text-white tracking-wider uppercase drop-shadow-sm">
-                    {initialQuery
-                      ? (language === 'es' ? 'Tu consulta' : 'Your query')
-                      : (language === 'es' ? 'Sabías que...' : 'Did you know...')}
-                  </span>
-                </div>
-                <p className="text-sm sm:text-base text-white/95 leading-relaxed pt-1 font-light">
-                  {initialQuery ? content.queryMessage : etymology}
+              <div className="inline-block px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20">
+                <p className="text-xs text-white/90 font-light">
+                  <span className="font-semibold">{userCount.toLocaleString('es-ES')}</span> personas ya han experimentado los beneficios de <span className='font-semibold'>Objetivo Vientre Plano</span>
                 </p>
               </div>
             </motion.div>
-          )}
-        </AnimatePresence>
 
-        {/* Barra de progreso */}
-        <AnimatePresence>
-          {showProgressBar && (
+            {/* Logo Circular con efecto de respiración */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9 }}
+              initial={{ scale: 0, opacity: 0, rotate: -180 }}
+              animate={{ scale: 1, opacity: 1, rotate: 0 }}
               transition={{
                 type: 'spring',
                 stiffness: 200,
-                damping: 15
+                damping: 15,
+                delay: 0.3,
               }}
-              className="w-full max-w-md mx-auto"
+              className="inline-block mb-6"
             >
-              {/* Texto sobre la barra */}
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-white/90 text-sm font-light mb-3 text-center"
+              <motion.div
+                animate={{
+                  boxShadow: [
+                    '0 0 0 0 rgba(255, 255, 255, 0.4)',
+                    '0 0 0 20px rgba(255, 255, 255, 0)',
+                    '0 0 0 0 rgba(255, 255, 255, 0)',
+                  ],
+                }}
+                transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  repeatDelay: 0.5,
+                }}
+                className="relative border-4 border-white w-24 h-24 bg-white rounded-full flex items-center justify-center overflow-hidden"
               >
-                {language === 'es' ? 'Preparando tu experiencia...' : 'Preparing your experience...'}
-              </motion.p>
+                <img
+                  src="/assets/images/favicon.webp"
+                  alt="OVP"
+                  className="w-full h-full object-cover"
+                />
+              </motion.div>
+            </motion.div>
 
-              {/* Barra de progreso */}
-              <div className="relative w-full h-2 bg-white/20 rounded-full overflow-hidden backdrop-blur-sm">
+            {/* Greeting con efecto de texto */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4, duration: 0.8, ease: 'easeOut' }}
+            >
+              <h1 className="text-4xl sm:text-5xl font-bold text-white mb-4 tracking-tight">
+                {content.greeting}
+              </h1>
+            </motion.div>
+
+            {/* Subtitle con línea decorativa */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6, duration: 0.7 }}
+              className="mb-8"
+            >
+              <div className="flex items-center justify-center gap-3 mb-3">
                 <motion.div
-                  className="absolute inset-y-0 left-0 bg-white rounded-full shadow-lg"
-                  style={{
-                    width: `${progress}%`,
-                  }}
-                  transition={{
-                    duration: 0.1,
-                    ease: 'linear',
-                  }}
+                  initial={{ width: 0 }}
+                  animate={{ width: 30 }}
+                  transition={{ delay: 0.8, duration: 0.5 }}
+                  className="h-[2px] bg-white/60"
+                />
+                <p className="text-base sm:text-lg text-white/95 font-light">
+                  {content.subtitle}
+                </p>
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: 30 }}
+                  transition={{ delay: 0.8, duration: 0.5 }}
+                  className="h-[2px] bg-white/60"
                 />
               </div>
-
-              {/* Porcentaje */}
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-white/70 text-xs font-light mt-2 text-center"
-              >
-                {Math.round(progress)}%
-              </motion.p>
             </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.div>
-      )}
+
+            {/* Etymology Box o Query Message con diseño mejorado */}
+            <AnimatePresence>
+              {showEtymology && (etymology || (initialQuery && queryResponse)) && (
+                <motion.div
+                  initial={{ opacity: 0, y: 30, scale: 0.9 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                  transition={{
+                    type: 'spring',
+                    stiffness: 200,
+                    damping: 20
+                  }}
+                  className="mb-6 mx-auto max-w-xl"
+                >
+                  <div
+                    className="relative px-6 py-5 rounded-2xl shadow-2xl border border-white/30"
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.15)',
+                      backdropFilter: 'blur(20px)',
+                      WebkitBackdropFilter: 'blur(20px)',
+                    }}
+                  >
+                    <div
+                      className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 pb-1 bg-[#6B6C44] rounded-full shadow-lg"
+                      style={{
+                        boxShadow: '0 0 20px rgba(107, 108, 68, 0.4), 0 4px 10px rgba(0, 0, 0, 0.2)',
+                      }}
+                    >
+                      <span className="text-[10px] font-semibold text-white tracking-wider uppercase drop-shadow-sm">
+                        {initialQuery
+                          ? (language === 'es' ? 'Tu consulta' : 'Your query')
+                          : (language === 'es' ? 'Sabías que...' : 'Did you know...')}
+                      </span>
+                    </div>
+                    <p className="text-sm sm:text-base text-white/95 leading-relaxed pt-1 font-light">
+                      {initialQuery ? content.queryMessage : etymology}
+                    </p>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Barra de progreso */}
+            <AnimatePresence>
+              {showProgressBar && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  transition={{
+                    type: 'spring',
+                    stiffness: 200,
+                    damping: 15
+                  }}
+                  className="w-full max-w-md mx-auto"
+                >
+                  {/* Texto sobre la barra */}
+                  <motion.p
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="text-white/90 text-sm font-light mb-3 text-center"
+                  >
+                    {language === 'es' ? 'Preparando tu experiencia...' : 'Preparing your experience...'}
+                  </motion.p>
+
+                  {/* Barra de progreso */}
+                  <div className="relative w-full h-2 bg-white/20 rounded-full overflow-hidden backdrop-blur-sm">
+                    <motion.div
+                      className="absolute inset-y-0 left-0 bg-white rounded-full shadow-lg"
+                      style={{
+                        width: `${progress}%`,
+                      }}
+                      transition={{
+                        duration: 0.1,
+                        ease: 'linear',
+                      }}
+                    />
+                  </div>
+
+                  {/* Porcentaje */}
+                  <motion.p
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="text-white/70 text-xs font-light mt-2 text-center"
+                  >
+                    {Math.round(progress)}%
+                  </motion.p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+        )}
       </AnimatePresence>
     </motion.div>
   );

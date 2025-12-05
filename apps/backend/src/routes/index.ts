@@ -10,6 +10,7 @@ import { webhookRoutes } from './webhook.routes';
 import { ImageController, uploadMiddleware } from '../controllers/image.controller';
 import authRoutes from './auth.routes';
 import ratingRoutes from './rating.routes';
+import statsRoutes from './stats.routes';
 
 const router: ExpressRouter = Router();
 const imageController = new ImageController();
@@ -30,6 +31,7 @@ router.use('/challenges', challengeRoutes);  // Micro-challenges routes (PRO onl
 router.use('/discount', discountRoutes);
 router.use('/webhooks', webhookRoutes);
 router.use('/ratings', ratingRoutes);
+router.use('/stats', statsRoutes);  // Global statistics
 
 // Image upload route (needs to be before other routes to avoid conflicts)
 router.post('/images', uploadMiddleware, imageController.uploadImage.bind(imageController));

@@ -500,3 +500,13 @@ model Reminder {
   @@index([enabled])
   @@map("reminders")
 }
+
+// Global statistics and counters
+model GlobalCounter {
+  id        String   @id @default(cuid())
+  key       String   @unique  // "user_count", "page_views", etc.
+  value     Int      @default(0)
+  updatedAt DateTime @updatedAt
+
+  @@map("global_counters")
+}

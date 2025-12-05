@@ -72,29 +72,29 @@ export const ChatMessage = forwardRef<HTMLDivElement, ChatMessageProps>(({
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="space-y-3 font-semibold leading-tight"
+                className="space-y-3 font-normal leading-relaxed"
               >
                 {/* Contenido del diagnóstico - Ya viene formateado en HTML desde el backend */}
                 <div
-                  className="diagnosis-content space-y-3 font-semibold leading-tight"
+                  className="diagnosis-content space-y-3 font-normal leading-relaxed"
                   dangerouslySetInnerHTML={{ __html: message.content }}
                 />
               </motion.div>
             ) : (
               /* Render normal messages with Markdown and typewriter effect */
-              <div className="text-[16px] leading-tight font-semibold">
+              <div className="text-[16px] leading-relaxed font-normal">
                 {!isUser ? (
                   /* Siempre usar TypewriterText para mensajes del asistente */
                   <TypewriterText
                     text={message.content}
                     speed={20}
-                    className="font-semibold"
+                    className="font-normal"
                     shouldAnimate={isLatest && message.isNew !== false}
                     onComplete={onTypewriterComplete}
                   />
                 ) : (
                   /* Mensajes de usuario */
-                  <div className="whitespace-pre-wrap break-words font-semibold">
+                  <div className="whitespace-pre-wrap break-words font-normal">
                     {message.content}
                   </div>
                 )}

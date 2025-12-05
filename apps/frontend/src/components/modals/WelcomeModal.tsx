@@ -43,7 +43,7 @@ export const WelcomeModal = ({ isOpen, onClose }: WelcomeModalProps) => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="fixed inset-0 z-[9998] bg-black/40 backdrop-blur-xs"
+            className="fixed inset-0 z-[9998] bg-black/45 backdrop-blur-xs"
           />
 
           {/* Modal */}
@@ -55,51 +55,62 @@ export const WelcomeModal = ({ isOpen, onClose }: WelcomeModalProps) => {
               duration: 0.4,
               ease: [0.23, 1, 0.32, 1], // Custom easing for smooth feel
             }}
-            className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-6"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="relative w-full max-w-md">
-              {/* Modal Content */}
+              {/* Modal Content - Glassmorphism */}
               <div
-                className="relative rounded-3xl border border-white/20 overflow-hidden shadow-2xl"
+                className="relative rounded-3xl border border-white/30 overflow-hidden shadow-2xl"
                 style={{
-                  background: 'rgba(255, 255, 255, 0.95)',
-                  backdropFilter: 'blur(20px)',
-                  WebkitBackdropFilter: 'blur(20px)',
+                  background: 'linear-gradient(135deg, rgba(248, 245, 230, 0.70) 0%, rgba(255, 255, 255, 0.65) 100%)',
+                  backdropFilter: 'blur(20px) saturate(180%)',
+                  WebkitBackdropFilter: 'blur(20px) saturate(180%)',
                 }}
               >
-                {/* Checkmark icon with subtle background - centered */}
-                <div className="flex justify-center pt-6 pb-3">
-
-                  <div className="w-16 h-16 rounded-full bg-white shadow-2xl flex items-center justify-center overflow-hidden border-4 border-white/30 ">
+                {/* Logo with expanding ring pulse - centered */}
+                <div className="flex justify-center pt-6 pb-2">
+                  <motion.div
+                    animate={{
+                      boxShadow: [
+                        '0 0 0 0 rgba(255, 255, 255, 0.4)',
+                        '0 0 0 20px rgba(255, 255, 255, 0)',
+                        '0 0 0 0 rgba(255, 255, 255, 0)',
+                      ],
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: Infinity,
+                      repeatDelay: 0.5,
+                    }}
+                    className="relative border-4 border-white/30 w-16 h-16 bg-white rounded-full flex items-center justify-center overflow-hidden shadow-lg"
+                  >
                     <img
                       src="/assets/images/favicon.webp"
                       alt="OVP"
                       className="w-full h-full object-cover"
                     />
-                  </div>
-
+                  </motion.div>
                 </div>
 
-
                 {/* Content */}
-                <div className="px-6 pb-6 text-center">
+                <div className="px-6 pb-5 text-center">
                   <motion.h2
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1, duration: 0.4 }}
-                    className="text-2xl font-bold text-gray-900 mb-2"
+                    className="text-2xl font-bold text-gray-900 mb-1.5"
                   >
-                    ¡Comienza tu transformación!
+                    ¡Aquí empieza tu transformación!
                   </motion.h2>
 
                   <motion.p
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2, duration: 0.4 }}
-                    className="text-sm text-gray-600 mb-4 leading-relaxed"
+                    className="text-sm text-gray-600 mb-3.5 leading-relaxed"
                   >
-                    Ingresa tu nombre para acceder a tu diagnóstico gratuito
+                    Personaliza la experiencia con tu nombre.
                   </motion.p>
 
                   {/* Input de nombre */}
@@ -107,7 +118,7 @@ export const WelcomeModal = ({ isOpen, onClose }: WelcomeModalProps) => {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3, duration: 0.4 }}
-                    className="mb-4"
+                    className="mb-3.5"
                   >
                     <input
                       type="text"
@@ -117,7 +128,7 @@ export const WelcomeModal = ({ isOpen, onClose }: WelcomeModalProps) => {
                         setError('');
                       }}
                       onKeyPress={handleKeyPress}
-                      placeholder="Tu nombre"
+                      placeholder="¿Cómo te llamas?"
                       className="w-full px-4 py-3 rounded-2xl border-2 border-gray-200 focus:border-[#99AB75] focus:outline-none transition-all text-gray-900 placeholder-gray-400 text-base"
                       autoFocus
                     />
@@ -141,14 +152,21 @@ export const WelcomeModal = ({ isOpen, onClose }: WelcomeModalProps) => {
                     whileTap={{ scale: 0.98 }}
                     onClick={handleContinueDiagnostic}
                     disabled={!userName.trim()}
-                    className="w-full py-3 rounded-2xl font-semibold text-white text-sm shadow-lg hover:shadow-xl transition-all mb-3 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="relative w-full py-3.5 rounded-2xl font-semibold text-white text-base shadow-lg hover:shadow-[0_20px_40px_-15px_rgba(153,171,117,0.5)] transition-shadow duration-300 mb-2.5 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden group"
                     style={{
                       background: 'linear-gradient(135deg, #99AB75 0%, #A0AD5E 100%)',
                     }}
                   >
-                    Comenzar diagnóstico
+                    <span
+                      className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 pointer-events-none"
+                      style={{
+                        animation: 'shimmer 3s linear infinite',
+                        animationDelay: '1s',
+                      }}
+                    />
+                    <span className="relative z-10">Comenzar diagnóstico</span>
                     <svg
-                      className="w-4 h-4"
+                      className="w-4 h-4 relative z-10 group-hover:translate-x-1 transition-transform duration-300"
                       fill="none"
                       strokeLinecap="round"
                       strokeLinejoin="round"
@@ -165,7 +183,7 @@ export const WelcomeModal = ({ isOpen, onClose }: WelcomeModalProps) => {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.5, duration: 0.4 }}
-                    className="text-sm text-gray-500"
+                    className="text-xs text-gray-500"
                   >
                     <button
                       onClick={handleLogin}
@@ -181,7 +199,7 @@ export const WelcomeModal = ({ isOpen, onClose }: WelcomeModalProps) => {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.6, duration: 0.4 }}
-                    className="mt-4 pt-4 border-t border-gray-200/50 flex items-center justify-center gap-1 text-xs text-gray-500"
+                    className="mt-3 mb-2 pt-3 border-t border-gray-200/50 flex items-center justify-center gap-1 text-xs text-gray-500"
                   >
                     <svg
                       className="w-4 h-4 text-[#99AB75]"

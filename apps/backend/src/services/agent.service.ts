@@ -533,7 +533,13 @@ IMPORTANTE:
     try {
       const tempSessionId = `temp_${Date.now()}`;
 
-      const welcomeMessage = `Hola ${userName}, bienvenido a Objetivo Vientre Plano 🌿\n\nEncantada de saludarte. Soy Clara, tu asistente personal.\n\nVoy a ayudarte mediante algunas preguntas a obtener un diagnóstico personalizado para entender tu inflamación abdominal, mejorar tu energía y ayudarte a sentirte realmente bien contigo mismo.\n\n**¿Empezamos?** ¿O prefieres hacerme alguna pregunta antes?\n\nEstoy aquí para ti. Este es tu espacio.`;
+      const welcomeMessage = `Hola ${userName}, bienvenido a **Objetivo Vientre Plano**.
+
+Soy **Clara**, tu asistente personal en este camino hacia una **salud digestiva** ligera, más equilibrada y más tuya.
+
+Antes de avanzar, voy a hacerte unas preguntas muy sencillas para prepararte un **diagnóstico personalizado** basado en tres pilares: tu **digestión**, tu **energía** y tu **equilibrio emocional**.
+
+**Cuando tú me digas, empezamos.**`;
 
       return {
         conversationId: tempSessionId,
