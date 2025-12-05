@@ -7,10 +7,11 @@
  * - PRO-specific features
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useProChat } from '../../hooks/useProChat';
 import { useSpeechToText } from '../../hooks/useSpeechToText';
+import { useMobileKeyboard } from '../../hooks/useMobileKeyboard';
 import { ChatHeader } from '../chat/ChatHeader';
 import { ChatFooter } from '../chat/ChatFooter';
 import { ChatMessage } from '../chat/ChatMessage';
@@ -55,11 +56,44 @@ export const ProChat = ({ onSubscriptionExpired, activeTab, onTabChange }: ProCh
 
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+
+  // Hook para manejar el teclado móvil
+  const { isKeyboardOpen, keyboardHeight } = useMobileKeyboard({
+    onKeyboardShow: () => {
+      scrollToBottom('instant');
+    },
+  });
+
+  // Función mejorada de scroll al final
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({
+        behavior,
+        block: 'end',
+      });
+    }
+
+    if (messagesContainerRef.current) {
+      const container = messagesContainerRef.current;
+      requestAnimationFrame(() => {
+        container.scrollTop = container.scrollHeight;
+      });
+    }
+  }, []);
 
   // Auto-scroll on new messages
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-  }, [messages]);
+    scrollToBottom('smooth');
+  }, [messages, scrollToBottom]);
+
+  // Auto-scroll when sending
+  useEffect(() => {
+    if (isSending) {
+      scrollToBottom('smooth');
+    }
+  }, [isSending, scrollToBottom]);
 
   // Handle speech-to-text transcript
   useEffect(() => {
@@ -205,8 +239,20 @@ export const ProChat = ({ onSubscriptionExpired, activeTab, onTabChange }: ProCh
           />
 
           {/* Chat Content */}
-          <div className="mobile-chat-container flex-1 bg-neutral-50 dark:bg-neutral-900 bg-chat-lighting transition-colors duration-200">
-            <main className="mobile-chat-main smooth-scroll scroll-pt-4 pt-20 pb-32">
+          <div
+            ref={chatContainerRef}
+            className="mobile-chat-container flex-1 bg-neutral-50 dark:bg-neutral-900 bg-chat-lighting transition-colors duration-200"
+            style={{
+              height: isKeyboardOpen ? `calc(100dvh - ${keyboardHeight}px)` : undefined,
+            }}
+          >
+            <main
+              ref={messagesContainerRef}
+              className="mobile-chat-main smooth-scroll scroll-pt-4 pt-20"
+              style={{
+                paddingBottom: isKeyboardOpen ? '100px' : '140px',
+              }}
+            >
               <div className="container-narrow pt-4 pb-4">
                 {/* Empty State - No conversation selected */}
                 {!selectedConversationId && !isLoading && (
@@ -308,6 +354,8 @@ export const ProChat = ({ onSubscriptionExpired, activeTab, onTabChange }: ProCh
               isUploadingImage={isUploadingImage}
               onImageClick={handleImageClick}
               showImageLimitMessage={false} // PRO has unlimited images
+              isKeyboardOpen={isKeyboardOpen}
+              onInputFocus={scrollToBottom}
             />
           )}
         </div>

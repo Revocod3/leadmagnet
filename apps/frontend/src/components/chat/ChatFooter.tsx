@@ -20,6 +20,8 @@ interface ChatFooterProps {
   isUploadingImage: boolean;
   onImageClick: (imageUrl: string) => void;
   showImageLimitMessage: boolean;
+  isKeyboardOpen?: boolean;
+  onInputFocus?: () => void;
 }
 
 export const ChatFooter = ({
@@ -40,6 +42,8 @@ export const ChatFooter = ({
   isUploadingImage,
   onImageClick,
   showImageLimitMessage,
+  isKeyboardOpen = false,
+  onInputFocus,
 }: ChatFooterProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -72,8 +76,23 @@ export const ChatFooter = ({
     };
   }, [isPlusMenuOpen, setIsPlusMenuOpen]);
 
+  // Handler para focus en el textarea
+  const handleFocus = () => {
+    onInputFocus?.();
+    // Pequeño delay para que el teclado termine de abrirse
+    setTimeout(() => {
+      onInputFocus?.();
+    }, 300);
+  };
+
   return (
-    <footer className="fixed bottom-0 left-0 right-0 z-30 pointer-events-none">
+    <footer
+      className="fixed left-0 right-0 z-30 pointer-events-none transition-all duration-200"
+      style={{
+        // En iOS, usar el bottom seguro; cuando el teclado está abierto, posicionar sobre él
+        bottom: isKeyboardOpen ? 'env(safe-area-inset-bottom, 0px)' : '0',
+      }}
+    >
       {/* Gradiente de abajo hacia arriba */}
       <div className="absolute inset-0 bg-gradient-to-t from-neutral-50 via-neutral-50/80 via-75% to-transparent dark:from-neutral-900 dark:via-neutral-900/80 dark:via-75% dark:to-transparent pointer-events-none" />
 
@@ -214,6 +233,7 @@ export const ChatFooter = ({
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyDown={onKeyDown}
+                onFocus={handleFocus}
                 placeholder="Escribe tu mensaje..."
                 rows={1}
                 className="flex-1 pl-1 sm:pl-2 resize-none bg-transparent text-neutral-900 dark:text-white border-none placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-0 focus:border-transparent focus-visible:outline-none text-[16px] max-h-[120px] py-1"
