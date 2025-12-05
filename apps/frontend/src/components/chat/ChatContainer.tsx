@@ -114,7 +114,7 @@ export const ChatContainer = () => {
   const [isTypewriterComplete, setIsTypewriterComplete] = useState(true);
 
   // Hook para manejar el teclado móvil
-  const { isKeyboardOpen, keyboardHeight } = useMobileKeyboard({
+  const { isKeyboardOpen } = useMobileKeyboard({
     onKeyboardShow: () => {
       // Scroll al final cuando se abre el teclado
       scrollToBottom('instant');
@@ -536,19 +536,11 @@ export const ChatContainer = () => {
         <div
           ref={chatContainerRef}
           className="mobile-chat-container bg-neutral-50 dark:bg-neutral-900 bg-chat-lighting transition-colors duration-200"
-          style={{
-            // Ajustar altura cuando el teclado está abierto
-            height: isKeyboardOpen ? `calc(100dvh - ${keyboardHeight}px)` : undefined,
-          }}
         >
           {/* Messages Area */}
           <main
             ref={messagesContainerRef}
-            className="mobile-chat-main smooth-scroll scroll-pt-4 pt-20"
-            style={{
-              // Ajustar padding inferior dinámicamente basado en el teclado
-              paddingBottom: isKeyboardOpen ? '100px' : '140px',
-            }}
+            className="mobile-chat-main smooth-scroll scroll-pt-4 pt-20 pb-32"
           >
             <div className="container-narrow pt-4 pb-4">
               {/* Empty State - Loading state while initializing */}
