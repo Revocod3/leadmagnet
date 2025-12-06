@@ -68,8 +68,8 @@
 
   <!-- Eruda: Mobile console for debugging (only in dev mode) -->
   <script>
-    // Only load Eruda in development
-    if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    // Only load Eruda in development (localhost or 127.0.0.1)
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
       const script = document.createElement('script');
       script.src = 'https://cdn.jsdelivr.net/npm/eruda';
       script.onload = function() {
