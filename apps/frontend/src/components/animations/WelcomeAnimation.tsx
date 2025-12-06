@@ -29,6 +29,7 @@ export const WelcomeAnimation = ({
   const [progress, setProgress] = useState(0);
   const [showProgressBar, setShowProgressBar] = useState(false);
   const [userCount, setUserCount] = useState(18452);
+  const [isPaused, setIsPaused] = useState(false);
 
   // Obtener e incrementar contador de usuarios desde el backend
   useEffect(() => {
@@ -143,24 +144,34 @@ export const WelcomeAnimation = ({
 
     const duration = 12000; // 12 segundos
     const intervalTime = 50; // Actualizar cada 50ms
-    const steps = duration / intervalTime;
-    let currentStep = 0;
+    const increment = (100 / (duration / intervalTime));
 
     const interval = setInterval(() => {
-      currentStep++;
-      setProgress((currentStep / steps) * 100);
+      if (!isPaused) {
+        setProgress((prev) => {
+          const newProgress = prev + increment;
 
-      if (currentStep >= steps) {
-        clearInterval(interval);
-        // Llamar a onComplete automáticamente cuando termine
-        setTimeout(() => {
-          onComplete();
-        }, 300);
+          if (newProgress >= 100) {
+            clearInterval(interval);
+            // Llamar a onComplete automáticamente cuando termine
+            setTimeout(() => {
+              onComplete();
+            }, 300);
+            return 100;
+          }
+
+          return newProgress;
+        });
       }
     }, intervalTime);
 
     return () => clearInterval(interval);
-  }, [showProgressBar, onComplete]);
+  }, [showProgressBar, onComplete, isPaused]);
+
+  // Función para saltar la animación
+  const handleSkip = () => {
+    onComplete();
+  };
 
   return (
     <motion.div
@@ -302,9 +313,9 @@ export const WelcomeAnimation = ({
               transition={{ delay: 0.2, duration: 0.6 }}
               className="mb-10"
             >
-              <div className="inline-block px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20">
-                <p className="text-xs text-white/90 font-light">
-                  <span className="font-semibold">{userCount.toLocaleString('es-ES')}</span> personas ya han experimentado los beneficios de <span className='font-semibold'>Objetivo Vientre Plano</span>
+              <div className="inline-block px-6 py-3.5 rounded-full bg-white/20 backdrop-blur-md border-2 border-white/30 shadow-xl">
+                <p className="text-sm sm:text-base text-white font-light">
+                  <span className="font-bold text-base sm:text-lg">{userCount.toLocaleString('es-ES')}</span> personas ya han experimentado los beneficios de <span className='font-semibold'>Objetivo Vientre Plano</span>
                 </p>
               </div>
             </motion.div>
@@ -460,14 +471,45 @@ export const WelcomeAnimation = ({
                     />
                   </div>
 
-                  {/* Porcentaje */}
-                  <motion.p
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="text-white/70 text-xs font-light mt-2 text-center"
+                  {/* Controles: Pausa y Saltar - Solo iconos */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                    className="flex items-center justify-center gap-3 mt-4"
                   >
-                    {Math.round(progress)}%
-                  </motion.p>
+                    {/* Botón Pausar/Reanudar */}
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => setIsPaused(!isPaused)}
+                      className="w-10 h-10 rounded-full bg-white/15 hover:bg-white/25 border border-white/30 text-white transition-all backdrop-blur-sm flex items-center justify-center"
+                      aria-label={isPaused ? (language === 'es' ? 'Reanudar' : 'Resume') : (language === 'es' ? 'Pausar' : 'Pause')}
+                    >
+                      {isPaused ? (
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M8 5v14l11-7z" />
+                        </svg>
+                      ) : (
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
+                        </svg>
+                      )}
+                    </motion.button>
+
+                    {/* Botón Saltar */}
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={handleSkip}
+                      className="w-10 h-10 rounded-full bg-white/15 hover:bg-white/25 border border-white/30 text-white transition-all backdrop-blur-sm flex items-center justify-center"
+                      aria-label={language === 'es' ? 'Saltar' : 'Skip'}
+                    >
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M6 4l12 8-12 8V4zm12 0v16h2V4h-2z" />
+                      </svg>
+                    </motion.button>
+                  </motion.div>
                 </motion.div>
               )}
             </AnimatePresence>
