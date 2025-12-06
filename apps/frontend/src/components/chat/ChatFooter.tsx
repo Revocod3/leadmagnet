@@ -42,7 +42,7 @@ export const ChatFooter = ({
   isUploadingImage,
   onImageClick,
   showImageLimitMessage,
-  isKeyboardOpen = false,
+  // isKeyboardOpen = false,
   onInputFocus,
 }: ChatFooterProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);

@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { statsController } from '../controllers/stats.controller';
 
-const router = Router();
+const router: Router = Router();
 
 // Get user count
 router.get('/user-count', statsController.getUserCount.bind(statsController));
