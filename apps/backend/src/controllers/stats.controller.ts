@@ -16,7 +16,7 @@ export class StatsController {
         count,
       });
     } catch (error) {
-      logger.error('Error getting user count:', error);
+      logger.error('Error getting user count:', { error: error instanceof Error ? error.message : String(error) });
       res.status(500).json({
         success: false,
         message: 'Error al obtener el contador de usuarios',
@@ -37,7 +37,7 @@ export class StatsController {
         count,
       });
     } catch (error) {
-      logger.error('Error incrementing user count:', error);
+      logger.error('Error incrementing user count:', { error: error instanceof Error ? error.message : String(error) });
       res.status(500).json({
         success: false,
         message: 'Error al incrementar el contador de usuarios',
