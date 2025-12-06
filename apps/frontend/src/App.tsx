@@ -11,7 +11,6 @@ import { PricingPage } from './pages/PricingPage';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { useAuthStore } from './stores/authStore';
 import './styles/globals.css';
-import './styles/pricing.css';
 
 // Create a client
 const queryClient = new QueryClient({
