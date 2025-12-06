@@ -27,21 +27,31 @@ import { useMobileKeyboard } from '../../hooks/useMobileKeyboard';
  * Usamos frases clave que son únicas de cada pregunta.
  */
 const QUESTION_PATTERNS: { blockIndex: number; questionIndex: number; patterns: RegExp[] }[] = [
-  // BLOQUE DIGESTIVO (0)
-  { blockIndex: 0, questionIndex: 0, patterns: [/momento del día.*barriga.*inflamada/i, /qué momento.*sientes.*inflamada/i] },
-  { blockIndex: 0, questionIndex: 1, patterns: [/gases.*pesadez.*digestiones lentas/i, /sueles tener gases/i] },
-  { blockIndex: 0, questionIndex: 2, patterns: [/hinchas.*comidas ligeras/i, /notas que te hinchas/i] },
-  { blockIndex: 0, questionIndex: 3, patterns: [/inflamas.*tarda.*en bajar/i, /sensación tarda mucho/i] },
-  // BLOQUE ENERGÍA (1)
-  { blockIndex: 1, questionIndex: 0, patterns: [/energía después de comer/i, /cómo sientes tu energía/i] },
-  { blockIndex: 1, questionIndex: 1, patterns: [/dependes de café.*azúcar/i, /café.*snacks.*rendir/i] },
-  { blockIndex: 1, questionIndex: 2, patterns: [/momento del día.*más activo.*más cansado/i, /activo.*cansado/i] },
-  { blockIndex: 1, questionIndex: 3, patterns: [/falta de energía.*día a día/i, /cómo te afecta la falta/i] },
-  // BLOQUE EMOCIONAL (2)
-  { blockIndex: 2, questionIndex: 0, patterns: [/estrés.*más presente.*últimamente/i, /sientes que el estrés/i] },
-  { blockIndex: 2, questionIndex: 1, patterns: [/menos motivación.*constancia/i, /cuesta mantener la constancia/i] },
-  { blockIndex: 2, questionIndex: 2, patterns: [/preocupaciones.*ansiedad.*afectan/i, /ansiedad te afectan/i] },
-  { blockIndex: 2, questionIndex: 3, patterns: [/aspecto emocional.*mejorar/i, /emocional.*gustaría mejorar/i] },
+  // BLOQUE PERSONAL (0)
+  { blockIndex: 0, questionIndex: 0, patterns: [/qué edad tienes/i, /edad tienes/i] },
+  { blockIndex: 0, questionIndex: 1, patterns: [/objetivo principal ahora mismo/i, /cuál.*objetivo principal/i] },
+  { blockIndex: 0, questionIndex: 2, patterns: [/qué punto.*estás.*bienestar/i, /punto.*sientes.*bienestar/i] },
+  // BLOQUE DIGESTIVO (1)
+  { blockIndex: 1, questionIndex: 0, patterns: [/momento del día.*barriga.*inflamada/i, /qué momento.*sientes.*inflamada/i] },
+  { blockIndex: 1, questionIndex: 1, patterns: [/gases.*pesadez.*digestiones lentas/i, /sueles tener gases/i] },
+  { blockIndex: 1, questionIndex: 2, patterns: [/hinchas.*comidas ligeras/i, /notas que te hinchas/i] },
+  { blockIndex: 1, questionIndex: 3, patterns: [/inflamas.*tarda.*en bajar/i, /sensación tarda mucho/i] },
+  { blockIndex: 1, questionIndex: 4, patterns: [/cuántos días.*semana.*molestias digestivas/i, /días.*semana.*molestias/i] },
+  { blockIndex: 1, questionIndex: 5, patterns: [/digestión afecta.*comodidad diaria/i, /ropa.*postura.*movimiento/i] },
+  // BLOQUE ENERGÍA (2)
+  { blockIndex: 2, questionIndex: 0, patterns: [/energía después de comer/i, /cómo sientes tu energía/i] },
+  { blockIndex: 2, questionIndex: 1, patterns: [/dependes de café.*azúcar/i, /café.*snacks.*rendir/i] },
+  { blockIndex: 2, questionIndex: 2, patterns: [/momento del día.*más activo.*más cansado/i, /activo.*cansado/i] },
+  { blockIndex: 2, questionIndex: 3, patterns: [/falta de energía.*día a día/i, /cómo te afecta la falta/i] },
+  { blockIndex: 2, questionIndex: 4, patterns: [/cómo te levantas.*mañanas/i, /levantas normalmente/i] },
+  { blockIndex: 2, questionIndex: 5, patterns: [/bajones fuertes de energía/i, /bajones.*alguna hora/i] },
+  // BLOQUE EMOCIONAL (3)
+  { blockIndex: 3, questionIndex: 0, patterns: [/estrés.*más presente.*últimamente/i, /sientes que el estrés/i] },
+  { blockIndex: 3, questionIndex: 1, patterns: [/menos motivación.*constancia/i, /cuesta mantener la constancia/i] },
+  { blockIndex: 3, questionIndex: 2, patterns: [/preocupaciones.*ansiedad.*afectan/i, /ansiedad te afectan/i] },
+  { blockIndex: 3, questionIndex: 3, patterns: [/aspecto emocional.*mejorar/i, /emocional.*gustaría mejorar/i] },
+  { blockIndex: 3, questionIndex: 4, patterns: [/afecta emocionalmente.*inflamado.*poca energía/i, /emocionalmente sentirte/i] },
+  { blockIndex: 3, questionIndex: 5, patterns: [/cómo te sientes contigo mismo/i, /sientes contigo.*últimos meses/i] },
 ];
 
 /**
@@ -504,13 +514,13 @@ export const ChatContainer = () => {
     }
   };
 
-  // Mostrar modal de valoración cuando el diagnóstico esté listo (solo en flujo gratuito)
+  // Mostrar modal de valoración MIENTRAS se genera el diagnóstico (solo en flujo gratuito)
   useEffect(() => {
-    if (state.step === 'diagnosis_ready' && !user && !hasRated && !isRatingModalOpen) {
-      // Esperar 2 segundos antes de mostrar el modal
+    if (state.step === 'generating_diagnosis' && !user && !hasRated && !isRatingModalOpen) {
+      // Esperar 1.5 segundos para que el usuario vea la animación de generación
       const timer = setTimeout(() => {
         setIsRatingModalOpen(true);
-      }, 2000);
+      }, 1500);
 
       return () => clearTimeout(timer);
     }
@@ -602,11 +612,11 @@ export const ChatContainer = () => {
                           wedgeBlock = prevMsgQuestion.block;
                         }
 
-                        // Si el mensaje anterior era la última pregunta del bloque emocional (pregunta 12)
+                        // Si el mensaje anterior era la última pregunta del bloque emocional (pregunta 21)
                         // y el actual es el diagnóstico, mostrar el InfoWedge del bloque emocional
                         if (prevMsgQuestion &&
-                          prevMsgQuestion.blockIndex === 2 &&
-                          prevMsgQuestion.questionIndex === 3 &&
+                          prevMsgQuestion.blockIndex === 3 &&
+                          prevMsgQuestion.questionIndex === 5 &&
                           isDiagnosisMessage) {
                           showInfoWedgeBefore = true;
                           wedgeBlock = prevMsgQuestion.block;

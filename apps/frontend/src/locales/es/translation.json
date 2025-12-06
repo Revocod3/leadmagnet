@@ -33,18 +33,18 @@
     "rateExperience": "Valorar mi experiencia"
   },
   "rating": {
-    "title": "¿Cómo fue tu experiencia?",
-    "subtitle": "Tu opinión nos ayuda a mejorar",
+    "title": "Mientras preparamos tu diagnóstico...",
+    "subtitle": "¿Qué te ha parecido la experiencia hasta ahora?",
     "comment": "Comentario (opcional)",
-    "commentPlaceholder": "¿Qué te gustó o qué podríamos mejorar?",
-    "cancel": "Cancelar",
+    "commentPlaceholder": "¿Qué te ha gustado o qué podríamos mejorar?",
+    "cancel": "Ahora no",
     "submit": "Enviar",
     "submitting": "Enviando...",
     "ratings": {
-      "1": "Muy insatisfecho",
-      "2": "Insatisfecho",
-      "3": "Neutral",
-      "4": "Satisfecho",
+      "1": "Mejorable",
+      "2": "Regular",
+      "3": "Bien",
+      "4": "Muy bien",
       "5": "¡Excelente!"
     }
   },

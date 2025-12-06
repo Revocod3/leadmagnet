@@ -33,18 +33,18 @@
     "rateExperience": "Rate my experience"
   },
   "rating": {
-    "title": "How was your experience?",
-    "subtitle": "Your feedback helps us improve",
+    "title": "While we prepare your diagnosis...",
+    "subtitle": "How has the experience been so far?",
     "comment": "Comment (optional)",
     "commentPlaceholder": "What did you like or what could we improve?",
-    "cancel": "Cancel",
+    "cancel": "Not now",
     "submit": "Submit",
     "submitting": "Submitting...",
     "ratings": {
-      "1": "Very dissatisfied",
-      "2": "Dissatisfied",
-      "3": "Neutral",
-      "4": "Satisfied",
+      "1": "Could be better",
+      "2": "Okay",
+      "3": "Good",
+      "4": "Very good",
       "5": "Excellent!"
     }
   },
