@@ -510,3 +510,377 @@
     margin-top: 12px;
   }
 }
+
+/* Offer Layout */
+.ovp-offer {
+  background: linear-gradient(135deg, #A2AE5A 0%, #97AA79 100%);
+  padding: 40px 20px;
+}
+
+.ovp-offer.again {
+  padding-top: 24px;
+}
+
+.ovp-offer-container {
+  max-width: 700px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.ovp-logo-top {
+  margin-bottom: 14px;
+}
+
+.ovp-logo-circle {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: #fff;
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.ovp-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ovp-offer-title {
+  color: #fff;
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.25px;
+  margin-bottom: 6px;
+}
+
+.ovp-offer-subtitle {
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 16px;
+  margin-bottom: 18px;
+}
+
+.ovp-plan-box {
+  background: transparent;
+  backdrop-filter: none;
+  border-radius: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+  max-width: 340px;
+  margin: 0 auto;
+}
+
+.ovp-plan-option {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 24px;
+  padding: 10px 14px;
+  min-height: 64px;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.ovp-plan-option.selected {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: #ffffff;
+  backdrop-filter: blur(4px);
+}
+
+.ovp-plan-radio {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.ovp-plan-option.selected .ovp-plan-radio {
+  background: #fff;
+  border-color: #fff;
+  color: #2D3748;
+}
+
+.ovp-plan-check-icon {
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.ovp-plan-text {
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ovp-plan-label {
+  color: #fff;
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 1.2;
+}
+
+.ovp-plan-price-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ovp-plan-old {
+  color: #F16A6A;
+  text-decoration: line-through;
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 0.9;
+}
+
+.ovp-plan-total {
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.ovp-plan-popular {
+  position: absolute;
+  top: -11px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #F16A6A;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 12px;
+  border-radius: 12px;
+  pointer-events: none;
+  z-index: 10;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.ovp-plan-bubble {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  border-radius: 16px;
+  padding: 6px 12px;
+  min-width: 80px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+}
+
+.ovp-plan-option.selected .ovp-plan-bubble {
+  background: #fff;
+  color: #2D3748;
+}
+
+.ovp-bubble-prices {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.1;
+}
+
+.ovp-bubble-old {
+  font-size: 11px;
+  color: #F16A6A;
+  text-decoration: line-through;
+  font-weight: 600;
+  margin-bottom: 1px;
+  opacity: 0.9;
+}
+
+.ovp-plan-option.selected .ovp-bubble-old {
+  color: #F16A6A;
+  opacity: 1;
+}
+
+.ovp-bubble-new {
+  font-size: 15px;
+  font-weight: 800;
+  margin-bottom: 1px;
+}
+
+.ovp-bubble-note {
+  font-size: 9px;
+  opacity: 0.8;
+  font-weight: 500;
+}
+
+.ovp-plan-option.selected .ovp-bubble-note {
+  color: #718096;
+  opacity: 1;
+}
+
+.ovp-bubble-one {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.ovp-cta-main {
+  display: inline-block;
+  margin-top: 16px;
+  background: linear-gradient(180deg, #ffffff 0%, #f7f7f7 100%);
+  color: #2D3748;
+  border-radius: 999px;
+  padding: 14px 24px;
+  font-weight: 700;
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.06), 0 8px 24px rgba(0, 0, 0, 0.12);
+  text-decoration: none;
+}
+
+.ovp-cta-main:hover {
+  transform: translateY(-1px);
+}
+
+.ovp-disclaimer {
+  margin-top: 14px;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 12px;
+}
+
+/* Proof Section */
+.ovp-proof {
+  background: #0F2740;
+  padding: 28px 20px 36px;
+}
+
+.ovp-proof-card {
+  max-width: 700px;
+  margin: 0 auto;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 22px;
+  padding: 24px 20px;
+  text-align: center;
+}
+
+.ovp-proof-icon {
+  width: 44px;
+  height: 44px;
+  background: linear-gradient(135deg, #ffffff 0%, #e8f0d1 100%);
+  color: #2D3748;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  margin-bottom: 12px;
+}
+
+.ovp-proof-title {
+  color: #fff;
+  font-size: 24px;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+.ovp-proof-text {
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 14px;
+}
+
+/* Benefits */
+.ovp-benefits {
+  background: #0F2740;
+  padding: 20px;
+}
+
+.ovp-benefits-container {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.ovp-benefits-title {
+  color: #fff;
+  font-size: 26px;
+  font-weight: 800;
+  text-align: center;
+  margin-bottom: 14px;
+}
+
+.ovp-benefits-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.ovp-benefit {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  border-radius: 16px;
+  padding: 14px 16px;
+  font-weight: 600;
+}
+
+@media (max-width: 640px) {
+  .ovp-benefits-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Testimonials */
+.ovp-testimonials {
+  background: #0F2740;
+  padding: 24px 20px 10px;
+}
+
+.ovp-testimonials-container {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.ovp-testimonials-title {
+  color: #fff;
+  font-size: 26px;
+  font-weight: 800;
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.ovp-testimonials-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.ovp-testimonial-card {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 16px;
+  color: #fff;
+  text-align: center;
+}
+
+.ovp-stars {
+  color: #F6C85F;
+  font-size: 18px;
+  margin-bottom: 8px;
+}
+
+.ovp-author {
+  margin-top: 8px;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 700;
+}
+
+@media (max-width: 640px) {
+  .ovp-testimonials-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -304,9 +304,9 @@ export class ConversationalAssistantService {
     turnCount: number,
     hasRealProblem?: boolean
   ): boolean {
-    // FLUJO ESTRUCTURADO: En turno 14+ siempre generar diagnóstico
-    // (turno 14 = después de responder las 12 preguntas + bienvenida + confirmación)
-    if (turnCount >= 14) return true;
+    // FLUJO ESTRUCTURADO: En turno 23+ siempre generar diagnóstico
+    // (turno 23 = después de responder las 21 preguntas + bienvenida + confirmación)
+    if (turnCount >= 23) return true;
 
     // Si el mensaje contiene señales de diagnóstico (ampliado para instrucciones Ulises)
     const diagnosisSignals = [

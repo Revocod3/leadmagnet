@@ -90,7 +90,7 @@ export const ChatFooter = ({
       className="fixed bottom-0 left-0 right-0 z-30 pointer-events-none"
     >
       {/* Gradiente de abajo hacia arriba */}
-      <div className="absolute inset-0 bg-gradient-to-t from-neutral-50 via-neutral-50/80 via-75% to-transparent dark:from-neutral-900 dark:via-neutral-900/80 dark:via-75% dark:to-transparent pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-t from-neutral-50 via-neutral-50/80 via-50% to-transparent dark:from-neutral-900 dark:via-neutral-900/80 dark:via-50% dark:to-transparent pointer-events-none" />
 
       <div className="max-w-3xl mx-auto px-2 sm:px-4 py-4 pb-6 pointer-events-auto relative z-10">
         {/* Mensaje de límite de imágenes alcanzado */}
@@ -185,7 +185,7 @@ export const ChatFooter = ({
             <button
               type="button"
               onClick={() => setIsPlusMenuOpen(!isPlusMenuOpen)}
-              className="h-[44px] w-[44px] flex items-center justify-center text-neutral-700 dark:text-neutral-300 rounded-full bg-white dark:bg-neutral-800 dark:border dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-all shadow-md"
+              className="h-[44px] w-[44px] flex items-center justify-center text-neutral-700 dark:text-neutral-300 rounded-full bg-white dark:bg-neutral-800 border border-neutral-200/60 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-all shadow-md"
               title="Más opciones"
             >
               <Plus className="w-5 h-5" />
@@ -221,7 +221,7 @@ export const ChatFooter = ({
           </div>
 
           {/* Input Container - Separado del botón + */}
-          <form onSubmit={onSendMessage} className="flex-1 relative rounded-[26px] shadow-md px-3 sm:px-4 py-2 transition-all focus-within:shadow-lg bg-gradient-to-b from-white to-white/95 dark:from-neutral-800 dark:to-neutral-800/90 dark:border dark:border-neutral-700 min-h-[44px]">
+          <form onSubmit={onSendMessage} className="flex-1 relative rounded-[26px] shadow-md px-3 sm:px-4 py-2 transition-all focus-within:shadow-lg bg-gradient-to-b from-white to-white/95 dark:from-neutral-800 dark:to-neutral-800/90 border border-neutral-200/60 dark:border-neutral-700 min-h-[44px]">
             <div className="flex items-center gap-1 sm:gap-2">
               {/* Textarea */}
               <textarea

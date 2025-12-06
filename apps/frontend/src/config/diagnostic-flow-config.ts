@@ -3,7 +3,7 @@
  *
  * Este archivo contiene toda la configuración del flujo de diagnóstico gratuito:
  * - Mensaje de bienvenida
- * - 3 bloques de preguntas (Digestivo, Energía, Emocional)
+ * - 4 bloques de preguntas (Personal, Digestivo, Energía, Emocional)
  * - Cuñas informativas después de cada bloque
  * - CTA final
  */
@@ -37,6 +37,7 @@ export interface DiagnosticFlowConfig {
   };
   blocks: FlowBlock[];
   transitions: {
+    toDigestive: string;
     toEnergy: string;
     toEmotional: string;
     toDiagnosis: string;
@@ -61,6 +62,53 @@ Cuando tú me digas, empezamos.`,
 
   blocks: [
     // ═══════════════════════════════════════════════════════════════
+    // BLOQUE PERSONAL 🔘
+    // ═══════════════════════════════════════════════════════════════
+    {
+      id: 'personal',
+      name: 'Personal',
+      emoji: '🔘',
+      color: '#6B7280',      // gray-500
+      colorLight: '#F3F4F6', // gray-100
+      questions: [
+        {
+          id: 'pers_1',
+          text: '¿Qué edad tienes?',
+          type: 'multiple_choice',
+          options: [
+            { value: '18-30', label: 'Entre 18 y 30 años' },
+            { value: '31-45', label: 'Entre 31 y 45 años' },
+            { value: '45+', label: 'Más de 45 años' }
+          ]
+        },
+        {
+          id: 'pers_2',
+          text: '¿Cuál dirías que es tu objetivo principal ahora mismo?',
+          type: 'multiple_choice',
+          options: [
+            { value: 'deflate', label: 'Desinflamar mi abdomen' },
+            { value: 'energy', label: 'Recuperar mi energía vital' },
+            { value: 'emotional', label: 'Mejorar mi bienestar emocional' },
+            { value: 'all', label: 'Quiero mejorar todo lo anterior' }
+          ]
+        },
+        {
+          id: 'pers_3',
+          text: '¿En qué punto sientes que estás ahora mismo con tu bienestar?',
+          type: 'multiple_choice',
+          options: [
+            { value: 'starting', label: 'Estoy empezando desde cero' },
+            { value: 'stuck', label: 'He probado cosas pero no avanzo' },
+            { value: 'very_stuck', label: 'Me siento bastante estancado/a' }
+          ]
+        }
+      ],
+      infoWedge: `Antes de nada, quiero que sepas algo importante: cada persona llega aquí con una historia distinta, pero todas tienen algo en común—buscan recuperar su bienestar desde la raíz.
+
+Por eso, en Objetivo Vientre Plano personalizamos cada paso según tu contexto, tu estilo de vida y tu punto de partida.`
+    },
+
+    // ═══════════════════════════════════════════════════════════════
     // BLOQUE DIGESTIVO 🔵
     // ═══════════════════════════════════════════════════════════════
     {
@@ -75,10 +123,10 @@ Cuando tú me digas, empezamos.`,
           text: '¿En qué momento del día sientes tu barriga más inflamada o molesta?',
           type: 'multiple_choice',
           options: [
-            { value: 'morning', label: 'Por la mañana (al despertar)' },
-            { value: 'after_lunch', label: 'Después de comer (post comida)' },
-            { value: 'afternoon', label: 'Por la tarde (a mitad del día)' },
-            { value: 'night', label: 'Por la noche (antes de dormir)' }
+            { value: 'morning', label: 'Por la mañana al despertar' },
+            { value: 'after_lunch', label: 'Después de comer la comida' },
+            { value: 'afternoon', label: 'Por la tarde a mitad del día' },
+            { value: 'night', label: 'Por la noche antes de dormir' }
           ]
         },
         {
@@ -86,24 +134,49 @@ Cuando tú me digas, empezamos.`,
           text: '¿Sueles tener gases, pesadez o digestiones lentas después de comer?',
           type: 'multiple_choice',
           options: [
-            { value: 'always', label: 'Sí, casi siempre (me ocurre con frecuencia)' },
-            { value: 'sometimes', label: 'A veces (depende del día)' },
-            { value: 'rarely', label: 'No mucho (solo en ocasiones puntuales)' }
+            { value: 'always', label: 'Sí, me pasa casi siempre' },
+            { value: 'sometimes', label: 'A veces, depende del día' },
+            { value: 'rarely', label: 'No mucho, solo ocasionalmente' }
           ]
         },
         {
           id: 'dig_3',
-          text: '¿Notas que te hinchas incluso con comidas ligeras?\n\nSiente la libertad de explicarlo con tus palabras, como te resulte más cómodo.',
-          type: 'open_ended'
+          text: '¿Notas que te hinchas incluso con comidas ligeras?',
+          type: 'multiple_choice',
+          options: [
+            { value: 'yes_always', label: 'Sí, incluso con comidas suaves' },
+            { value: 'heavy_only', label: 'Solo con comidas más pesadas' },
+            { value: 'depends', label: 'Depende bastante del día' }
+          ]
         },
         {
           id: 'dig_4',
-          text: '¿Cuando te inflamas, esa sensación tarda mucho en bajar?',
+          text: 'Cuando te inflamas, ¿esa sensación tarda mucho en bajar?',
           type: 'multiple_choice',
           options: [
-            { value: 'long', label: 'Sí, tarda bastante (puede durar horas)' },
-            { value: 'depends', label: 'Depende del día (no siempre es igual)' },
-            { value: 'quick', label: 'No, baja rápido (suele mejorar pronto)' }
+            { value: 'long', label: 'Sí, tarda bastante en bajar' },
+            { value: 'depends', label: 'Depende mucho del día' },
+            { value: 'quick', label: 'No, mejora relativamente rápido' }
+          ]
+        },
+        {
+          id: 'dig_5',
+          text: '¿Cuántos días a la semana dirías que tienes molestias digestivas?',
+          type: 'multiple_choice',
+          options: [
+            { value: '1-2', label: 'Uno o dos días por semana' },
+            { value: '3-4', label: 'Tres o cuatro días por semana' },
+            { value: '5-7', label: 'Entre cinco y siete días por semana' }
+          ]
+        },
+        {
+          id: 'dig_6',
+          text: '¿Tu digestión afecta a tu comodidad diaria (ropa, postura, movimiento)?',
+          type: 'multiple_choice',
+          options: [
+            { value: 'a_lot', label: 'Sí, afecta bastante a diario' },
+            { value: 'sometimes', label: 'Algo, depende del día' },
+            { value: 'not_much', label: 'No demasiado, lo llevo bien' }
           ]
         }
       ],
@@ -129,9 +202,9 @@ Eso es lo que trabajamos en el Método Objetivo Vientre Plano: ir al origen para
           text: '¿Cómo sientes tu energía después de comer?',
           type: 'multiple_choice',
           options: [
-            { value: 'low', label: 'Me baja bastante (me entra cansancio o sueño)' },
-            { value: 'same', label: 'Me quedo igual (no noto cambios)' },
-            { value: 'better', label: 'Me siento mejor (me activa o me estabiliza)' }
+            { value: 'low', label: 'Me baja bastante la energía' },
+            { value: 'same', label: 'Me quedo prácticamente igual' },
+            { value: 'better', label: 'Me siento mejor y más activo/a' }
           ]
         },
         {
@@ -139,20 +212,51 @@ Eso es lo que trabajamos en el Método Objetivo Vientre Plano: ir al origen para
           text: '¿Dependes de café, azúcar o snacks para rendir durante el día?',
           type: 'multiple_choice',
           options: [
-            { value: 'yes', label: 'Sí (lo necesito a diario)' },
-            { value: 'sometimes', label: 'A veces (cuando estoy más cansado)' },
-            { value: 'no', label: 'No (no suelo depender de eso)' }
+            { value: 'yes', label: 'Sí, lo necesito casi a diario' },
+            { value: 'sometimes', label: 'A veces, solo algunos días' },
+            { value: 'no', label: 'No, no suelo depender de eso' }
           ]
         },
         {
           id: 'ene_3',
-          text: '¿En qué momento del día te sientes más activo y en cuál más cansado?\n\nPuedes contármelo como tú te sientas más cómodo, sin necesidad de resumirlo demasiado.',
-          type: 'open_ended'
+          text: '¿En qué momento del día te sientes más activo y en cuál más cansado?',
+          type: 'multiple_choice',
+          options: [
+            { value: 'morning', label: 'Tengo más energía por la mañana' },
+            { value: 'afternoon', label: 'Rindo mejor por la tarde' },
+            { value: 'irregular', label: 'Mi energía es muy irregular' }
+          ]
         },
         {
           id: 'ene_4',
-          text: '¿Cómo te afecta la falta de energía en tu día a día?\n\nSi quieres, descríbelo con tus palabras para entenderlo mejor.',
-          type: 'open_ended'
+          text: '¿Cómo te afecta la falta de energía en tu día a día?',
+          type: 'multiple_choice',
+          options: [
+            { value: 'a_lot', label: 'Me limita bastante a diario' },
+            { value: 'manageable', label: 'Lo noto pero puedo gestionarlo' },
+            { value: 'not_much', label: 'No me afecta demasiado' }
+          ]
+        },
+        {
+          id: 'ene_5',
+          text: '¿Cómo te levantas normalmente por las mañanas?',
+          type: 'multiple_choice',
+          options: [
+            { value: 'tired', label: 'Me levanto bastante cansado/a' },
+            { value: 'normal', label: 'Me levanto con energía normal' },
+            { value: 'good', label: 'Me levanto con buena energía' }
+          ]
+        },
+        {
+          id: 'ene_6',
+          text: '¿Tienes bajones fuertes de energía a alguna hora del día?',
+          type: 'multiple_choice',
+          options: [
+            { value: 'after_lunch', label: 'Sí, sobre todo después de comer' },
+            { value: 'afternoon', label: 'Sí, especialmente por la tarde' },
+            { value: 'sometimes', label: 'A veces, depende del día' },
+            { value: 'no', label: 'No, no tengo bajones fuertes' }
+          ]
         }
       ],
       infoWedge: `No es normal vivir con la energía por los suelos.
@@ -177,25 +281,61 @@ Eso es lo que trabajamos en el Método Objetivo Vientre Plano: restaurar tu ener
           text: '¿Sientes que el estrés está más presente en tu vida últimamente?',
           type: 'multiple_choice',
           options: [
-            { value: 'high', label: 'Sí, bastante (está muy presente)' },
-            { value: 'moderate', label: 'Algo (pero lo manejo)' },
-            { value: 'low', label: 'No demasiado (no me afecta mucho)' }
+            { value: 'high', label: 'Sí, está muy presente ahora mismo' },
+            { value: 'moderate', label: 'Algo, pero lo voy gestionando' },
+            { value: 'low', label: 'No demasiado, lo llevo bien' }
           ]
         },
         {
           id: 'emo_2',
-          text: '¿Notas que tienes menos motivación o te cuesta mantener la constancia?\n\nComparte lo que sientas, sin prisa y con tus palabras.',
-          type: 'open_ended'
+          text: '¿Notas que tienes menos motivación o te cuesta mantener la constancia?',
+          type: 'multiple_choice',
+          options: [
+            { value: 'yes', label: 'Sí, me falta bastante motivación' },
+            { value: 'depends', label: 'Depende del día y de mi ánimo' },
+            { value: 'no', label: 'No mucho, lo llevo bastante bien' }
+          ]
         },
         {
           id: 'emo_3',
-          text: '¿Sientes que las preocupaciones o la ansiedad te afectan por dentro?\n\nPuedes expresarlo libremente, de la forma que te sea más natural.',
-          type: 'open_ended'
+          text: '¿Sientes que las preocupaciones o la ansiedad te afectan por dentro?',
+          type: 'multiple_choice',
+          options: [
+            { value: 'yes', label: 'Sí, me afectan bastante' },
+            { value: 'sometimes', label: 'A veces, depende del día' },
+            { value: 'no', label: 'No demasiado en mi caso' }
+          ]
         },
         {
           id: 'emo_4',
-          text: '¿En qué aspecto emocional sientes que te gustaría mejorar más ahora mismo?\n\nCuéntamelo con tus palabras, desde lo que tú sientes.',
-          type: 'open_ended'
+          text: '¿En qué aspecto emocional sientes que te gustaría mejorar más ahora mismo?',
+          type: 'multiple_choice',
+          options: [
+            { value: 'motivation', label: 'Mejorar mi motivación personal' },
+            { value: 'stress', label: 'Reducir mi nivel de estrés diario' },
+            { value: 'anxiety', label: 'Gestionar mejor mi ansiedad' },
+            { value: 'self_esteem', label: 'Trabajar mi autoestima interna' }
+          ]
+        },
+        {
+          id: 'emo_5',
+          text: '¿Cómo te afecta emocionalmente sentirte inflamado/a o con poca energía?',
+          type: 'multiple_choice',
+          options: [
+            { value: 'a_lot', label: 'Me afecta bastante a nivel emocional' },
+            { value: 'manageable', label: 'Algo, pero lo gestiono bien' },
+            { value: 'not_much', label: 'No me afecta demasiado' }
+          ]
+        },
+        {
+          id: 'emo_6',
+          text: 'En general, ¿cómo te sientes contigo mismo estos últimos meses?',
+          type: 'multiple_choice',
+          options: [
+            { value: 'unmotivated', label: 'Me siento desmotivado/a últimamente' },
+            { value: 'irregular', label: 'He estado un poco irregular' },
+            { value: 'good', label: 'Me siento bastante bien conmigo' }
+          ]
         }
       ],
       infoWedge: `La parte emocional tampoco es algo aislado.
@@ -208,6 +348,7 @@ Eso es lo que hacemos en el Método Objetivo Vientre Plano: equilibrar cuerpo y 
 
   // Transiciones entre bloques
   transitions: {
+    toDigestive: 'Perfecto. Ahora vamos a hablar de tu digestión.',
     toEnergy: 'Perfecto. Ahora vamos a hablar de tu energía.',
     toEmotional: 'Muy bien. Por último, hablemos de cómo te sientes emocionalmente.',
     toDiagnosis: '¡Perfecto! Ya tengo toda la información que necesito. Dame un momento para preparar tu diagnóstico personalizado...'
@@ -288,6 +429,8 @@ export const isLastBlock = (blockIndex: number): boolean => {
  */
 export const getTransitionMessage = (nextBlockId: string): string => {
   switch (nextBlockId) {
+    case 'digestive':
+      return DIAGNOSTIC_FLOW.transitions.toDigestive;
     case 'energy':
       return DIAGNOSTIC_FLOW.transitions.toEnergy;
     case 'emotional':

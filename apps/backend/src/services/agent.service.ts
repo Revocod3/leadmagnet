@@ -843,7 +843,7 @@ IMPORTANTE: Usa el tool save_diagnosis para guardar el diagnóstico generado.`;
     hasRealProblem?: boolean
   ): boolean {
     if (!hasRealProblem) return false;
-    if (turnCount >= 14) return true;
+    if (turnCount >= 23) return true;
 
     const diagnosisSignals = [
       'basándome en lo que me has contado',

@@ -318,7 +318,7 @@ export class ChatController {
       });
 
       // Generar diagnóstico si está listo
-      // FLUJO ESTRUCTURADO: isDiagnosisReady se activa en turno 14+ o con señales de diagnóstico
+      // FLUJO ESTRUCTURADO: isDiagnosisReady se activa en turno 23+ o con señales de diagnóstico
       // IMPORTANTE: NO generar si ya existe diagnóstico (hasCompletedDiagnosis)
       let diagnosisContent: string | null = null;
       let discountCode: { code: string; percentage: number } | null = null;

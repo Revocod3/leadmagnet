@@ -43,7 +43,7 @@ export const WelcomeModal = ({ isOpen, onClose }: WelcomeModalProps) => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="fixed inset-0 z-[9998] bg-black/45 backdrop-blur-xs"
+            className="fixed inset-0 z-[9998] bg-black/40 backdrop-blur-xs"
           />
 
           {/* Modal */}
@@ -61,11 +61,10 @@ export const WelcomeModal = ({ isOpen, onClose }: WelcomeModalProps) => {
             <div className="relative w-full max-w-md">
               {/* Modal Content - Glassmorphism */}
               <div
-                className="relative rounded-3xl border border-white/30 overflow-hidden shadow-2xl"
+                className="relative rounded-3xl border border-white/20 overflow-hidden shadow-2xl bg-white"
                 style={{
-                  background: 'linear-gradient(135deg, rgba(248, 245, 230, 0.70) 0%, rgba(255, 255, 255, 0.65) 100%)',
-                  backdropFilter: 'blur(20px) saturate(180%)',
-                  WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+                  backdropFilter: 'blur(8px) saturate(120%)',
+                  WebkitBackdropFilter: 'blur(8px) saturate(120%)',
                 }}
               >
                 {/* Logo with expanding ring pulse - centered */}
@@ -73,9 +72,9 @@ export const WelcomeModal = ({ isOpen, onClose }: WelcomeModalProps) => {
                   <motion.div
                     animate={{
                       boxShadow: [
-                        '0 0 0 0 rgba(255, 255, 255, 0.4)',
-                        '0 0 0 20px rgba(255, 255, 255, 0)',
-                        '0 0 0 0 rgba(255, 255, 255, 0)',
+                        '0 0 0 0 rgba(153, 171, 117, 0.4)',
+                        '0 0 0 20px rgba(153, 171, 117, 0)',
+                        '0 0 0 0 rgba(153, 171, 117, 0)',
                       ],
                     }}
                     transition={{
@@ -83,7 +82,7 @@ export const WelcomeModal = ({ isOpen, onClose }: WelcomeModalProps) => {
                       repeat: Infinity,
                       repeatDelay: 0.5,
                     }}
-                    className="relative border-4 border-white/30 w-16 h-16 bg-white rounded-full flex items-center justify-center overflow-hidden shadow-lg"
+                    className="relative border-4 border-[#99AB75]/30 w-16 h-16 bg-white rounded-full flex items-center justify-center overflow-hidden shadow-lg"
                   >
                     <img
                       src="/assets/images/favicon.webp"
@@ -110,7 +109,7 @@ export const WelcomeModal = ({ isOpen, onClose }: WelcomeModalProps) => {
                     transition={{ delay: 0.2, duration: 0.4 }}
                     className="text-sm text-gray-600 mb-3.5 leading-relaxed"
                   >
-                    Personaliza la experiencia con tu nombre.
+                    Ingresa tu nombre para acceder al chat de Objetivo Vientre Plano.
                   </motion.p>
 
                   {/* Input de nombre */}
@@ -129,7 +128,7 @@ export const WelcomeModal = ({ isOpen, onClose }: WelcomeModalProps) => {
                       }}
                       onKeyPress={handleKeyPress}
                       placeholder="¿Cómo te llamas?"
-                      className="w-full px-4 py-3 rounded-2xl border-2 border-gray-200 focus:border-[#99AB75] focus:outline-none transition-all text-gray-900 placeholder-gray-400 text-base"
+                      className="w-full px-4 py-3 rounded-2xl border-[3px] border-gray-300 focus:border-[#99AB75] focus:outline-none focus:ring-2 focus:ring-[#99AB75]/20 transition-all text-gray-900 placeholder-gray-400 text-base bg-white shadow-sm"
                       autoFocus
                     />
                     {error && (

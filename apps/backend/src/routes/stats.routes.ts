@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, type Router as RouterType } from 'express';
 import { statsController } from '../controllers/stats.controller';
 
 const router: Router = Router();
