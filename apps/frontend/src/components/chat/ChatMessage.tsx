@@ -4,6 +4,7 @@ import { Download, Star } from 'lucide-react';
 import { MessageActions } from './MessageActions';
 import { TypewriterText } from './TypewriterText';
 import type { FlowMessage, DiagnosticState } from '../../hooks/useDiagnosticFlow';
+import { DIAGNOSTIC_FLOW } from '../../config/diagnostic-flow-config';
 
 interface ChatMessageProps {
   message: FlowMessage;
@@ -101,23 +102,19 @@ export const ChatMessage = forwardRef<HTMLDivElement, ChatMessageProps>(({
               </div>
             )}
 
-            {/* Show 2 buttons when diagnosis is ready */}
+            {/* Show buttons when diagnosis is ready */}
             {message.type === 'diagnosis_ready' && state.diagnosisContent && onDownloadPDF && (
-              <div className="mt-8 flex flex-col gap-3">
+              <div className="mt-6 flex flex-col gap-3">
                 {/* Primary CTA - Subscription Button */}
                 <a
                   href="/pricing"
                   className="group w-full py-4 sm:py-5 px-4 sm:px-6 rounded-2xl bg-gradient-to-r from-purple-600 via-purple-700 to-indigo-700 hover:from-purple-700 hover:via-purple-800 hover:to-indigo-800 text-white font-bold text-sm sm:text-base md:text-lg flex items-center justify-center gap-2 sm:gap-3 transition-all duration-300 shadow-2xl hover:shadow-purple-500/50 transform hover:-translate-y-1 hover:scale-[1.02] relative overflow-hidden"
                 >
-                  {/* Animated background effect */}
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -skew-x-12 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000"></div>
-
                   <div className="relative z-10 flex items-center gap-2 sm:gap-3">
                     <span className="text-center leading-tight">
-                      <span className="hidden sm:inline">Transforma tu salud digestiva</span>
-                      <span className="sm:hidden">Comenzar ahora</span>
+                      {DIAGNOSTIC_FLOW.closingCTA.buttonText}
                     </span>
-                    <span className="text-lg sm:text-xl group-hover:translate-x-1 transition-transform">→</span>
                   </div>
                 </a>
 
@@ -142,7 +139,7 @@ export const ChatMessage = forwardRef<HTMLDivElement, ChatMessageProps>(({
                   )}
                 </button>
 
-                {/* Tertiary CTA - Rate Experience Button (only shown if callback provided) */}
+                {/* Tertiary CTA - Rate Experience Button */}
                 {onRateExperience && (
                   <button
                     onClick={onRateExperience}
@@ -152,6 +149,13 @@ export const ChatMessage = forwardRef<HTMLDivElement, ChatMessageProps>(({
                     <span>Valorar mi experiencia</span>
                   </button>
                 )}
+              </div>
+            )}
+
+            {/* Show closing CTA message in its own bubble */}
+            {message.type === 'closing_cta' && (
+              <div className="text-[15px] leading-relaxed whitespace-pre-wrap">
+                {message.content}
               </div>
             )}
 

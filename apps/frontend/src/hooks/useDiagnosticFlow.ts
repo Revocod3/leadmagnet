@@ -3,6 +3,7 @@ import { diagnosticContent, type DiagnosticQuestion } from '../constants/diagnos
 import { useSessionStore } from '../stores/sessionStore';
 import { useChatStore } from '../stores/chatStore';
 import { apiClient } from '../services/api';
+import { DIAGNOSTIC_FLOW } from '../config/diagnostic-flow-config';
 
 export type FlowStep =
   | 'initial'
@@ -22,6 +23,7 @@ export interface FlowMessage {
   | 'question'
   | 'comment'
   | 'diagnosis_ready'
+  | 'closing_cta'
   | 'validation_error'
   | 'completed'
   | 'limit_exceeded';
@@ -95,7 +97,6 @@ export const useDiagnosticFlow = () => {
 
       // Timeout after maxPolls - diagnosis generation failed or was interrupted
       if (pollCount >= maxPolls) {
-        console.warn('Diagnosis polling timeout, resetting state');
         clearInterval(pollInterval);
         setState((prev) => ({ ...prev, step: 'asking_questions' }));
         setIsProcessing(false);
@@ -116,7 +117,14 @@ export const useDiagnosticFlow = () => {
               content: diagnosisData.content!,
               type: 'diagnosis_ready',
               timestamp: new Date().toISOString(),
-              isNew: true, // Animate diagnosis from polling
+              isNew: true,
+            },
+            {
+              role: 'assistant',
+              content: DIAGNOSTIC_FLOW.closingCTA.message,
+              type: 'closing_cta',
+              timestamp: new Date().toISOString(),
+              isNew: true,
             },
           ]);
 
@@ -155,7 +163,6 @@ export const useDiagnosticFlow = () => {
 
     // Evitar múltiples inicializaciones
     if (isInitialized) {
-      console.log('Already initialized, skipping');
       return;
     }
 
@@ -171,7 +178,6 @@ export const useDiagnosticFlow = () => {
     try {
       // 0) Check if FREE chat state is expired (24h after diagnosis completed)
       if (chatStore.isFreeChatExpired()) {
-        console.log('FREE chat state expired, clearing and starting fresh');
         chatStore.clearFreeChatState();
         // Also clear the session to force a new one
         sessionStore.clearSession();
@@ -181,7 +187,6 @@ export const useDiagnosticFlow = () => {
       // 1) Try to restore from localStorage first (fastest)
       const restoredFromLocal = chatStore.restoreFreeChatState(sessionId);
       if (restoredFromLocal && chatStore.freeChatState.messages.length > 0) {
-        console.log('✅ Restored chat from localStorage');
         // Mark all restored messages as not new (don't animate typewriter)
         const restoredMessages = (chatStore.freeChatState.messages as FlowMessage[]).map(m => ({
           ...m,
@@ -216,14 +221,12 @@ export const useDiagnosticFlow = () => {
           return; // History restored; no need to call init
         }
       } catch (historyErr) {
-        console.warn('Could not restore chat history, will call init:', historyErr);
       }
 
       // 3) No history: call backend to initialize diagnostic flow with user name
       const welcomeMsg = await apiClient.initializeChat(sessionId, sessionStore.language);
 
       if (welcomeMsg && welcomeMsg.content) {
-        console.log('✅ Mensaje de bienvenida de Clara V2:', welcomeMsg.content.substring(0, 50));
         // Add welcome message from backend (Clara V2)
         const welcomeMessages: FlowMessage[] = [
           {
@@ -310,7 +313,6 @@ export const useDiagnosticFlow = () => {
           // CRÍTICO: Guardar diagnosisContent cuando el backend lo envía en metadata
           if (metadata.diagnosisContent) {
             newState.diagnosisContent = metadata.diagnosisContent;
-            console.log('✅ Diagnosis content saved to state');
           }
 
           return newState;
@@ -351,7 +353,6 @@ export const useDiagnosticFlow = () => {
 
         // Add assistant message to UI with a small delay to simulate typing
         setTimeout(() => {
-          console.log('➕ Agregando mensaje del asistente:', response.content.substring(0, 50));
           const assistantMsg: FlowMessage = {
             role: 'assistant',
             content: response.content,

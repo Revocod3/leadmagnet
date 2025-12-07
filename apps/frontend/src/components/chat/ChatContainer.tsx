@@ -210,8 +210,6 @@ export const ChatContainer = () => {
       if (user) {
         // Si hay sesión PERO no pertenece a este usuario → LIMPIAR
         if (session?.id && session.userId !== user.id) {
-          console.log('⚠️ Sesión existente no pertenece al usuario actual, limpiando...');
-          console.log('   Session userId:', session.userId, '| Current user:', user.id);
           setSession({ ...session, id: '', userId: undefined } as any); // Forzar limpieza
           return; // Salir y dejar que el siguiente render cree la sesión correcta
         }
@@ -230,7 +228,6 @@ export const ChatContainer = () => {
             ? (user.name || user.email.split('@')[0] || 'Usuario')
             : (session?.userName || 'Usuario');
 
-          console.log('📝 Solicitando sesión para:', userName, user ? `(PRO - userId: ${user.id})` : '(Free)');
 
           // Para usuarios PRO, pasar userId - el backend buscará sesión existente
           const newSession = await apiClient.createSession({
@@ -240,7 +237,6 @@ export const ChatContainer = () => {
           });
 
           setSession(newSession);
-          console.log('✅ Sesión obtenida/creada:', newSession.id);
         } catch (error) {
           console.error('Error creating session:', error);
         }
@@ -260,7 +256,6 @@ export const ChatContainer = () => {
     const isRealSession = session?.id && !session.id.startsWith('free_');
 
     if (messages.length === 0 && isRealSession && !isProcessing) {
-      console.log('🎬 Inicializando chat con sesión:', session.id);
       initialize();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -298,7 +293,6 @@ export const ChatContainer = () => {
     const finalLang = supportedLangs.includes(detectedLang) ? detectedLang : 'es';
 
     if (language !== finalLang) {
-      console.log('🌍 Idioma detectado automáticamente:', finalLang);
       useSessionStore.getState().setLanguage(finalLang as any);
     }
   }, [i18n.language, language]);
@@ -393,7 +387,6 @@ export const ChatContainer = () => {
       });
 
       if (success) {
-        console.log('PDF generado exitosamente');
       }
     } catch (error) {
       console.error('Error al generar PDF:', error);
@@ -507,7 +500,6 @@ export const ChatContainer = () => {
       if (session?.id) {
         localStorage.setItem(`rated_${session.id}`, 'true');
       }
-      console.log('✅ Valoración enviada exitosamente');
     } catch (error) {
       console.error('❌ Error al enviar valoración:', error);
       throw error;
