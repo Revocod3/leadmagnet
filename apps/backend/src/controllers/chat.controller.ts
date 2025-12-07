@@ -390,12 +390,10 @@ export class ChatController {
                 'deep',
                 0
               );
-              console.log(`✅ Descuento generado para sesión ${sessionId}: ${discount.code}`);
             } catch (error) {
               console.error('Error generating discount:', error);
             }
 
-            console.log(`✅ Diagnóstico generado y guardado para sesión ${sessionId}`);
           } catch (error) {
             console.error('Error generando diagnóstico asíncrono:', error);
           }

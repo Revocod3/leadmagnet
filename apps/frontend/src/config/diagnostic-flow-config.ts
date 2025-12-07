@@ -52,11 +52,15 @@ export const DIAGNOSTIC_FLOW: DiagnosticFlowConfig = {
   welcome: {
     message: `Hola {userName}, bienvenido a Objetivo Vientre Plano.
 
-Soy Clara, tu asistente personal en este camino hacia una salud más ligera, más equilibrada y más tuya.
+Soy Clara, tu asistente personal.
 
-Antes de avanzar, voy a hacerte unas preguntas muy sencillas para prepararte un diagnóstico personalizado basado en tres pilares: tu digestión, tu energía y tu equilibrio emocional.
+Antes de avanzar, voy a hacerte unas preguntas muy sencillas para prepararte un diagnóstico personalizado basado en tres pilares:
 
-Cuando tú me digas, empezamos.`,
+• 🌿 Tu digestión
+• ⚡ Tu energía
+• 💜 Tu equilibrio emocional
+
+empezamos.`,
     buttonText: "Empezamos"
   },
 
@@ -355,25 +359,101 @@ Eso es lo que hacemos en el Método Objetivo Vientre Plano: equilibrar cuerpo y 
   },
 
   closingCTA: {
-    message: `{userName}, tú y yo ya hemos completado tu diagnóstico.
+    message: `Tu perfil necesita algo muy concreto:
 
-Ya sabemos qué te pasa.
-Ya sabemos dónde está el origen.
-Y también sabemos el camino para solucionarlo.
+• Revisar cada síntoma que vayas teniendo cada día.
+• Ajustar tus comidas según tus sensaciones reales.
+• Regular tu energía después de cada comida.
+• Acompañar el estrés que aparece según tu día.
+• Ir adaptando tu plan conforme tu cuerpo avanza.
 
-Ahora solo falta lo más importante: pasar a la acción.
+Esto solo puede hacerse con un acompañamiento 24/7, donde yo te guío paso a paso.
 
-Con el Plan Pro tendrás acceso a tu propio chat privado 24/7.
-Un acompañamiento real, continuo y diseñado para ayudarte cada día a desinflamar tu abdomen, recuperar tu energía y sentirte bien contigo mismo.
+---
 
-Un sistema que se adapta por completo a ti: a tus horarios, a tus gustos, a tu alimentación y a tu estilo real de vida.
+### ¿Cómo trabajaremos juntos dentro del Chat 24/7?
 
-Y te puedo asegurar que, si decides acceder al Método Objetivo Vientre Plano, te va a cambiar la vida.
+Una vez elijas el plan que más se adapte a ti, tendrás acceso a un chat personal, donde Clara estará contigo las 24 horas del día, 7 días a la semana.
 
-No estás aquí por casualidad.
-Estás aquí porque buscas un cambio real.
-Y ese cambio empieza ahora mismo.`,
-    buttonText: "Quiero Empezar Mi Nueva Etapa"
+Y desde el primer minuto sentirás la diferencia:
+lo que recibirás no es una asistente… sino la fuerza combinada de múltiples profesionales trabajando para ti:
+
+✅ **Un equipo digestivo completo**, analizando tus síntomas y guiándote para reducir la inflamación día a día.
+
+✅ **Un conjunto de especialistas emocionales**, que te acompañan en momentos de estrés, ansiedad y bloqueo interno.
+
+✅ **Un panel de coaches de hábitos**, que te ayudan a mantener constancia, mejorar tu energía y avanzar incluso en los días complicados.
+
+✅ **Un apoyo humano real**, que te escucha con empatía, te comprende y está a tu lado cuando lo necesitas.
+
+✅ **Un equipo nutricional adaptativo**, que te propone menús y alimentos según tu digestión del día.
+
+✅ **Una guía de bienestar integral**, que conecta tu digestión, tus emociones, tu descanso, tu energía y tu estilo de vida.
+
+✅ **Un sistema inteligente que evoluciona contigo**, aprendiendo de tus respuestas para darte recomendaciones cada vez más precisas.
+
+---
+
+### Y lo más importante:
+
+Clara se adapta totalmente a ti:
+
+• A tus horarios
+• A tu rutina diaria
+• A tu estilo de vida
+• A tus gustos personales
+• A tu forma de comer
+• A tu país y tu cultura alimentaria
+• A tus limitaciones y tus preferencias
+
+**Tú no tienes que adaptarte a un plan.
+Es el plan el que se adapta a ti.**
+
+---
+
+### Nuevos hábitos + herramientas exclusivas
+
+Dentro del chat tendrás:
+
+• Hábitos diarios marcados por Clara, diseñados para que avances sin estrés.
+• Recordatorios inteligentes para mantener constancia.
+• Ejercicios de respiración, enfoque y regulación emocional.
+• Seguimiento del sueño, energía y digestión.
+• Panel interno con herramientas prácticas, para trabajar tu día a día con calma y claridad.
+
+**No solo recibirás información:
+recibirás acompañamiento real y práctico, de forma continua.**
+
+---
+
+### ¿Qué cambia realmente cuando trabajamos juntos cada día?
+
+Empieza a pasar algo que seguramente llevas tiempo esperando:
+
+✨ Te despiertas con claridad, sabiendo exactamente qué comer, qué evitar y cómo organizar tu día para sentirte mejor desde por la mañana.
+
+✨ Comes sin miedo, sin esa sensación constante de que cualquier cosa te va a inflamar.
+
+✨ Tu cuerpo responde mejor, porque cada recomendación está hecha para ti, para tu estilo de vida, tus horarios, tu ritmo y tu país.
+
+✨ Tienes apoyo emocional en cualquier momento, sin tener que esperar, sin sentirte solo, sin derrumbarte cuando te falta fuerza.
+
+✨ Tu energía empieza a estabilizarse, dejando atrás los bajones que te frenan y te desaniman.
+
+✨ Tu digestión mejora semana tras semana, ya no por suerte… sino porque sigues un camino diseñado específicamente para tu perfil.
+
+✨ Ganas orden, hábitos y dirección, porque Clara te marca rutinas realistas que puedes mantener en tu día a día.
+
+✨ Y sientes por fin que tienes un guía, alguien que te acompaña y te corrige cuando lo necesitas, sin juzgarte y sin soltarte.
+
+---
+
+**Esto no es un plan.**
+
+**Es un cambio real, construido contigo, a tu lado, cada día.**
+
+Y, sobre todo, dejas de sentir que estás solo en este proceso.`,
+    buttonText: "Comienza ahora"
   }
 };
 
