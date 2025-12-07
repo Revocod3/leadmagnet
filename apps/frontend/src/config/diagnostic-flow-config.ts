@@ -453,7 +453,7 @@ Empieza a pasar algo que seguramente llevas tiempo esperando:
 **Es un cambio real, construido contigo, a tu lado, cada día.**
 
 Y, sobre todo, dejas de sentir que estás solo en este proceso.`,
-    buttonText: "Comienza ahora tu acompañamiento personal con Clara"
+    buttonText: "Comienza ahora"
   }
 };
 
