@@ -537,7 +537,7 @@ IMPORTANTE:
 
 Soy **Clara**, tu asistente personal en este camino hacia una **salud digestiva** ligera, más equilibrada y más tuya.
 
-Antes de avanzar, voy a hacerte unas preguntas muy sencillas para prepararte un **diagnóstico personalizado** basado en tres pilares: tu **digestión**, tu **energía** y tu **equilibrio emocional**.
+Voy a hacerte unas preguntas muy sencillas para prepararte un **diagnóstico personalizado** basado en tres pilares: tu **digestión**, tu **energía** y tu **equilibrio emocional**.
 
 **Cuando tú me digas, empezamos.**`;
 

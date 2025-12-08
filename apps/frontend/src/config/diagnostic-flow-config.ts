@@ -54,7 +54,7 @@ export const DIAGNOSTIC_FLOW: DiagnosticFlowConfig = {
 
 Soy Clara, tu asistente personal.
 
-Antes de avanzar, voy a hacerte unas preguntas muy sencillas para prepararte un diagnóstico personalizado basado en tres pilares:
+Voy a hacerte unas preguntas muy sencillas para prepararte un diagnóstico personalizado basado en tres pilares:
 
 • 🌿 Tu digestión
 • ⚡ Tu energía
