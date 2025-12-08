@@ -50,6 +50,7 @@ export const ProChat = ({ onSubscriptionExpired, activeTab, onTabChange }: ProCh
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isPlusMenuOpen, setIsPlusMenuOpen] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [isTypewriterComplete, setIsTypewriterComplete] = useState(true);
 
   // Speech to text
   const { isListening, transcript, startListening, stopListening, isSupported: isSpeechSupported } = useSpeechToText();
@@ -87,6 +88,29 @@ export const ProChat = ({ onSubscriptionExpired, activeTab, onTabChange }: ProCh
   useEffect(() => {
     scrollToBottom('smooth');
   }, [messages, scrollToBottom]);
+
+  // Track typewriter lifecycle to sync scroll with assistant animation
+  useEffect(() => {
+    const lastMessage = messages[messages.length - 1];
+    if (lastMessage?.role === 'assistant') {
+      if (lastMessage.isNew !== false) {
+        setIsTypewriterComplete(false);
+      } else {
+        setIsTypewriterComplete(true);
+      }
+    }
+  }, [messages]);
+
+  // Auto-scroll when typewriter finishes so the latest chips/footer stay visible
+  useEffect(() => {
+    if (isTypewriterComplete) {
+      const timer = window.setTimeout(() => {
+        scrollToBottom('smooth');
+      }, 120);
+      return () => window.clearTimeout(timer);
+    }
+    return undefined;
+  }, [isTypewriterComplete, scrollToBottom]);
 
   // Auto-scroll when sending
   useEffect(() => {
@@ -254,8 +278,8 @@ export const ProChat = ({ onSubscriptionExpired, activeTab, onTabChange }: ProCh
               }}
             >
               <div className="container-narrow pt-4 pb-4">
-                {/* Empty State - No conversation selected */}
-                {!selectedConversationId && !isLoading && (
+                {/* Empty State - Only when user has zero conversations */}
+                {conversations.length === 0 && !selectedConversationId && !isLoading && (
                   <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
                     <motion.div
                       animate={{ scale: [1, 1.05, 1] }}
@@ -312,6 +336,7 @@ export const ProChat = ({ onSubscriptionExpired, activeTab, onTabChange }: ProCh
                           message={message}
                           state={state}
                           isLatest={index === messages.length - 1}
+                          onTypewriterComplete={() => setIsTypewriterComplete(true)}
                         />
                       ))}
                     </AnimatePresence>

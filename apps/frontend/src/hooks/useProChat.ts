@@ -95,11 +95,6 @@ export const useProChat = (onSubscriptionExpired?: () => void): UseProChatReturn
     }
   }, []);
 
-  // Load on mount
-  useEffect(() => {
-    loadConversations();
-  }, [loadConversations]);
-
   // Select and load a conversation
   const selectConversation = useCallback(async (conversationId: string) => {
     try {
@@ -128,6 +123,19 @@ export const useProChat = (onSubscriptionExpired?: () => void): UseProChatReturn
       setIsLoading(false);
     }
   }, []);
+
+  // Load on mount
+  useEffect(() => {
+    loadConversations();
+  }, [loadConversations]);
+
+  // Auto-select most recent conversation when available
+  useEffect(() => {
+    const firstConversation = conversations[0];
+    if (!isLoading && !selectedConversationId && firstConversation) {
+      selectConversation(firstConversation.id);
+    }
+  }, [isLoading, selectedConversationId, conversations, selectConversation]);
 
   // Create a new conversation
   const createNewConversation = useCallback(async () => {

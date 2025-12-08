@@ -110,6 +110,9 @@ export class AgentProService {
       // Get or create global context
       const globalContext = await globalContextService.getOrCreateContext(userId);
 
+      // Use only first name for all greetings
+      const firstName = (userName || 'Usuario').trim().split(/\s+/)[0] || 'Usuario';
+
       // Check if this is the first conversation
       const isFirstConversation = await globalContextService.isFirstConversation(userId);
 
@@ -130,17 +133,30 @@ export class AgentProService {
       });
 
       // Build full instructions
-      const fullInstructions = await this.buildFullInstructions(userId, userName);
+      const fullInstructions = await this.buildFullInstructions(userId, firstName);
 
       // Generate welcome message
       let welcomeMessage: string;
 
       if (isFirstConversation && !globalContext.radiographyCompleted) {
         // First time user - use official welcome message
-        welcomeMessage = WELCOME_MESSAGE_TEMPLATE.replace(/\{\{nombre\}\}/g, userName);
+        welcomeMessage = WELCOME_MESSAGE_TEMPLATE.replace(/\{\{nombre\}\}/g, firstName);
       } else {
         // Returning user - generate contextual greeting via Responses API
         const formattedGlobalContext = await globalContextService.getFormattedContext(userId);
+        const currentChallenge = await globalContextService.getCurrentChallenge(userId);
+
+        const pendingHighlights: string[] = [];
+        if (currentChallenge) {
+          pendingHighlights.push(`Reto activo: "${currentChallenge.title}" (estado: ${currentChallenge.status})`);
+        }
+        if (Array.isArray(globalContext.goals) && globalContext.goals.length > 0) {
+          pendingHighlights.push(`Objetivo principal: ${globalContext.goals[0]}`);
+        }
+
+        const pendingText = pendingHighlights.length > 0
+          ? `Pendientes clave: ${pendingHighlights.join(' | ')}`
+          : 'No hay pendientes explícitos, pregunta en qué quiere avanzar hoy.';
 
         const response = await openai.responses.create({
           model: MODELS.TEXT,
@@ -153,7 +169,13 @@ export class AgentProService {
               content: [
                 {
                   type: 'input_text',
-                  text: `[SISTEMA] El usuario ${userName} vuelve al chat. Genera un saludo breve y cálido (máximo 3 líneas) que le dé la bienvenida de vuelta. Contexto: ${formattedGlobalContext}`
+                  text: `[SISTEMA] El usuario ${firstName} vuelve al chat. Genera un saludo de retorno (no onboarding) de máximo 3 líneas.
+Reglas:
+- Usa solo el primer nombre: ${firstName}
+- Arranca con un saludo del tipo "Qué tal ${firstName}," o similar (sin presentarte de nuevo).
+- Usa el contexto para sonar al día y menciona 1 pendiente si existe (retos, objetivos, avances): ${pendingText}
+- No repitas frases de bienvenida genéricas ni discursos largos.
+Contexto resumido: ${formattedGlobalContext}`
                 },
               ],
             },
