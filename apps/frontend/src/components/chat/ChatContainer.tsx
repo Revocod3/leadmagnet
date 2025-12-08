@@ -10,7 +10,6 @@ import { useTranslation } from 'react-i18next';
 import { CameraModal } from '../modals/CameraModal';
 import { ImageViewerModal } from '../modals/ImageViewerModal';
 import { EmailCaptureModal } from '../modals/EmailCaptureModal';
-import { RatingModal } from '../modals/RatingModal';
 import { ChatMessage } from './ChatMessage';
 import { ChatHeader } from './ChatHeader';
 import { ChatFooter } from './ChatFooter';
@@ -95,15 +94,6 @@ export const ChatContainer = () => {
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [showImageLimitMessage, setShowImageLimitMessage] = useState(false);
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
-  const [isRatingModalOpen, setIsRatingModalOpen] = useState(false);
-  // Persistir hasRated en localStorage para que no se muestre repetidamente
-  const [hasRated, setHasRated] = useState(() => {
-    const sessionId = session?.id;
-    if (sessionId) {
-      return localStorage.getItem(`rated_${sessionId}`) === 'true';
-    }
-    return false;
-  });
 
   const {
     messages,
@@ -194,14 +184,6 @@ export const ChatContainer = () => {
   const handleTypewriterComplete = () => {
     setIsTypewriterComplete(true);
   };
-
-  // Actualizar hasRated cuando cambie la sesión
-  useEffect(() => {
-    if (session?.id) {
-      const rated = localStorage.getItem(`rated_${session.id}`) === 'true';
-      setHasRated(rated);
-    }
-  }, [session?.id]);
 
   // Create session if it doesn't exist OR if session doesn't belong to current user
   useEffect(() => {
@@ -481,43 +463,6 @@ export const ChatContainer = () => {
     }
   };
 
-  const handleRatingSubmit = async (rating: number, comment: string) => {
-    if (!session?.id) return;
-
-    try {
-      // Determinar el tipo de flujo: 'free' o 'paid'
-      const flowType = user ? 'paid' : 'free';
-
-      await apiClient.createRating({
-        sessionId: session.id,
-        rating,
-        comment,
-        flowType,
-      });
-
-      setHasRated(true);
-      // Guardar en localStorage para que persista
-      if (session?.id) {
-        localStorage.setItem(`rated_${session.id}`, 'true');
-      }
-    } catch (error) {
-      console.error('❌ Error al enviar valoración:', error);
-      throw error;
-    }
-  };
-
-  // Mostrar modal de valoración MIENTRAS se genera el diagnóstico (solo en flujo gratuito)
-  useEffect(() => {
-    if (state.step === 'generating_diagnosis' && !user && !hasRated && !isRatingModalOpen) {
-      // Esperar 1.5 segundos para que el usuario vea la animación de generación
-      const timer = setTimeout(() => {
-        setIsRatingModalOpen(true);
-      }, 1500);
-
-      return () => clearTimeout(timer);
-    }
-    return undefined;
-  }, [state.step, user, hasRated, isRatingModalOpen]);
 
   return (
     <>
@@ -574,7 +519,6 @@ export const ChatContainer = () => {
               <div className="space-y-3">
                 <AnimatePresence mode="popLayout">
                   {messages.map((message, index) => {
-                    const rateHandler = user && !hasRated ? () => setIsRatingModalOpen(true) : undefined;
 
                     // Detectar si este mensaje inicia un nuevo bloque (para mostrar InfoWedge)
                     let showInfoWedgeBefore = false;
@@ -637,7 +581,6 @@ export const ChatContainer = () => {
                           onDownloadPDF={handleDownloadPDF}
                           isGeneratingPDF={isGeneratingPDF}
                           onTypewriterComplete={index === messages.length - 1 ? handleTypewriterComplete : undefined}
-                          {...(rateHandler && { onRateExperience: rateHandler })}
                         />
                       </div>
                     );
@@ -734,11 +677,6 @@ export const ChatContainer = () => {
         userName={state.userName}
       />
 
-      <RatingModal
-        isOpen={isRatingModalOpen}
-        onClose={() => setIsRatingModalOpen(false)}
-        onSubmit={handleRatingSubmit}
-      />
     </>
   );
 };

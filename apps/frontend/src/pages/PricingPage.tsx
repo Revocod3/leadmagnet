@@ -11,6 +11,45 @@ const PAYMENT_LINKS = {
   lifetime: 'https://buy.stripe.com/3cIcN42Dwg2eg259DxfMA02',  // 399.99€
 };
 
+// Helper to get affiliate ID from multiple sources
+const getAffiliateId = (): string | null => {
+  // 1. Check URL parameter first (for direct links like ?afi=11)
+  const urlParams = new URLSearchParams(window.location.search);
+  const afiFromUrl = urlParams.get('afi');
+  if (afiFromUrl) {
+    // Save to localStorage for persistence
+    localStorage.setItem('affiliate_id', afiFromUrl);
+    return afiFromUrl;
+  }
+
+  // 2. Check localStorage (persisted from previous visit)
+  const afiFromStorage = localStorage.getItem('affiliate_id');
+  if (afiFromStorage) {
+    return afiFromStorage;
+  }
+
+  // 3. Check UAP cookie (if coming from WordPress with cookie sharing)
+  try {
+    const cookies = document.cookie.split(';');
+    for (const cookie of cookies) {
+      const [name, value] = cookie.trim().split('=');
+      if (name === 'uap_referral' && value) {
+        const decoded = decodeURIComponent(value);
+        const data = JSON.parse(decoded);
+        const affiliateId = data.affiliate_id || data.id || null;
+        if (affiliateId) {
+          localStorage.setItem('affiliate_id', affiliateId);
+          return affiliateId;
+        }
+      }
+    }
+  } catch (e) {
+    // Cookie not found or invalid
+  }
+
+  return null;
+};
+
 export const PricingPage = () => {
   const { user, isAuthenticated } = useAuthStore();
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'yearly' | 'lifetime'>('monthly');
@@ -23,13 +62,24 @@ export const PricingPage = () => {
     };
   }, []);
 
-  // Pre-fill email if user is authenticated
+  // Pre-fill email if user is authenticated and include affiliate tracking
   const getPaymentLink = (plan: 'monthly' | 'yearly' | 'lifetime') => {
     const baseUrl = PAYMENT_LINKS[plan];
+    const params = new URLSearchParams();
+
+    // Pre-fill email if authenticated
     if (isAuthenticated && user?.email) {
-      return `${baseUrl}?prefilled_email=${encodeURIComponent(user.email)}`;
+      params.set('prefilled_email', user.email);
     }
-    return baseUrl;
+
+    // Add affiliate tracking via client_reference_id
+    const affiliateId = getAffiliateId();
+    if (affiliateId) {
+      params.set('client_reference_id', `aff_${affiliateId}`);
+    }
+
+    const queryString = params.toString();
+    return queryString ? `${baseUrl}?${queryString}` : baseUrl;
   };
 
   const planData = useMemo(

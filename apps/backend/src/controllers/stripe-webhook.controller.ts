@@ -3,6 +3,7 @@ import Stripe from 'stripe';
 import { prisma } from '../config/database';
 import type { ApiResponse } from '../types';
 import { emailService } from '../services/email.service';
+import { affiliateService } from '../services/affiliate.service';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
   apiVersion: '2025-11-17.clover',
@@ -378,13 +379,31 @@ export class StripeWebhookController {
 
     const customerEmail = session.customer_email || session.customer_details?.email;
     const customerId = session.customer as string;
+    const clientReferenceId = session.client_reference_id;
 
     if (!customerEmail) {
       console.error('[Stripe Webhook] No email in checkout session:', session.id);
       return;
     }
 
-    // If it's a subscription, the subscription events will handle it
+    // Process affiliate referral for ALL checkout sessions (subscription and one-time)
+    if (clientReferenceId) {
+      console.log('[Stripe Webhook] Processing affiliate referral:', clientReferenceId);
+      // Determine plan from line items
+      const lineItems = await stripe.checkout.sessions.listLineItems(session.id);
+      const priceId = lineItems.data[0]?.price?.id;
+      const plan = priceId ? getPlanFromPriceId(priceId) : 'monthly';
+      const subscriptionId = session.subscription as string || `checkout_${session.id}`;
+
+      await affiliateService.processCheckoutReferral(
+        clientReferenceId,
+        plan,
+        subscriptionId,
+        customerEmail
+      );
+    }
+
+    // If it's a subscription, the subscription events will handle the rest
     if (session.mode === 'subscription' && session.subscription) {
       console.log('[Stripe Webhook] Subscription checkout - will be handled by subscription events');
       return;
