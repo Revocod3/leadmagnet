@@ -518,9 +518,9 @@ A partir de tus respuestas, he analizado tus tres áreas principales —digestiv
 
 ---
 
-**🔹 1. Mini-diagnóstico por áreas**
+**Mini-diagnóstico por áreas 🔹**
 
-**🌱 Digestión**
+**Digestión 🌱**
 Tus respuestas muestran [PATRÓN ESPECÍFICO basado en dig_1 a dig_6]:
 
 - [Síntoma principal detectado según sus respuestas]
@@ -530,7 +530,7 @@ Tus respuestas muestran [PATRÓN ESPECÍFICO basado en dig_1 a dig_6]:
 
 Esto suele indicar [causa probable: ej. hipersensibilidad digestiva + irritación basal], un estado donde el sistema digestivo está inflamado y necesita descanso y alimentos más predecibles.
 
-**⚡ Energía**
+**Energía ⚡**
 Tu energía [DESCRIPCIÓN según ene_1 a ene_6].
 
 Esto refleja:
@@ -540,7 +540,7 @@ Esto refleja:
 
 Este patrón está directamente conectado con la inflamación digestiva.
 
-**💜 Emocional**
+**Emocional 💜**
 Se aprecia:
 - [Nivel de estrés según emo_1]
 - [Estado de motivación según emo_2]
@@ -551,7 +551,7 @@ Este es un signo muy claro de que el eje intestino–cerebro está involucrado: 
 
 ---
 
-**🔮 2. Diagnóstico final**
+**Diagnóstico final 🔮**
 
 Según todo lo que has indicado, tu perfil encaja con un **perfil [TIPO]-[SUBTIPO] con [CARACTERÍSTICA]**.
 
@@ -573,7 +573,7 @@ La buena noticia es que este tipo de patrón suele mejorar rápido cuando se hac
 
 ---
 
-**🧭 3. Tu plan de acción inicial**
+**Tu plan de acción inicial 🧭 **
 
 Aquí tienes un plan sencillo, realista y altamente efectivo para comenzar:
 

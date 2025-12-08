@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
-import { Lightbulb } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 
 interface InfoWedgeProps {
   content: string;
@@ -14,9 +15,6 @@ export const InfoWedge = ({
   blockColorLight,
   blockEmoji
 }: InfoWedgeProps) => {
-  // Dividir el contenido en párrafos
-  const paragraphs = content.split('\n\n').filter(p => p.trim());
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 20, scale: 0.95 }}
@@ -50,7 +48,7 @@ export const InfoWedge = ({
             className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center"
             style={{ backgroundColor: `${blockColor}20` }}
           >
-            <Lightbulb
+            <Sparkles
               className="w-4 h-4"
               style={{ color: blockColor }}
             />
@@ -63,26 +61,46 @@ export const InfoWedge = ({
           )}
         </div>
 
-        {/* Contenido */}
-        <div className="space-y-3">
-          {paragraphs.map((paragraph, index) => (
-            <motion.p
-              key={index}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 + index * 0.1 }}
-              className={`
-                text-sm md:text-base leading-relaxed
-                ${index === 0
-                  ? 'font-semibold text-neutral-800 dark:text-neutral-100'
-                  : 'text-neutral-600 dark:text-neutral-300'
-                }
-              `}
-            >
-              {paragraph}
-            </motion.p>
-          ))}
-        </div>
+        {/* Contenido con soporte Markdown */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="prose prose-sm md:prose-base dark:prose-invert max-w-none"
+        >
+          <ReactMarkdown
+            components={{
+              p: ({ children }) => (
+                <p className="mb-3 text-neutral-700 dark:text-neutral-200 leading-relaxed">
+                  {children}
+                </p>
+              ),
+              strong: ({ children }) => (
+                <strong className="font-bold text-neutral-900 dark:text-neutral-50">
+                  {children}
+                </strong>
+              ),
+              ul: ({ children }) => (
+                <ul className="space-y-2 mb-3">
+                  {children}
+                </ul>
+              ),
+              li: ({ children }) => (
+                <li className="flex items-start gap-2 text-neutral-700 dark:text-neutral-200">
+                  <span className="text-xs mt-1.5" style={{ color: blockColor }}>●</span>
+                  <span className="flex-1">{children}</span>
+                </li>
+              ),
+              h3: ({ children }) => (
+                <h3 className="text-lg font-bold mb-2 mt-4 text-neutral-900 dark:text-neutral-50">
+                  {children}
+                </h3>
+              ),
+            }}
+          >
+            {content}
+          </ReactMarkdown>
+        </motion.div>
 
         {/* Firma sutil */}
         <motion.div

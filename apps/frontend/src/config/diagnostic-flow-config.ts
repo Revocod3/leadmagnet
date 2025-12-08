@@ -107,7 +107,7 @@ empezamos.`,
           ]
         }
       ],
-      infoWedge: `Antes de nada, quiero que sepas algo importante: cada persona llega aquí con una historia distinta, pero todas tienen algo en común—buscan recuperar su bienestar desde la raíz.
+      infoWedge: `**Antes de nada, quiero que sepas algo importante: cada persona llega aquí con una historia distinta, pero todas tienen algo en común—buscan recuperar su bienestar desde la raíz.**
 
 Por eso, en Objetivo Vientre Plano personalizamos cada paso según tu contexto, tu estilo de vida y tu punto de partida.`
     },
@@ -184,7 +184,7 @@ Por eso, en Objetivo Vientre Plano personalizamos cada paso según tu contexto, 
           ]
         }
       ],
-      infoWedge: `No es normal vivir con la barriga inflamada.
+      infoWedge: `**No es normal vivir con la barriga inflamada.**
 
 La inflamación siempre tiene una raíz, y cuando se identifica y se corrige de la manera adecuada, el cuerpo responde mucho más rápido de lo que la mayoría imagina.
 
@@ -263,7 +263,7 @@ Eso es lo que trabajamos en el Método Objetivo Vientre Plano: ir al origen para
           ]
         }
       ],
-      infoWedge: `No es normal vivir con la energía por los suelos.
+      infoWedge: `**No es normal vivir con la energía por los suelos.**
 
 La falta de vitalidad siempre tiene una raíz, y cuando se identifica y se corrige desde dentro, el cuerpo recupera su fuerza mucho antes de lo que imaginas.
 
@@ -342,7 +342,7 @@ Eso es lo que trabajamos en el Método Objetivo Vientre Plano: restaurar tu ener
           ]
         }
       ],
-      infoWedge: `La parte emocional tampoco es algo aislado.
+      infoWedge: `**La parte emocional tampoco es algo aislado.**
 
 El estrés, la preocupación o la ansiedad siempre tienen una raíz, y cuando se trabajan de forma adecuada, tu cuerpo responde mucho más rápido de lo que imaginas.
 
@@ -359,14 +359,13 @@ Eso es lo que hacemos en el Método Objetivo Vientre Plano: equilibrar cuerpo y 
   },
 
   closingCTA: {
-    message: `Tu perfil necesita algo muy concreto:
+    message: `**Tu perfil necesita algo muy concreto**:
 
-• Revisar cada síntoma que vayas teniendo cada día.
-• Ajustar tus comidas según tus sensaciones reales.
-• Regular tu energía después de cada comida.
-• Acompañar el estrés que aparece según tu día.
-• Ir adaptando tu plan conforme tu cuerpo avanza.
-
+- Revisar cada síntoma que vayas teniendo cada día.
+- Ajustar tus comidas según tus sensaciones reales.
+- Regular tu energía después de cada comida.
+- Acompañar el estrés que aparece según tu día.
+- Ir adaptando tu plan conforme tu cuerpo avanza.
 Esto solo puede hacerse con un acompañamiento 24/7, donde yo te guío paso a paso.
 
 ---
@@ -378,19 +377,19 @@ Una vez elijas el plan que más se adapte a ti, tendrás acceso a un chat person
 Y desde el primer minuto sentirás la diferencia:
 lo que recibirás no es una asistente… sino la fuerza combinada de múltiples profesionales trabajando para ti:
 
-✅ **Un equipo digestivo completo**, analizando tus síntomas y guiándote para reducir la inflamación día a día.
+**Un equipo digestivo completo**, analizando tus síntomas y guiándote para reducir la inflamación día a día.
 
-✅ **Un conjunto de especialistas emocionales**, que te acompañan en momentos de estrés, ansiedad y bloqueo interno.
+**Un conjunto de especialistas emocionales**, que te acompañan en momentos de estrés, ansiedad y bloqueo interno.
 
-✅ **Un panel de coaches de hábitos**, que te ayudan a mantener constancia, mejorar tu energía y avanzar incluso en los días complicados.
+**Un panel de coaches de hábitos**, que te ayudan a mantener constancia, mejorar tu energía y avanzar incluso en los días complicados.
 
-✅ **Un apoyo humano real**, que te escucha con empatía, te comprende y está a tu lado cuando lo necesitas.
+**Un apoyo humano real**, que te escucha con empatía, te comprende y está a tu lado cuando lo necesitas.
 
-✅ **Un equipo nutricional adaptativo**, que te propone menús y alimentos según tu digestión del día.
+**Un equipo nutricional adaptativo**, que te propone menús y alimentos según tu digestión del día.
 
-✅ **Una guía de bienestar integral**, que conecta tu digestión, tus emociones, tu descanso, tu energía y tu estilo de vida.
+**Una guía de bienestar integral**, que conecta tu digestión, tus emociones, tu descanso, tu energía y tu estilo de vida.
 
-✅ **Un sistema inteligente que evoluciona contigo**, aprendiendo de tus respuestas para darte recomendaciones cada vez más precisas.
+**Un sistema inteligente que evoluciona contigo**, aprendiendo de tus respuestas para darte recomendaciones cada vez más precisas.
 
 ---
 
@@ -398,13 +397,13 @@ lo que recibirás no es una asistente… sino la fuerza combinada de múltiples 
 
 Clara se adapta totalmente a ti:
 
-• A tus horarios
-• A tu rutina diaria
-• A tu estilo de vida
-• A tus gustos personales
-• A tu forma de comer
-• A tu país y tu cultura alimentaria
-• A tus limitaciones y tus preferencias
+- A tus horarios
+- A tu rutina diaria
+- A tu estilo de vida
+- A tus gustos personales
+- A tu forma de comer
+- A tu país y tu cultura alimentaria
+- A tus limitaciones y tus preferencias
 
 **Tú no tienes que adaptarte a un plan.
 Es el plan el que se adapta a ti.**
@@ -415,12 +414,11 @@ Es el plan el que se adapta a ti.**
 
 Dentro del chat tendrás:
 
-• Hábitos diarios marcados por Clara, diseñados para que avances sin estrés.
-• Recordatorios inteligentes para mantener constancia.
-• Ejercicios de respiración, enfoque y regulación emocional.
-• Seguimiento del sueño, energía y digestión.
-• Panel interno con herramientas prácticas, para trabajar tu día a día con calma y claridad.
-
+- Hábitos diarios marcados por Clara, diseñados para que avances sin estrés.
+- Recordatorios inteligentes para mantener constancia.
+- Ejercicios de respiración, enfoque y regulación emocional.
+- Seguimiento del sueño, energía y digestión.
+- Panel interno con herramientas prácticas, para trabajar tu día a día con calma y claridad.
 **No solo recibirás información:
 recibirás acompañamiento real y práctico, de forma continua.**
 
@@ -430,22 +428,21 @@ recibirás acompañamiento real y práctico, de forma continua.**
 
 Empieza a pasar algo que seguramente llevas tiempo esperando:
 
-✨ Te despiertas con claridad, sabiendo exactamente qué comer, qué evitar y cómo organizar tu día para sentirte mejor desde por la mañana.
+Te despiertas con claridad, sabiendo exactamente qué comer, qué evitar y cómo organizar tu día para sentirte mejor desde por la mañana.
 
-✨ Comes sin miedo, sin esa sensación constante de que cualquier cosa te va a inflamar.
+Comes sin miedo, sin esa sensación constante de que cualquier cosa te va a inflamar.
 
-✨ Tu cuerpo responde mejor, porque cada recomendación está hecha para ti, para tu estilo de vida, tus horarios, tu ritmo y tu país.
+Tu cuerpo responde mejor, porque cada recomendación está hecha para ti, para tu estilo de vida, tus horarios, tu ritmo y tu país.
 
-✨ Tienes apoyo emocional en cualquier momento, sin tener que esperar, sin sentirte solo, sin derrumbarte cuando te falta fuerza.
+Tienes apoyo emocional en cualquier momento, sin tener que esperar, sin sentirte solo, sin derrumbarte cuando te falta fuerza.
 
-✨ Tu energía empieza a estabilizarse, dejando atrás los bajones que te frenan y te desaniman.
+Tu energía empieza a estabilizarse, dejando atrás los bajones que te frenan y te desaniman.
 
-✨ Tu digestión mejora semana tras semana, ya no por suerte… sino porque sigues un camino diseñado específicamente para tu perfil.
+Tu digestión mejora semana tras semana, ya no por suerte… sino porque sigues un camino diseñado específicamente para tu perfil.
 
-✨ Ganas orden, hábitos y dirección, porque Clara te marca rutinas realistas que puedes mantener en tu día a día.
+Ganas orden, hábitos y dirección, porque Clara te marca rutinas realistas que puedes mantener en tu día a día.
 
-✨ Y sientes por fin que tienes un guía, alguien que te acompaña y te corrige cuando lo necesitas, sin juzgarte y sin soltarte.
-
+Y sientes por fin que tienes un guía, alguien que te acompaña y te corrige cuando lo necesitas, sin juzgarte y sin soltarte.
 ---
 
 **Esto no es un plan.**

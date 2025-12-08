@@ -4,6 +4,7 @@ import { Download, Star } from 'lucide-react';
 import { MessageActions } from './MessageActions';
 import { TypewriterText } from './TypewriterText';
 import type { FlowMessage, DiagnosticState } from '../../hooks/useDiagnosticFlow';
+import { InfoWedge } from './InfoWedge';
 import { DIAGNOSTIC_FLOW } from '../../config/diagnostic-flow-config';
 
 interface ChatMessageProps {
@@ -57,7 +58,7 @@ export const ChatMessage = forwardRef<HTMLDivElement, ChatMessageProps>(({
         )}
 
         {/* Message Bubble - only show if there's text content (not just image placeholder) */}
-        {(!isUser || message.content !== 'Imagen adjunta') && (
+        {(!isUser || message.content !== 'Imagen adjunta') && message.type !== 'closing_cta' && (
           <div
             className={`${isUser
               ? 'text-white rounded-2xl px-4 py-2.5 md:px-5 md:py-3 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.01] border border-white/20'
@@ -81,7 +82,7 @@ export const ChatMessage = forwardRef<HTMLDivElement, ChatMessageProps>(({
                   dangerouslySetInnerHTML={{ __html: message.content }}
                 />
               </motion.div>
-            ) : message.type === 'closing_cta' || message.type === 'limit_exceeded' ? null : (
+            ) : message.type === 'limit_exceeded' ? null : (
               /* Render normal messages with Markdown and typewriter effect */
               <div className="text-[16px] leading-relaxed font-normal">
                 {!isUser ? (
@@ -152,34 +153,6 @@ export const ChatMessage = forwardRef<HTMLDivElement, ChatMessageProps>(({
               </div>
             )}
 
-            {/* Show closing CTA message in its own bubble with Markdown support */}
-            {message.type === 'closing_cta' && (
-              <div className="space-y-4">
-                <TypewriterText
-                  text={message.content}
-                  speed={20}
-                  className="font-normal text-[15px]"
-                  shouldAnimate={isLatest && message.isNew !== false}
-                  onComplete={onTypewriterComplete}
-                />
-                {/* CTA Button for closing message */}
-                <div className="mt-6 pt-4 border-t border-white/20">
-                  <a
-                    href="/pricing"
-                    className="group w-full py-4 sm:py-5 px-4 sm:px-6 rounded-2xl bg-gradient-to-r from-purple-600 via-purple-700 to-indigo-700 hover:from-purple-700 hover:via-purple-800 hover:to-indigo-800 text-white font-bold text-sm sm:text-base flex items-center justify-center gap-2 sm:gap-3 transition-all duration-300 shadow-2xl hover:shadow-purple-500/50 transform hover:-translate-y-1 hover:scale-[1.02] relative overflow-hidden"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -skew-x-12 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000"></div>
-                    <div className="relative z-10 flex items-center gap-2 sm:gap-3">
-                      <span className="text-center leading-tight">
-                        Comienza ahora tu acompañamiento personal con Clara
-                      </span>
-                      <span className="text-xl group-hover:translate-x-1 transition-transform">→</span>
-                    </div>
-                  </a>
-                </div>
-              </div>
-            )}
-
             {/* Show subscription CTA when limit is exceeded */}
             {message.type === 'limit_exceeded' && (
               <div className="mt-6">
@@ -202,6 +175,32 @@ export const ChatMessage = forwardRef<HTMLDivElement, ChatMessageProps>(({
                 {message.question.questionDetails}
               </p>
             )}
+          </div>
+        )}
+
+        {/* Show closing CTA as InfoWedge outside bubble - purple/fuchsia theme */}
+        {message.type === 'closing_cta' && (
+          <div className="w-full mt-4">
+            <InfoWedge
+              content={message.content}
+              blockColor="#c026d3" // Fuchsia-600
+              blockColorLight="#fae8ff" // Fuchsia-100
+            />
+            {/* CTA Button for closing message */}
+            <div className="mt-4">
+              <a
+                href="/pricing"
+                className="group w-full py-4 sm:py-5 px-4 sm:px-6 rounded-2xl bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-600 hover:from-purple-700 hover:via-fuchsia-700 hover:to-pink-700 text-white font-bold text-sm sm:text-base flex items-center justify-center gap-2 sm:gap-3 transition-all duration-300 shadow-2xl hover:shadow-fuchsia-500/50 transform hover:-translate-y-1 hover:scale-[1.02] relative overflow-hidden"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -skew-x-12 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000"></div>
+                <div className="relative z-10 flex items-center gap-2 sm:gap-3">
+                  <span className="text-center leading-tight">
+                    {DIAGNOSTIC_FLOW.closingCTA.buttonText}
+                  </span>
+                  <span className="text-xl group-hover:translate-x-1 transition-transform">→</span>
+                </div>
+              </a>
+            </div>
           </div>
         )}
 
