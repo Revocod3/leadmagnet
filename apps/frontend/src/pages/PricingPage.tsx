@@ -22,13 +22,30 @@ const getAffiliateId = (): string | null => {
     return afiFromUrl;
   }
 
-  // 2. Check localStorage (persisted from previous visit)
+  // 2. Check simple cookie first (uap_referral_id - set by WordPress mu-plugin)
+  try {
+    const cookies = document.cookie.split(';');
+    for (const cookie of cookies) {
+      const [name, value] = cookie.trim().split('=');
+      if (name === 'uap_referral_id' && value) {
+        const affiliateId = decodeURIComponent(value);
+        if (affiliateId) {
+          localStorage.setItem('affiliate_id', affiliateId);
+          return affiliateId;
+        }
+      }
+    }
+  } catch (e) {
+    // Cookie not found or invalid
+  }
+
+  // 3. Check localStorage (persisted from previous visit)
   const afiFromStorage = localStorage.getItem('affiliate_id');
   if (afiFromStorage) {
     return afiFromStorage;
   }
 
-  // 3. Check UAP cookie (if coming from WordPress with cookie sharing)
+  // 4. Check UAP complex cookie (if coming from WordPress with cookie sharing)
   try {
     const cookies = document.cookie.split(';');
     for (const cookie of cookies) {
