@@ -109,6 +109,7 @@ export const ChatContainer = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const diagnosisMessageRef = useRef<HTMLDivElement>(null);
 
   // Estado para controlar si el typewriter terminó
   const [isTypewriterComplete, setIsTypewriterComplete] = useState(true);
@@ -245,7 +246,27 @@ export const ChatContainer = () => {
 
   // Auto-scroll cuando cambian los mensajes
   useEffect(() => {
-    scrollToBottom('smooth');
+    // Detectar si el último o penúltimo mensaje es diagnosis_ready
+    const lastMessage = messages[messages.length - 1];
+    const secondToLastMessage = messages[messages.length - 2];
+
+    // Si acabamos de agregar diagnosis_ready + closing_cta, scrollear al inicio del diagnóstico
+    const justAddedDiagnosis =
+      lastMessage?.type === 'closing_cta' &&
+      secondToLastMessage?.type === 'diagnosis_ready';
+
+    if (justAddedDiagnosis && diagnosisMessageRef.current) {
+      // Scroll al inicio del mensaje de diagnóstico
+      requestAnimationFrame(() => {
+        diagnosisMessageRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        });
+      });
+    } else {
+      // Comportamiento normal: scroll al final
+      scrollToBottom('smooth');
+    }
   }, [messages, scrollToBottom]);
 
   // Auto-scroll cuando el typewriter termina (para que los QuickReplies sean visibles)
@@ -575,6 +596,7 @@ export const ChatContainer = () => {
                         )}
 
                         <ChatMessage
+                          ref={message.type === 'diagnosis_ready' ? diagnosisMessageRef : undefined}
                           message={message}
                           state={state}
                           isLatest={index === messages.length - 1}
