@@ -6,9 +6,12 @@
  * - Current conversation messages
  * - Message sending with image support (unlimited for PRO)
  * - Connection with PRO API endpoints
+ * 
+ * Uses React Query for automatic cache invalidation and sync across tabs
  */
 
 import { useState, useCallback, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../services/api';
 import type { FlowMessage, DiagnosticState } from './useDiagnosticFlow';
 import { useAuthStore } from '../stores/authStore';
@@ -43,6 +46,7 @@ interface UseProChatReturn {
   // State flags
   isLoading: boolean;
   isSending: boolean;
+  isCreatingConversation: boolean;
   error: string | null;
 
   // Actions
@@ -54,9 +58,9 @@ interface UseProChatReturn {
 
 export const useProChat = (onSubscriptionExpired?: () => void): UseProChatReturn => {
   const { user } = useAuthStore();
+  const queryClient = useQueryClient();
 
-  // Conversations state
-  const [conversations, setConversations] = useState<ProConversation[]>([]);
+  // Selected conversation state
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [conversationTitle, setConversationTitle] = useState<string | null>(null);
 
@@ -64,7 +68,6 @@ export const useProChat = (onSubscriptionExpired?: () => void): UseProChatReturn
   const [messages, setMessages] = useState<FlowMessage[]>([]);
 
   // UI state
-  const [isLoading, setIsLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -80,26 +83,52 @@ export const useProChat = (onSubscriptionExpired?: () => void): UseProChatReturn
     diagnosisContent: null,
   };
 
-  // Load all conversations
-  const loadConversations = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      const data = await apiClient.getProConversations();
-      setConversations(data);
-    } catch (err) {
-      console.error('Error loading conversations:', err);
-      setError('Error al cargar conversaciones');
-    } finally {
-      setIsLoading(false);
+  // React Query: Load all conversations
+  const {
+    data: conversations = [],
+    isLoading,
+    error: conversationsError,
+    refetch: refetchConversations,
+  } = useQuery({
+    queryKey: ['proConversations'],
+    queryFn: () => apiClient.getProConversations(),
+    staleTime: 30000, // Consider data fresh for 30 seconds
+    refetchOnWindowFocus: true, // Refetch when tab gets focus (helps sync across tabs)
+  });
+
+  // Update error state when query fails
+  useEffect(() => {
+    if (conversationsError) {
+      console.error('Error loading conversations:', conversationsError);
+      let errorMessage = 'Error al cargar conversaciones';
+
+      if (conversationsError instanceof Error) {
+        // Translate common backend errors to Spanish
+        if (conversationsError.message.includes('Error retrieving conversations')) {
+          errorMessage = 'Error al cargar las conversaciones';
+        } else {
+          errorMessage = conversationsError.message;
+        }
+      }
+
+      setError(errorMessage);
     }
-  }, []);
+  }, [conversationsError]);
 
   // Select and load a conversation
   const selectConversation = useCallback(async (conversationId: string) => {
     try {
-      setIsLoading(true);
       setError(null);
+
+      // Check if conversation still exists in the list (prevents selecting deleted conversations)
+      const conversationExists = conversations.find(c => c.id === conversationId);
+      if (!conversationExists) {
+        setError('Esta conversación ya no existe. Por favor selecciona otra conversación.');
+        setSelectedConversationId(null);
+        setMessages([]);
+        setConversationTitle(null);
+        return;
+      }
 
       const data = await apiClient.getProConversation(conversationId);
 
@@ -116,36 +145,43 @@ export const useProChat = (onSubscriptionExpired?: () => void): UseProChatReturn
       setMessages(flowMessages);
       setConversationTitle(data.conversation.title);
       setSelectedConversationId(conversationId);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error loading conversation:', err);
-      setError('Error al cargar la conversación');
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
 
-  // Load on mount
-  useEffect(() => {
-    loadConversations();
-  }, [loadConversations]);
+      // Handle 404 - conversation was deleted
+      if (err.message?.includes('Conversation not found') || err.message?.includes('CONVERSATION_NOT_FOUND')) {
+        setError('Esta conversación fue eliminada. Por favor selecciona otra conversación.');
+        setSelectedConversationId(null);
+        setMessages([]);
+        setConversationTitle(null);
+        // Refetch conversations to sync the list
+        refetchConversations();
+      } else if (err.message?.includes('Error retrieving conversation')) {
+        setError('Error al cargar la conversación');
+      } else {
+        // Use specific error message from backend if available
+        const errorMessage = err.message || 'Error al cargar la conversación';
+        setError(errorMessage);
+      }
+    }
+  }, [conversations, refetchConversations]);
 
   // Auto-select most recent conversation when available
   useEffect(() => {
     const firstConversation = conversations[0];
     if (!isLoading && !selectedConversationId && firstConversation) {
+      // Call selectConversation directly without adding it to dependencies
       selectConversation(firstConversation.id);
     }
-  }, [isLoading, selectedConversationId, conversations, selectConversation]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading, selectedConversationId, conversations.length]);
 
-  // Create a new conversation
-  const createNewConversation = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      setMessages([]);
-      setConversationTitle(null);
-
-      const data = await apiClient.createProConversation();
+  // React Query Mutation: Create a new conversation
+  const createConversationMutation = useMutation({
+    mutationFn: () => apiClient.createProConversation(),
+    onSuccess: (data) => {
+      // Invalidate conversations query to refetch the list
+      queryClient.invalidateQueries({ queryKey: ['proConversations'] });
 
       setSelectedConversationId(data.conversationId);
       setMessages([{
@@ -155,32 +191,46 @@ export const useProChat = (onSubscriptionExpired?: () => void): UseProChatReturn
         timestamp: new Date().toISOString(),
         isNew: true, // Animate new welcome message
       }]);
-
-      // Refresh conversation list
-      await loadConversations();
-    } catch (err: any) {
+      setError(null);
+    },
+    onError: (err: any) => {
       console.error('Error creating conversation:', err);
 
+      // Check for rate limit error
+      if (err.isRateLimit || err.code === 'RATE_LIMIT') {
+        setError(err.message || 'Demasiadas solicitudes. Por favor espera un momento e intenta de nuevo.');
+      }
       // Check for subscription required error (new user without PRO)
-      if (err.requiresSubscription) {
+      else if (err.requiresSubscription) {
         onSubscriptionExpired?.();
         setError('Necesitas una suscripción Pro para acceder al chat');
       } else if (err.message === 'SUBSCRIPTION_EXPIRED' || err.message?.includes('subscription')) {
         onSubscriptionExpired?.();
         setError('Tu suscripción ha expirado');
       } else {
-        setError('Error al crear conversación');
+        // Use specific error message from backend if available
+        const errorMessage = err.message || 'Error al crear conversación';
+        setError(errorMessage);
       }
-    } finally {
-      setIsLoading(false);
-    }
-  }, [loadConversations, onSubscriptionExpired]);
+    },
+  });
 
-  // Delete a conversation
-  const deleteConversation = useCallback(async (conversationId: string) => {
-    try {
-      await apiClient.deleteProConversation(conversationId);
-      setConversations((prev) => prev.filter((c) => c.id !== conversationId));
+  // Wrapper for mutation
+  const createNewConversation = useCallback(async () => {
+    // Prevent multiple concurrent creations
+    if (createConversationMutation.isPending) return;
+
+    setMessages([]);
+    setConversationTitle(null);
+    createConversationMutation.mutate();
+  }, [createConversationMutation]);
+
+  // React Query Mutation: Delete a conversation
+  const deleteConversationMutation = useMutation({
+    mutationFn: (conversationId: string) => apiClient.deleteProConversation(conversationId),
+    onSuccess: (_, conversationId) => {
+      // Invalidate and refetch conversations list - this updates ALL tabs/components
+      queryClient.invalidateQueries({ queryKey: ['proConversations'] });
 
       // Clear selection if deleted conversation was selected
       if (selectedConversationId === conversationId) {
@@ -188,17 +238,34 @@ export const useProChat = (onSubscriptionExpired?: () => void): UseProChatReturn
         setMessages([]);
         setConversationTitle(null);
       }
-    } catch (err) {
+      setError(null);
+    },
+    onError: (err) => {
       console.error('Error deleting conversation:', err);
       setError('Error al eliminar conversación');
-    }
-  }, [selectedConversationId]);
+    },
+  });
+
+  // Wrapper for mutation
+  const deleteConversation = useCallback(async (conversationId: string) => {
+    deleteConversationMutation.mutate(conversationId);
+  }, [deleteConversationMutation]);
 
   // Send a message
   const sendMessage = useCallback(async (content: string, imageFile?: File) => {
     // Allow empty content if there's an image
     if (!content.trim() && !imageFile) return;
     if (!selectedConversationId || isSending) return;
+
+    // CRITICAL: Check if conversation still exists before sending
+    const conversationExists = conversations.find(c => c.id === selectedConversationId);
+    if (!conversationExists) {
+      setError('Esta conversación fue eliminada. Por favor selecciona otra conversación.');
+      setSelectedConversationId(null);
+      setMessages([]);
+      setConversationTitle(null);
+      return;
+    }
 
     const userMessage = content.trim() || (imageFile ? 'Imagen adjunta' : '');
     setIsSending(true);
@@ -240,13 +307,22 @@ export const useProChat = (onSubscriptionExpired?: () => void): UseProChatReturn
 
       setMessages((prev) => [...prev, assistantMessage]);
 
-      // Refresh conversation list to update last message time
-      await loadConversations();
+      // Invalidate conversations query to update last message time
+      queryClient.invalidateQueries({ queryKey: ['proConversations'] });
     } catch (err: any) {
       console.error('Error sending message:', err);
 
+      // Check if conversation was deleted (404 error)
+      if (err.message?.includes('Conversation not found') || err.message?.includes('CONVERSATION_NOT_FOUND')) {
+        setError('Esta conversación fue eliminada. Por favor selecciona otra conversación.');
+        setSelectedConversationId(null);
+        setMessages([]);
+        setConversationTitle(null);
+        // Refetch conversations to sync the list
+        queryClient.invalidateQueries({ queryKey: ['proConversations'] });
+      }
       // Check for subscription required error
-      if (err.requiresSubscription || err.message === 'SUBSCRIPTION_EXPIRED') {
+      else if (err.requiresSubscription || err.message === 'SUBSCRIPTION_EXPIRED') {
         onSubscriptionExpired?.();
         // Add error message
         setMessages((prev) => [...prev, {
@@ -256,7 +332,7 @@ export const useProChat = (onSubscriptionExpired?: () => void): UseProChatReturn
           timestamp: new Date().toISOString(),
         }]);
       } else {
-        // Add error message
+        // Add generic error message
         setMessages((prev) => [...prev, {
           role: 'assistant',
           content: 'Lo siento, hubo un error. Por favor, intenta de nuevo.',
@@ -267,7 +343,12 @@ export const useProChat = (onSubscriptionExpired?: () => void): UseProChatReturn
     } finally {
       setIsSending(false);
     }
-  }, [selectedConversationId, isSending, loadConversations, onSubscriptionExpired]);
+  }, [selectedConversationId, isSending, conversations, queryClient, onSubscriptionExpired]);
+
+  // Wrapper for loadConversations to match interface
+  const loadConversations = useCallback(async () => {
+    await refetchConversations();
+  }, [refetchConversations]);
 
   return {
     // Conversation management
@@ -285,6 +366,7 @@ export const useProChat = (onSubscriptionExpired?: () => void): UseProChatReturn
     // State flags
     isLoading,
     isSending,
+    isCreatingConversation: createConversationMutation.isPending,
     error,
 
     // Actions

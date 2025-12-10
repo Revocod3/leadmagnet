@@ -39,6 +39,21 @@ class ApiClient {
       (error: AxiosError<ApiResponse>) => {
         const responseData = error.response?.data as any;
 
+        // Check for rate limit errors (429)
+        if (error.response?.status === 429) {
+          const rateLimitError = new Error(responseData?.error || 'Demasiadas solicitudes. Por favor espera un momento.');
+          (rateLimitError as any).code = 'RATE_LIMIT';
+          (rateLimitError as any).isRateLimit = true;
+          throw rateLimitError;
+        }
+
+        // Check for conversation not found errors (404)
+        if (error.response?.status === 404 && responseData?.code === 'CONVERSATION_NOT_FOUND') {
+          const notFoundError = new Error(responseData.error || 'Conversation not found');
+          (notFoundError as any).code = 'CONVERSATION_NOT_FOUND';
+          throw notFoundError;
+        }
+
         // Check for subscription required errors (403 with requiresSubscription)
         if (error.response?.status === 403 && responseData?.data?.requiresSubscription) {
           const subscriptionError = new Error(responseData.error || 'Necesitas una suscripción Pro');

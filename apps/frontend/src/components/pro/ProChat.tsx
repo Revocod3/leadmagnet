@@ -37,6 +37,8 @@ export const ProChat = ({ onSubscriptionExpired, activeTab, onTabChange }: ProCh
     messages,
     isLoading,
     isSending,
+    isCreatingConversation,
+    error,
     sendMessage,
     state,
   } = useProChat(onSubscriptionExpired);
@@ -247,6 +249,7 @@ export const ProChat = ({ onSubscriptionExpired, activeTab, onTabChange }: ProCh
           onSelectConversation={handleSelectConversation}
           onNewConversation={handleNewConversation}
           selectedConversationId={selectedConversationId || undefined}
+          isCreatingConversation={isCreatingConversation}
         />
 
         {/* Main Chat Area */}
@@ -278,8 +281,92 @@ export const ProChat = ({ onSubscriptionExpired, activeTab, onTabChange }: ProCh
               }}
             >
               <div className="container-narrow pt-4 pb-4">
+                {/* Error State - Show when there's an error */}
+                {error && (
+                  <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
+                    {/* Error Icon with animation */}
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: "spring", duration: 0.5 }}
+                      className="mb-6"
+                    >
+                      {error.includes('Demasiadas solicitudes') || error.includes('rate limit') ? (
+                        // Rate limit icon (clock)
+                        <div className="w-20 h-20 rounded-full bg-orange-100 dark:bg-orange-900/20 flex items-center justify-center">
+                          <svg className="w-10 h-10 text-orange-500 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </div>
+                      ) : (
+                        // Generic error icon
+                        <div className="w-20 h-20 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center">
+                          <svg className="w-10 h-10 text-red-500 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                          </svg>
+                        </div>
+                      )}
+                    </motion.div>
+
+                    {/* Error Message */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2 }}
+                      className="max-w-md"
+                    >
+                      <h3 className="text-xl font-semibold text-neutral-900 dark:text-white mb-2">
+                        {error.includes('Demasiadas solicitudes') || error.includes('rate limit')
+                          ? 'Un momento por favor'
+                          : '¡Ups! Algo salió mal'}
+                      </h3>
+                      <p className="text-neutral-600 dark:text-neutral-400 mb-6">
+                        {error}
+                      </p>
+                    </motion.div>
+
+                    {/* Action Buttons */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3 }}
+                      className="flex flex-col sm:flex-row gap-3"
+                    >
+                      {conversations.length > 0 && (
+                        <button
+                          onClick={() => {
+                            setShowSidebar(true);
+                          }}
+                          className="px-6 py-3 bg-brand-green-500 hover:bg-brand-green-600 text-white rounded-lg font-medium transition-colors shadow-md hover:shadow-lg"
+                        >
+                          Ver conversaciones
+                        </button>
+                      )}
+                      <button
+                        onClick={handleNewConversation}
+                        disabled={isCreatingConversation}
+                        className="px-6 py-3 bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 text-neutral-900 dark:text-white border border-neutral-300 dark:border-neutral-600 rounded-lg font-medium transition-colors shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      >
+                        {isCreatingConversation ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-neutral-900 dark:border-white" />
+                            Creando...
+                          </>
+                        ) : (
+                          <>
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                            </svg>
+                            Nueva conversación
+                          </>
+                        )}
+                      </button>
+                    </motion.div>
+                  </div>
+                )}
+
                 {/* Empty State - Only when user has zero conversations */}
-                {conversations.length === 0 && !selectedConversationId && !isLoading && (
+                {!error && conversations.length === 0 && !selectedConversationId && !isLoading && (
                   <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
                     <motion.div
                       animate={{ scale: [1, 1.05, 1] }}
@@ -303,9 +390,17 @@ export const ProChat = ({ onSubscriptionExpired, activeTab, onTabChange }: ProCh
                     </p>
                     <button
                       onClick={handleNewConversation}
-                      className="px-6 py-3 bg-brand-green-500 hover:bg-brand-green-600 text-white rounded-xl font-medium transition-colors shadow-lg"
+                      disabled={isCreatingConversation}
+                      className="px-6 py-3 bg-brand-green-500 hover:bg-brand-green-600 text-white rounded-xl font-medium transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 mx-auto"
                     >
-                      Iniciar conversación
+                      {isCreatingConversation ? (
+                        <>
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
+                          Creando conversación...
+                        </>
+                      ) : (
+                        'Iniciar conversación'
+                      )}
                     </button>
 
                     {conversations.length > 0 && (
@@ -320,14 +415,14 @@ export const ProChat = ({ onSubscriptionExpired, activeTab, onTabChange }: ProCh
                 )}
 
                 {/* Loading State */}
-                {isLoading && (
+                {!error && isLoading && (
                   <div className="flex items-center justify-center min-h-[50vh]">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-green-500" />
                   </div>
                 )}
 
                 {/* Messages */}
-                {selectedConversationId && !isLoading && (
+                {!error && selectedConversationId && !isLoading && (
                   <div className="space-y-3">
                     <AnimatePresence mode="popLayout">
                       {messages.map((message, index) => (
@@ -359,8 +454,8 @@ export const ProChat = ({ onSubscriptionExpired, activeTab, onTabChange }: ProCh
             </main>
           </div>
 
-          {/* Footer - Only show when conversation is selected */}
-          {selectedConversationId && (
+          {/* Footer - Only show when conversation is selected and no error */}
+          {!error && selectedConversationId && (
             <ChatFooter
               inputMessage={inputMessage}
               setInputMessage={setInputMessage}

@@ -257,6 +257,29 @@ export class ProController {
       // Get image buffer from multer (same as free flow)
       const imageBuffer = (req as any).file?.buffer;
 
+      // Pre-validate conversation exists and user has access
+      const existingConversation = await prisma.proConversation.findUnique({
+        where: { id: conversationId },
+        select: { userId: true },
+      });
+
+      if (!existingConversation) {
+        res.status(404).json({
+          success: false,
+          error: 'Conversation not found',
+          code: 'CONVERSATION_NOT_FOUND',
+        } as ApiResponse);
+        return;
+      }
+
+      if (existingConversation.userId !== userId) {
+        res.status(403).json({
+          success: false,
+          error: 'Access denied',
+        } as ApiResponse);
+        return;
+      }
+
       const result = await agentProService.processMessage(
         conversationId,
         userId,

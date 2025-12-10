@@ -8,6 +8,7 @@ import { useState, useEffect } from 'react';
 import { apiClient } from '../../services/api';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { ConfirmModal } from '../modals/ConfirmModal';
 
 interface Conversation {
   id: string;
@@ -21,16 +22,21 @@ interface ConversationListProps {
   onSelectConversation: (conversationId: string) => void;
   onNewConversation?: () => void; // Optional, not used in UI but kept for API compatibility
   selectedConversationId: string | undefined;
+  isCreatingConversation?: boolean;
 }
 
 export const ConversationList = ({
   onSelectConversation,
   onNewConversation: _onNewConversation, // Prefixed with _ to indicate intentionally unused
   selectedConversationId,
+  isCreatingConversation: _isCreatingConversation, // Not used in this component
 }: ConversationListProps) => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [conversationToDelete, setConversationToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const loadConversations = async () => {
     try {
@@ -52,14 +58,24 @@ export const ConversationList = ({
 
   const handleDelete = async (e: React.MouseEvent, conversationId: string) => {
     e.stopPropagation();
+    setConversationToDelete(conversationId);
+    setDeleteModalOpen(true);
+  };
 
-    if (!confirm('¿Eliminar esta conversación?')) return;
+  const confirmDelete = async () => {
+    if (!conversationToDelete) return;
 
+    setIsDeleting(true);
     try {
-      await apiClient.deleteProConversation(conversationId);
-      setConversations(prev => prev.filter(c => c.id !== conversationId));
+      await apiClient.deleteProConversation(conversationToDelete);
+      setConversations(prev => prev.filter(c => c.id !== conversationToDelete));
+      setDeleteModalOpen(false);
+      setConversationToDelete(null);
     } catch (err) {
       console.error('Error deleting conversation:', err);
+      alert('Error al eliminar la conversación. Por favor, intenta de nuevo.');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -142,6 +158,22 @@ export const ConversationList = ({
           </div>
         )}
       </div>
+
+      {/* Confirm Delete Modal */}
+      <ConfirmModal
+        isOpen={deleteModalOpen}
+        onClose={() => {
+          setDeleteModalOpen(false);
+          setConversationToDelete(null);
+        }}
+        onConfirm={confirmDelete}
+        title="¿Eliminar conversación?"
+        message="Esta acción no se puede deshacer. Se eliminarán todos los mensajes de esta conversación."
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+        isDangerous={true}
+        isLoading={isDeleting}
+      />
     </div>
   );
 };

@@ -18,6 +18,7 @@ interface ConversationsSidebarProps {
   onSelectConversation: (conversationId: string) => void;
   onNewConversation: () => void;
   selectedConversationId: string | undefined;
+  isCreatingConversation?: boolean;
 }
 
 export const ConversationsSidebar = ({
@@ -26,6 +27,7 @@ export const ConversationsSidebar = ({
   onSelectConversation,
   onNewConversation,
   selectedConversationId,
+  isCreatingConversation = false,
 }: ConversationsSidebarProps) => {
   return (
     <AnimatePresence>
@@ -72,6 +74,7 @@ export const ConversationsSidebar = ({
                   }}
                   onNewConversation={onNewConversation}
                   selectedConversationId={selectedConversationId}
+                  isCreatingConversation={isCreatingConversation}
                 />
               </div>
             </div>
