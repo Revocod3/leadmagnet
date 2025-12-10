@@ -163,26 +163,26 @@ export const usePremiumOnboarding = () => {
     isLoading,
     isCompleted,
     needsOnboarding: !isLoading && !isCompleted,
-    
+
     // Progress
     currentStep,
     totalQuestions: TOTAL_PREMIUM_QUESTIONS,
     progressPercentage,
-    
+
     // Current question
     currentBlock: currentQuestionData?.block ?? null,
     currentQuestion: currentQuestionData?.question ?? null,
     currentOptions: currentQuestionData?.question.options ?? [],
     isNewBlock,
     savedAnswer,
-    
+
     // Actions
     submitAnswer,
     startOnboarding,
-    
+
     // For building messages
     buildOnboardingMessages,
-    
+
     // Loading states
     isSaving: saveResponseMutation.isPending,
     isCompleting: completeMutation.isPending,
