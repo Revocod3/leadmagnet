@@ -4,9 +4,10 @@ import { useAuthStore } from '../../stores/authStore';
 interface ProtectedRouteProps {
   children: React.ReactNode;
   requirePro?: boolean;
+  skipOnboardingCheck?: boolean;
 }
 
-export function ProtectedRoute({ children, requirePro = false }: ProtectedRouteProps) {
+export function ProtectedRoute({ children, requirePro = false, skipOnboardingCheck = false }: ProtectedRouteProps) {
   const { isAuthenticated, user, checkAuth } = useAuthStore();
 
   // Check if token is still valid
@@ -15,6 +16,11 @@ export function ProtectedRoute({ children, requirePro = false }: ProtectedRouteP
   if (!isAuthenticated || !isValid) {
     // Not logged in, redirect to login
     return <Navigate to="/login" replace />;
+  }
+
+  // Check if user needs to complete onboarding
+  if (!skipOnboardingCheck && user && !user.onboardingCompleted) {
+    return <Navigate to="/onboarding" replace />;
   }
 
   if (requirePro && user?.role !== 'PRO') {

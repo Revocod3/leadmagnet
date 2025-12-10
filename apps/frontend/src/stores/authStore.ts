@@ -9,6 +9,8 @@ interface User {
   role: 'FREE' | 'PRO';
   provider: 'email' | 'google' | 'facebook';
   emailVerified: boolean;
+  birthDate: string | null;
+  onboardingCompleted: boolean;
 }
 
 interface AuthStore {

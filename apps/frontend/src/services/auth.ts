@@ -22,9 +22,16 @@ export interface AuthResponse {
       role: 'FREE' | 'PRO';
       provider: string;
       emailVerified: boolean;
+      birthDate: string | null;
+      onboardingCompleted: boolean;
     };
   };
   error?: string;
+}
+
+export interface OnboardingData {
+  name: string;
+  birthDate: string;
 }
 
 class AuthService {
@@ -111,6 +118,25 @@ class AuthService {
       return {
         success: false,
         error: error.response?.data?.error || 'Failed to request password reset',
+      };
+    }
+  }
+
+  /**
+   * Complete onboarding
+   */
+  async completeOnboarding(data: OnboardingData, token: string): Promise<AuthResponse> {
+    try {
+      const response = await apiClient['client'].post('/auth/complete-onboarding', data, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      return response.data;
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.response?.data?.error || 'Failed to complete onboarding',
       };
     }
   }

@@ -27,6 +27,10 @@ model User {
   passwordResetToken  String?  @unique
   passwordResetExpiry DateTime?
 
+  // Onboarding
+  birthDate           DateTime?
+  onboardingCompleted Boolean  @default(false)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
+import { authService } from '../services/auth';
 import { jwtDecode } from 'jwt-decode';
 
 export function AuthCallback() {
@@ -9,36 +10,54 @@ export function AuthCallback() {
   const { setAuth } = useAuthStore();
 
   useEffect(() => {
-    const token = searchParams.get('token');
+    const processAuth = async () => {
+      const token = searchParams.get('token');
 
-    if (token) {
-      try {
-        // Decode token to get user info
-        const decoded: any = jwtDecode(token);
+      if (token) {
+        try {
+          // Fetch full user data from server to get onboardingCompleted status
+          const meResponse = await authService.me(token);
 
-        // Create user object from JWT payload
-        const user = {
-          id: decoded.userId,
-          email: decoded.email,
-          name: decoded.name || decoded.email.split('@')[0],
-          role: decoded.role,
-          provider: 'google',
-          emailVerified: true,
-        };
+          if (meResponse.success && meResponse.data) {
+            const user = meResponse.data.user;
 
-        // Save auth data
-        setAuth(token, user as any);
+            // Save auth data
+            setAuth(token, user as any);
 
-        // Redirect to chat
-        navigate('/chat', { replace: true });
-      } catch (error) {
-        console.error('Error processing auth callback:', error);
-        navigate('/login?error=invalid_token', { replace: true });
+            // Redirect based on onboarding status
+            if (!user.onboardingCompleted) {
+              navigate('/onboarding', { replace: true });
+            } else {
+              navigate('/pro', { replace: true });
+            }
+          } else {
+            // Fallback: decode token if /me fails
+            const decoded: any = jwtDecode(token);
+
+            const user = {
+              id: decoded.userId,
+              email: decoded.email,
+              name: decoded.name || decoded.email.split('@')[0],
+              role: decoded.role,
+              provider: 'google' as const,
+              emailVerified: true,
+              birthDate: null,
+              onboardingCompleted: false,
+            };
+
+            setAuth(token, user);
+            navigate('/onboarding', { replace: true });
+          }
+        } catch (error) {
+          console.error('Error processing auth callback:', error);
+          navigate('/login?error=invalid_token', { replace: true });
+        }
+      } else {
+        navigate('/login?error=auth_failed', { replace: true });
       }
-    } else {
-      // No token, redirect to login with error
-      navigate('/login?error=auth_failed', { replace: true });
-    }
+    };
+
+    processAuth();
   }, [searchParams, navigate, setAuth]);
 
   return (

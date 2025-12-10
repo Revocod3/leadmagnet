@@ -366,6 +366,24 @@ export class AuthService {
       Math.random().toString(36).substring(2, 15) +
       Date.now().toString(36);
   }
+
+  /**
+   * Complete user onboarding
+   */
+  async completeOnboarding(userId: string, data: { name: string; birthDate: Date }) {
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        name: data.name,
+        birthDate: data.birthDate,
+        onboardingCompleted: true,
+      },
+    });
+
+    logger.info(`Onboarding completed for user: ${user.email}`);
+
+    return this.sanitizeUser(user);
+  }
 }
 
 export const authService = new AuthService();

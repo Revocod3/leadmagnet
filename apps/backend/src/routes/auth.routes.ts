@@ -62,4 +62,11 @@ router.post('/set-password', (req, res) => authController.setPassword(req, res))
  */
 router.post('/request-password-reset', (req, res) => authController.requestPasswordReset(req, res));
 
+/**
+ * POST /api/auth/complete-onboarding
+ * Complete user onboarding with name and birth date
+ * Body: { name, birthDate }
+ */
+router.post('/complete-onboarding', authenticateJWT, (req, res) => authController.completeOnboarding(req, res));
+
 export default router;

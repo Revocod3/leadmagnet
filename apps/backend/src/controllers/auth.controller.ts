@@ -25,6 +25,13 @@ const requestPasswordResetSchema = z.object({
   email: z.string().email('Invalid email address'),
 });
 
+const completeOnboardingSchema = z.object({
+  name: z.string().min(2, 'Name must be at least 2 characters'),
+  birthDate: z.string().refine((date) => !isNaN(Date.parse(date)), {
+    message: 'Invalid date format',
+  }),
+});
+
 export class AuthController {
   /**
    * POST /api/auth/register
@@ -247,6 +254,53 @@ export class AuthController {
       res.status(500).json({
         success: false,
         error: 'Failed to request password reset',
+      });
+    }
+  }
+
+  /**
+   * POST /api/auth/complete-onboarding
+   * Complete user onboarding with name and birth date
+   */
+  async completeOnboarding(req: Request, res: Response): Promise<void> {
+    try {
+      if (!req.user) {
+        res.status(401).json({
+          success: false,
+          error: 'Not authenticated',
+        });
+        return;
+      }
+
+      const validatedData = completeOnboardingSchema.parse(req.body);
+
+      const user = await authService.completeOnboarding(req.user.userId, {
+        name: validatedData.name,
+        birthDate: new Date(validatedData.birthDate),
+      });
+
+      // Generate new token with updated user info
+      const token = authService.generateToken(user);
+
+      res.status(200).json({
+        success: true,
+        data: { user, token },
+      });
+    } catch (error) {
+      logger.error('Complete onboarding error', { error });
+
+      if (error instanceof z.ZodError) {
+        res.status(400).json({
+          success: false,
+          error: 'Validation error',
+          details: error.errors,
+        });
+        return;
+      }
+
+      res.status(500).json({
+        success: false,
+        error: 'Failed to complete onboarding',
       });
     }
   }

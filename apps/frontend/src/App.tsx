@@ -8,6 +8,7 @@ import { AuthCallback } from './pages/AuthCallback';
 import { SetPasswordPage } from './pages/SetPasswordPage';
 import { WelcomePage } from './pages/WelcomePage';
 import { PricingPage } from './pages/PricingPage';
+import { OnboardingPage } from './pages/OnboardingPage';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { useAuthStore } from './stores/authStore';
 import './styles/globals.css';
@@ -60,6 +61,16 @@ function App() {
             <Route path="/welcome" element={<WelcomePage />} />
             <Route path="/pricing" element={<PricingPage />} />
             <Route path="/suscripcion" element={<PricingPage />} />
+
+            {/* Onboarding - Protected but skips onboarding check */}
+            <Route
+              path="/onboarding"
+              element={
+                <ProtectedRoute skipOnboardingCheck>
+                  <OnboardingPage />
+                </ProtectedRoute>
+              }
+            />
 
             {/* Protected routes - Clara Premium with tabs */}
             <Route
