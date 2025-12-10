@@ -5,21 +5,26 @@
  * - Sidebar for conversation management
  * - Unlimited images
  * - PRO-specific features
+ * - Premium onboarding flow (55 questions)
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useProChat } from '../../hooks/useProChat';
+import { usePremiumOnboarding } from '../../hooks/usePremiumOnboarding';
 import { useSpeechToText } from '../../hooks/useSpeechToText';
 import { useMobileKeyboard } from '../../hooks/useMobileKeyboard';
 import { ChatHeader } from '../chat/ChatHeader';
 import { ChatFooter } from '../chat/ChatFooter';
 import { ChatMessage } from '../chat/ChatMessage';
+import { QuickReplyChips } from '../chat/QuickReplyChips';
+import { InfoWedge } from '../chat/InfoWedge';
 import { TypingIndicator } from '../animations/TypingIndicator';
 import { ConversationsSidebar } from './ConversationsSidebar';
 import { CameraModal } from '../modals/CameraModal';
 import { ImageViewerModal } from '../modals/ImageViewerModal';
 import type { Tab } from './ProPremiumContainer';
+import { useAuthStore } from '../../stores/authStore';
 
 interface ProChatProps {
   onSubscriptionExpired?: () => void;
@@ -42,6 +47,24 @@ export const ProChat = ({ onSubscriptionExpired, activeTab, onTabChange }: ProCh
     sendMessage,
     state,
   } = useProChat(onSubscriptionExpired);
+
+  // Premium onboarding hook
+  const {
+    isLoading: isLoadingOnboarding,
+    isCompleted: onboardingCompleted,
+    needsOnboarding,
+    currentStep,
+    totalQuestions,
+    progressPercentage,
+    currentBlock,
+    currentQuestion,
+    currentOptions,
+    isNewBlock,
+    submitAnswer,
+    isSaving: isSavingOnboarding,
+  } = usePremiumOnboarding();
+
+  const { user } = useAuthStore();
 
   // Local UI state
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -365,8 +388,8 @@ export const ProChat = ({ onSubscriptionExpired, activeTab, onTabChange }: ProCh
                   </div>
                 )}
 
-                {/* Empty State - Only when user has zero conversations */}
-                {!error && conversations.length === 0 && !selectedConversationId && !isLoading && (
+                {/* Empty State - Only when user has zero conversations AND onboarding completed */}
+                {!error && conversations.length === 0 && !selectedConversationId && !isLoading && onboardingCompleted && (
                   <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
                     <motion.div
                       animate={{ scale: [1, 1.05, 1] }}
@@ -414,6 +437,51 @@ export const ProChat = ({ onSubscriptionExpired, activeTab, onTabChange }: ProCh
                   </div>
                 )}
 
+                {/* Onboarding Welcome - Show when onboarding needed and step 0 */}
+                {!error && needsOnboarding && currentStep === 0 && !isLoading && !isLoadingOnboarding && !selectedConversationId && (
+                  <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
+                    <motion.div
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ duration: 0.5 }}
+                      className="mb-6"
+                    >
+                      <div className="w-24 h-24 rounded-full overflow-hidden shadow-xl ring-4 ring-brand-green-100">
+                        <img
+                          src="/assets/images/favicon.webp"
+                          alt="Clara"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    </motion.div>
+
+                    <motion.div
+                      initial={{ y: 20, opacity: 0 }}
+                      animate={{ y: 0, opacity: 1 }}
+                      transition={{ delay: 0.2 }}
+                    >
+                      <h2 className="text-2xl font-bold text-neutral-900 dark:text-white mb-2">
+                        {user?.name || 'Hola'}, bienvenida a Objetivo Vientre Plano 🌿
+                      </h2>
+                      <p className="text-neutral-600 dark:text-neutral-400 max-w-lg mb-4 leading-relaxed">
+                        Antes de preparar tu plan personalizado necesito conocerte de verdad.
+                        Vamos a recorrer juntos un análisis completo: digestivo, emocional, físico, alimentario, social y de hábitos.
+                      </p>
+                      <p className="text-neutral-500 dark:text-neutral-500 text-sm max-w-md mb-6">
+                        No hay prisa. Puedes avanzar a tu ritmo, detenerte cuando lo necesites y volver más tarde.
+                      </p>
+
+                      <button
+                        onClick={() => submitAnswer('start')}
+                        disabled={isSavingOnboarding}
+                        className="px-8 py-4 bg-gradient-to-r from-brand-green-500 to-brand-green-600 hover:from-brand-green-600 hover:to-brand-green-700 text-white text-lg font-semibold rounded-xl transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isSavingOnboarding ? 'Preparando...' : '¿Empezamos? →'}
+                      </button>
+                    </motion.div>
+                  </div>
+                )}
+
                 {/* Loading State */}
                 {!error && isLoading && (
                   <div className="flex items-center justify-center min-h-[50vh]">
@@ -438,6 +506,83 @@ export const ProChat = ({ onSubscriptionExpired, activeTab, onTabChange }: ProCh
 
                     {/* Typing Indicator */}
                     {isSending && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0 }}
+                      >
+                        <TypingIndicator />
+                      </motion.div>
+                    )}
+
+                    <div ref={messagesEndRef} />
+                  </div>
+                )}
+
+                {/* PREMIUM ONBOARDING FLOW - Show when onboarding needed and no conversation selected */}
+                {!error && needsOnboarding && !selectedConversationId && !isLoading && !isLoadingOnboarding && (
+                  <div className="space-y-4">
+                    {/* Onboarding Progress Bar */}
+                    <div className="sticky top-0 z-10 bg-neutral-50/95 dark:bg-neutral-900/95 backdrop-blur-sm py-3 px-4 rounded-xl border border-neutral-200 dark:border-neutral-700 mb-4">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                          Pregunta {currentStep + 1} de {totalQuestions}
+                        </span>
+                        <span className="text-sm font-medium text-brand-green-600 dark:text-brand-green-400">
+                          {progressPercentage}%
+                        </span>
+                      </div>
+                      <div className="h-2 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-brand-green-500 to-brand-green-600 transition-all duration-500"
+                          style={{ width: `${progressPercentage}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* InfoWedge for new block */}
+                    {isNewBlock && currentBlock && (
+                      <InfoWedge
+                        content={currentBlock.infoWedge}
+                        blockColor={currentBlock.color}
+                        blockColorLight={`${currentBlock.color}20`}
+                        blockEmoji={currentBlock.emoji}
+                      />
+                    )}
+
+                    {/* Current Question as ChatMessage */}
+                    {currentQuestion && (
+                      <AnimatePresence mode="popLayout">
+                        <ChatMessage
+                          key={`onboarding-${currentStep}`}
+                          message={{
+                            role: 'assistant',
+                            content: currentQuestion.text,
+                            type: 'question',
+                            timestamp: new Date().toISOString(),
+                            isNew: true,
+                          }}
+                          state={state}
+                          isLatest={true}
+                          onTypewriterComplete={() => setIsTypewriterComplete(true)}
+                        />
+                      </AnimatePresence>
+                    )}
+
+                    {/* Quick Reply Chips for Options */}
+                    {currentOptions.length > 0 && isTypewriterComplete && (
+                      <QuickReplyChips
+                        options={currentOptions}
+                        onSelect={async (option) => {
+                          await submitAnswer(option.value);
+                        }}
+                        disabled={isSavingOnboarding}
+                        blockColor={currentBlock?.color || '#10B981'}
+                      />
+                    )}
+
+                    {/* Saving indicator */}
+                    {isSavingOnboarding && (
                       <motion.div
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}

@@ -37,4 +37,17 @@ router.post('/conversations/:id/message', requireProSubscription, proUploadMiddl
 // DELETE /api/pro/conversations/:id - Delete conversation
 router.delete('/conversations/:id', proController.deleteConversation.bind(proController));
 
+// ═══════════════════════════════════════════════════════════════
+// PREMIUM ONBOARDING ROUTES
+// ═══════════════════════════════════════════════════════════════
+
+// GET /api/pro/onboarding/status - Get onboarding status
+router.get('/onboarding/status', proController.getOnboardingStatus.bind(proController));
+
+// POST /api/pro/onboarding/response - Save onboarding response
+router.post('/onboarding/response', proController.saveOnboardingResponse.bind(proController));
+
+// POST /api/pro/onboarding/complete - Complete onboarding
+router.post('/onboarding/complete', proController.completeOnboarding.bind(proController));
+
 export default router;

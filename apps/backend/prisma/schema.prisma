@@ -300,6 +300,12 @@ model UserGlobalContext {
   id                    String   @id @default(cuid())
   userId                String   @unique
 
+  // Premium Onboarding (55 questions, 11 blocks)
+  premiumOnboardingCompleted Boolean @default(false)
+  premiumOnboardingResponses Json    @default("{}") // { blockId: { questionId: "answer" } }
+  premiumOnboardingStep      Int     @default(0)    // Current question index (0-54)
+  profileTags               Json    @default("{}") // AI-generated tags from onboarding
+
   // User profiles extracted from conversations
   digestiveProfile      Json     @default("{}") // { symptoms, patterns, triggers, intolerances }
   emotionalProfile      Json     @default("{}") // { stressLevel, emotionalPatterns, gutBrainConnection }

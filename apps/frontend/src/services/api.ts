@@ -372,6 +372,49 @@ class ApiClient {
     }
   }
 
+  // ══════════════════════════════════════════════════════════════
+  // PREMIUM ONBOARDING Endpoints
+  // ══════════════════════════════════════════════════════════════
+
+  async getOnboardingStatus(): Promise<{
+    completed: boolean;
+    currentStep: number;
+    responses: Record<string, Record<string, string>>;
+  }> {
+    const response = await this.client.get<ApiResponse<any>>('/pro/onboarding/status', {
+      headers: this.getAuthHeaders(),
+    });
+    if (!response.data.success || !response.data.data) {
+      throw new Error(response.data.error || 'Error al obtener estado onboarding');
+    }
+    return response.data.data;
+  }
+
+  async saveOnboardingResponse(data: {
+    blockId: string;
+    questionId: string;
+    answer: string;
+    step: number;
+  }): Promise<{ saved: boolean }> {
+    const response = await this.client.post<ApiResponse<any>>('/pro/onboarding/response', data, {
+      headers: this.getAuthHeaders(),
+    });
+    if (!response.data.success || !response.data.data) {
+      throw new Error(response.data.error || 'Error al guardar respuesta');
+    }
+    return response.data.data;
+  }
+
+  async completeOnboarding(): Promise<{ completed: boolean; profileTags: Record<string, string> }> {
+    const response = await this.client.post<ApiResponse<any>>('/pro/onboarding/complete', {}, {
+      headers: this.getAuthHeaders(),
+    });
+    if (!response.data.success || !response.data.data) {
+      throw new Error(response.data.error || 'Error al completar onboarding');
+    }
+    return response.data.data;
+  }
+
   // Health check
   async healthCheck(): Promise<{ status: string }> {
     const response = await this.client.get('/health');

@@ -570,6 +570,142 @@ export class ProController {
       } as ApiResponse);
     }
   }
+
+  // ═══════════════════════════════════════════════════════════════
+  // PREMIUM ONBOARDING ENDPOINTS
+  // ═══════════════════════════════════════════════════════════════
+
+  /**
+   * GET /api/pro/onboarding/status - Get onboarding status
+   */
+  async getOnboardingStatus(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = req.user?.userId;
+      if (!userId) {
+        res.status(401).json({ success: false, error: 'Authentication required' });
+        return;
+      }
+
+      const context = await prisma.userGlobalContext.findUnique({
+        where: { userId },
+        select: {
+          premiumOnboardingCompleted: true,
+          premiumOnboardingStep: true,
+          premiumOnboardingResponses: true,
+        },
+      });
+
+      res.json({
+        success: true,
+        data: {
+          completed: context?.premiumOnboardingCompleted ?? false,
+          currentStep: context?.premiumOnboardingStep ?? 0,
+          responses: context?.premiumOnboardingResponses ?? {},
+        },
+      });
+    } catch (error) {
+      logger.error('Error getting onboarding status:', { error });
+      res.status(500).json({ success: false, error: 'Error retrieving onboarding status' });
+    }
+  }
+
+  /**
+   * POST /api/pro/onboarding/response - Save single response
+   */
+  async saveOnboardingResponse(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = req.user?.userId;
+      if (!userId) {
+        res.status(401).json({ success: false, error: 'Authentication required' });
+        return;
+      }
+
+      const { blockId, questionId, answer, step } = req.body;
+      if (!blockId || !questionId || answer === undefined) {
+        res.status(400).json({ success: false, error: 'Missing required fields' });
+        return;
+      }
+
+      // Upsert context with new response
+      const existing = await prisma.userGlobalContext.findUnique({
+        where: { userId },
+        select: { premiumOnboardingResponses: true },
+      });
+
+      const responses = (existing?.premiumOnboardingResponses as Record<string, Record<string, string>>) ?? {};
+      if (!responses[blockId]) responses[blockId] = {};
+      responses[blockId][questionId] = answer;
+
+      await prisma.userGlobalContext.upsert({
+        where: { userId },
+        create: {
+          userId,
+          premiumOnboardingResponses: responses,
+          premiumOnboardingStep: step ?? 0,
+        },
+        update: {
+          premiumOnboardingResponses: responses,
+          premiumOnboardingStep: step ?? 0,
+        },
+      });
+
+      res.json({ success: true, data: { saved: true } });
+    } catch (error) {
+      logger.error('Error saving onboarding response:', { error });
+      res.status(500).json({ success: false, error: 'Error saving response' });
+    }
+  }
+
+  /**
+   * POST /api/pro/onboarding/complete - Complete onboarding
+   */
+  async completeOnboarding(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = req.user?.userId;
+      if (!userId) {
+        res.status(401).json({ success: false, error: 'Authentication required' });
+        return;
+      }
+
+      // Mark as completed and generate profile tags from responses
+      const context = await prisma.userGlobalContext.findUnique({
+        where: { userId },
+        select: { premiumOnboardingResponses: true },
+      });
+
+      const responses = context?.premiumOnboardingResponses as Record<string, Record<string, string>> ?? {};
+
+      // Generate simple profile tags from responses (can be enhanced with AI later)
+      const profileTags = {
+        digestiveType: responses.digestivo?.dig_1 || 'unknown',
+        emotionalState: responses.emocional?.emo_1 || 'unknown',
+        energyLevel: responses.fisico?.fis_1 || 'unknown',
+        eatingStyle: responses.alimentacion?.ali_1 || 'unknown',
+        socialInfluence: responses.social?.soc_3 || 'unknown',
+        workStress: responses.laboral?.lab_2 || 'unknown',
+        mainGoal: responses.objetivos?.obj_1 || 'unknown',
+        constancy: responses.habitos?.hab_1 || 'unknown',
+        lifeStage: responses.identidad?.ide_1 || 'unknown',
+        medicalHistory: responses.medico?.med_1 || 'unknown',
+      };
+
+      await prisma.userGlobalContext.update({
+        where: { userId },
+        data: {
+          premiumOnboardingCompleted: true,
+          premiumOnboardingStep: 55,
+          profileTags,
+          currentPhase: 'week1',
+          programStartDate: new Date(),
+        },
+      });
+
+      res.json({ success: true, data: { completed: true, profileTags } });
+    } catch (error) {
+      logger.error('Error completing onboarding:', { error });
+      res.status(500).json({ success: false, error: 'Error completing onboarding' });
+    }
+  }
 }
 
 export const proController = new ProController();
