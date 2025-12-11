@@ -61,7 +61,7 @@
 │  │  ├─ Avatar (OVP si assistant, inicial si user)      │       │
 │  │  ├─ Message Bubble                                   │       │
 │  │  │  ├─ Si type='diagnosis_ready'                     │       │
-│  │  │  │  └─ dangerouslySetInnerHTML (HTML crudo)      │       │
+│  │  │  │  └─ dangerouslySetInnerHTML (HTML crudo, desición aprobada por el equipo de desarrollo)     │       │
 │  │  │  │     Con botones PDF + Suscripción              │       │
 │  │  │  └─ Si type='question' o 'comment'                │       │
 │  │  │     └─ ReactMarkdown                              │       │

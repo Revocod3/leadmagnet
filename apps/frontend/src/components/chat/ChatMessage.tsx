@@ -77,6 +77,7 @@ export const ChatMessage = forwardRef<HTMLDivElement, ChatMessageProps>(({
                 className="space-y-3 font-normal leading-relaxed"
               >
                 {/* Contenido del diagnóstico - Ya viene formateado en HTML desde el backend */}
+                {/* Si alguien ve esto, le pido perdon por tal atrocidad xd, pero es necesario en esta fase del proyecto */}
                 <div
                   className="diagnosis-content space-y-3 font-normal leading-relaxed"
                   dangerouslySetInnerHTML={{ __html: message.content }}
