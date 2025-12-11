@@ -270,7 +270,7 @@ Este es un proyecto privado. Para contribuir, contacta al equipo.
 
 ## 📧 Soporte
 
-Para preguntas o soporte, contacta a: [email]
+Para preguntas o soporte, contacta a: [info@objetivovientreplano.com]
 
 ---
 
