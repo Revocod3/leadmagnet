@@ -17,7 +17,7 @@ if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
         callbackURL: GOOGLE_CALLBACK_URL,
         scope: ['profile', 'email'],
       },
-      async (accessToken, refreshToken, profile, done) => {
+      async (_accessToken, _refreshToken, profile, done) => {
         try {
           const user = await authService.findOrCreateGoogleUser(profile);
           done(null, user as any);

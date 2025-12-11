@@ -7,7 +7,6 @@
  * Este archivo es SOLO orquestación. NO contiene lógica conversacional.
  */
 
-import OpenAI from 'openai';
 import { openai, MODELS } from '../config/openai';
 import { CLARA_INSTRUCTIONS, DIAGNOSIS_INSTRUCTIONS, buildDynamicInstructions } from '../config/assistant-instructions';
 import { logger } from '../utils/logger';
@@ -190,7 +189,6 @@ export class ConversationalAssistantService {
           : this.shouldGenerateDiagnosis(
             messageText,
             context.turnCount,
-            context.hasRealProblem
           );
 
         const shouldEndConversation = this.shouldEndConversation(
@@ -302,7 +300,6 @@ export class ConversationalAssistantService {
   private shouldGenerateDiagnosis(
     message: string,
     turnCount: number,
-    hasRealProblem?: boolean
   ): boolean {
     // FLUJO ESTRUCTURADO: En turno 23+ siempre generar diagnóstico
     // (turno 23 = después de responder las 21 preguntas + bienvenida + confirmación)
