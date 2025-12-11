@@ -1,3 +1,5 @@
+// Este archivo esta para ser refactorizado, y mejorado en el futuro. por ahora no lo usamos.
+
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '../ui/Button';
@@ -85,11 +87,10 @@ export const RatingModal = ({ isOpen, onClose, onSubmit }: RatingModalProps) => 
                   disabled={isSubmitting}
                 >
                   <svg
-                    className={`w-12 h-12 transition-colors ${
-                      star <= (hoveredRating || rating)
+                    className={`w-12 h-12 transition-colors ${star <= (hoveredRating || rating)
                         ? 'fill-yellow-400 text-yellow-400'
                         : 'fill-neutral-200 dark:fill-neutral-700 text-neutral-200 dark:text-neutral-700'
-                    }`}
+                      }`}
                     xmlns="http://www.w3.org/2000/svg"
                     viewBox="0 0 24 24"
                   >

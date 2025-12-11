@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Check, Sparkles, MessageCircle, Settings2, Mic, Video, Clock } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
-import { UrgencyBanner } from '../components/premium/UrgencyBanner';
+import { UrgencyBanner } from '@/components/premium';
 
 // URLs de los Payment Links de Stripe (LIVE)
 const PAYMENT_LINKS = {

@@ -9,3 +9,4 @@ export { DiaryEditor } from './DiaryEditor';
 export { DiaryView } from './DiaryView';
 export { ChallengeCard } from './ChallengeCard';
 export { ProgressView } from './ProgressView';
+export { UrgencyBanner } from './UrgencyBanner';
