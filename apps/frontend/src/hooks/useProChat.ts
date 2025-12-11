@@ -255,7 +255,36 @@ export const useProChat = (onSubscriptionExpired?: () => void): UseProChatReturn
   const sendMessage = useCallback(async (content: string, imageFile?: File) => {
     // Allow empty content if there's an image
     if (!content.trim() && !imageFile) return;
-    if (!selectedConversationId || isSending) return;
+    if (isSending) return;
+
+    // If no conversation selected, create one first
+    if (!selectedConversationId) {
+      try {
+        const data = await apiClient.createProConversation();
+        queryClient.invalidateQueries({ queryKey: ['proConversations'] });
+        setSelectedConversationId(data.conversationId);
+        setMessages([{
+          role: data.message.role as 'user' | 'assistant',
+          content: data.message.content,
+          type: 'welcome',
+          timestamp: new Date().toISOString(),
+          isNew: true,
+        }]);
+        setError(null);
+        // The first message from user will be processed in the next interaction
+        // For now, just start the onboarding with the welcome message
+        return;
+      } catch (err: any) {
+        console.error('Error creating conversation:', err);
+        if (err.requiresSubscription) {
+          onSubscriptionExpired?.();
+          setError('Necesitas una suscripción Pro para acceder al chat');
+        } else {
+          setError(err.message || 'Error al crear conversación');
+        }
+        return;
+      }
+    }
 
     // CRITICAL: Check if conversation still exists before sending
     const conversationExists = conversations.find(c => c.id === selectedConversationId);

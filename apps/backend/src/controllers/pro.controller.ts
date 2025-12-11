@@ -130,7 +130,7 @@ export class ProController {
 
       const userName = user?.name || 'Usuario';
 
-      const { conversationId, welcomeMessage } = await agentProService.startConversation(
+      const { conversationId, welcomeMessage, isOnboarding, onboardingTurn } = await agentProService.startConversation(
         userId,
         userName
       );
@@ -143,6 +143,8 @@ export class ProController {
             role: 'assistant',
             content: welcomeMessage,
           },
+          isOnboarding,
+          onboardingTurn,
         },
       } as ApiResponse);
     } catch (error) {
@@ -313,6 +315,8 @@ export class ProController {
         data: {
           role: 'assistant',
           content: result.message,
+          isOnboarding: result.isOnboarding,
+          onboardingTurn: result.onboardingTurn,
         },
       } as ApiResponse);
     } catch (error) {

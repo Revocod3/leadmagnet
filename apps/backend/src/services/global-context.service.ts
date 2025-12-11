@@ -78,6 +78,9 @@ interface GlobalContextData {
   weekNumber: number;
   daysInProgram: number;
   programStartDate: Date | null;
+  // Premium onboarding
+  onboardingTurn: number;
+  onboardingCompleted: boolean;
   radiographyCompleted: boolean;
   radiographyContent: string | null;
   personalityType: string | null;

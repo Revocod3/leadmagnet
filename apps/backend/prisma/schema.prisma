@@ -318,6 +318,10 @@ model UserGlobalContext {
   daysInProgram         Int      @default(0)
   programStartDate      DateTime?
   
+  // Premium Onboarding (55 questions flow)
+  onboardingTurn        Int      @default(0)  // Current turn in onboarding (0=not started, 1=welcome, 2-56=questions, 57+=completed)
+  onboardingCompleted   Boolean  @default(false)
+  
   // Radiografía Premium
   radiographyCompleted  Boolean  @default(false)
   radiographyContent    String?  @db.Text  // The generated radiography

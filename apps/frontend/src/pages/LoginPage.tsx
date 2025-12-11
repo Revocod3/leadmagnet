@@ -35,7 +35,7 @@ export function LoginPage() {
         // Redirect to Clara PRO
         navigate('/chat');
       } else {
-        setError(response.error || 'Credenciales inválidas');
+        setError('Credenciales inválidas');
       }
     } catch (err) {
       setError('Ocurrió un error inesperado');
@@ -238,10 +238,10 @@ export function LoginPage() {
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="mb-2 p-2 bg-red-50 border border-red-200 rounded-lg text-red-600 text-xs flex items-start gap-2"
+                className="mb-2 p-2 bg-red-50 border border-red-200 rounded-lg text-red-600 text-xs flex items-center gap-2"
               >
                 <svg
-                  className="w-4 h-4 flex-shrink-0 mt-0.5"
+                  className="w-4 h-4 flex-shrink-0"
                   fill="currentColor"
                   viewBox="0 0 20 20"
                 >
@@ -255,7 +255,7 @@ export function LoginPage() {
                   {error ||
                     (authError === 'auth_failed'
                       ? 'Error de autenticación'
-                      : authError)}
+                      : 'Ocurrió un error inesperado')}
                 </span>
               </motion.div>
             )}
