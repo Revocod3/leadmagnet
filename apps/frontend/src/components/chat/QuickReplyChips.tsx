@@ -79,9 +79,11 @@ export const QuickReplyChips = ({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: options.length * 0.05 + 0.2 }}
-          className="text-xs text-neutral-400 dark:text-neutral-500 mt-1 ml-1"
+          className="text-xs text-neutral-700 dark:text-neutral-300 mt-1 ml-1"
         >
-          O escribe tu respuesta con tus propias palabras
+          <span className="px-1 py-0.5 bg-brand-green-500/20 dark:bg-brand-green-500/35 box-decoration-clone">
+            O escribe tu respuesta con tus propias palabras
+          </span>
         </motion.p>
       )}
     </motion.div>

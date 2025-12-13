@@ -35,7 +35,7 @@ export const ChatMessage = forwardRef<HTMLDivElement, ChatMessageProps>(({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
       transition={{ duration: 0.3 }}
-      className={`flex ${isUser ? 'justify-end' : 'justify-start relative'}`}
+      className={`flex relative ${isUser ? 'justify-end' : 'justify-start'}`}
     >
       {/* Avatar for assistant - subtle and minimal */}
       {!isUser && (
@@ -44,8 +44,15 @@ export const ChatMessage = forwardRef<HTMLDivElement, ChatMessageProps>(({
         </div>
       )}
 
+      {/* Avatar for user - positioned like assistant */}
+      {isUser && (
+        <div className="absolute right-0 top-0 z-10 w-6 h-6 md:w-7 md:h-7 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs md:text-sm font-semibold shadow-sm border border-white/20">
+          {state.userName?.charAt(0).toUpperCase() || 'U'}
+        </div>
+      )}
+
       {/* Message Content Wrapper */}
-      <div className={`flex flex-col ${isUser ? 'items-end max-w-[88%] sm:max-w-[80%] md:max-w-[75%]' : 'max-w-[92%] sm:max-w-[85%] md:max-w-[80%] ml-2.5 md:ml-3'}`}>
+      <div className={`flex flex-col ${isUser ? 'items-end max-w-[92%] sm:max-w-[85%] md:max-w-[80%] mr-2.5 md:mr-3' : 'max-w-[92%] sm:max-w-[85%] md:max-w-[80%] ml-2.5 md:ml-3'}`}>
         {/* Image attached to message - rendered outside the bubble for cleaner look */}
         {isUser && message.imageUrl && (
           <div className="mb-2">
@@ -61,8 +68,8 @@ export const ChatMessage = forwardRef<HTMLDivElement, ChatMessageProps>(({
         {(!isUser || message.content !== 'Imagen adjunta') && message.type !== 'closing_cta' && (
           <div
             className={`${isUser
-              ? 'text-white rounded-2xl px-4 py-2.5 md:px-5 md:py-3 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.01] border border-white/20'
-              : 'backdrop-blur-xl bg-white/90 dark:bg-white/10 text-neutral-900 dark:text-neutral-100 rounded-2xl px-4 py-3 md:px-5 md:py-4 shadow-lg border border-white/30 dark:border-white/20'
+              ? 'text-white rounded-2xl rounded-tr-none px-4 py-2.5 md:px-5 md:py-3 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.01] border border-white/20'
+              : 'backdrop-blur-xl bg-white/90 dark:bg-white/10 text-neutral-900 dark:text-neutral-100 rounded-2xl rounded-tl-none px-4 py-3 md:px-5 md:py-4 shadow-lg border border-white/30 dark:border-white/20'
               }`}
             style={isUser ? {
               backgroundColor: '#9DAC67',
@@ -213,13 +220,6 @@ export const ChatMessage = forwardRef<HTMLDivElement, ChatMessageProps>(({
           />
         )}
       </div>
-
-      {/* Avatar for user */}
-      {isUser && (
-        <div className="flex-shrink-0 w-7 h-7 md:w-8 md:h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs md:text-sm font-semibold shadow-sm">
-          {state.userName?.charAt(0).toUpperCase() || 'U'}
-        </div>
-      )}
     </motion.div>
   );
 });
