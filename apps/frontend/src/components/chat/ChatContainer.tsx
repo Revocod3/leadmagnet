@@ -605,7 +605,14 @@ export const ChatContainer = () => {
 
                           <ChatMessage
                             ref={message.type === 'diagnosis_ready' ? diagnosisMessageRef : undefined}
-                            message={message}
+                            message={{
+                              ...message,
+                              // Remove metadata from display to avoid breaking quick replies
+                              content: message.content
+                                .replace(/\[PREGUNTA_ACTUAL:\s*\w+\]/g, '')
+                                .replace(/PREGUNTA \d+ \(\w+\):/g, '')
+                                .trim()
+                            }}
                             state={state}
                             isLatest={index === messages.length - 1}
                             onDownloadPDF={handleDownloadPDF}
