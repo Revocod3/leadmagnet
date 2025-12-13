@@ -367,12 +367,11 @@ Eso es lo que hacemos en el Método Objetivo Vientre Plano: equilibrar cuerpo y 
 
 Te da acceso directo a nuestro **Chat Inteligente totalmente personalizado**, la fusión de la ciencia más actualizada en:
 
-• Digestión y bienestar abdominal
-• Nutrición adaptada a tu cuerpo
-• Descanso y recuperación
-• Gestión emocional y estrés
-• Hábitos reales del día a día
-
+- Digestión y bienestar abdominal
+- Nutrición adaptada a tu cuerpo
+- Descanso y recuperación
+- Gestión emocional y estrés
+- Hábitos reales del día a día
 Todo está integrado en una sola herramienta que **se adapta a tu estilo de vida en tiempo real**.
 
 ---
@@ -396,9 +395,9 @@ Está diseñada para convertirse en tu estilo de vida, ayudándote a mejorar des
 
 Su finalidad es que disfrutes de la vida en tu máximo esplendor, con:
 
-✨ Un cuerpo más ligero
-✨ Una mente tranquila
-✨ Una digestión que responde
+- Un cuerpo más ligero
+- Una mente tranquila
+- Una digestión que responde
 
 ---
 

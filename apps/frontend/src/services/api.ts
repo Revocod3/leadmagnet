@@ -378,6 +378,14 @@ class ApiClient {
     }
   }
 
+  // Ratings
+  async submitRating(data: { sessionId: string; rating: number; comment?: string; flowType: 'free' | 'paid' }): Promise<void> {
+    const response = await this.client.post<ApiResponse<void>>('/ratings', data);
+    if (!response.data.success) {
+      throw new Error(response.data.error || 'Error al enviar valoración');
+    }
+  }
+
   // Health check
   async healthCheck(): Promise<{ status: string }> {
     const response = await this.client.get('/health');

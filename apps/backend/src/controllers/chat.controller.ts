@@ -67,12 +67,17 @@ export class ChatController {
         session.userName || 'Usuario'
       );
 
-      // 2. Guardar conversationId en sesión
+      // 2. Guardar conversationId en sesión y RESETEAR estado
       await prisma.session.update({
         where: { id: sessionId },
         data: {
           flowState: { conversationId } as any, // Guardamos el conversationId en flowState
           step: 'asking_questions',
+          // Resetear contadores y flags para empezar de cero
+          messageCount: 0,
+          postDiagnosisMessageCount: 0,
+          completedDiagnosis: false,
+          hasSharedImage: false,
         },
       });
 
@@ -373,6 +378,7 @@ export class ChatController {
                 step: 'diagnosis_ready',
                 completionTime: new Date(),
                 completedDiagnosis: true,
+                postDiagnosisMessageCount: 0, // Reset counter to ensure user gets their free post-diagnosis messages
               },
             });
 

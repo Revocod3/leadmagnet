@@ -1,9 +1,7 @@
-// Este archivo esta para ser refactorizado, y mejorado en el futuro. por ahora no lo usamos.
-
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Button } from '../ui/Button';
 import { useTranslation } from 'react-i18next';
+import { Star } from 'lucide-react';
 
 interface RatingModalProps {
   isOpen: boolean;
@@ -30,7 +28,6 @@ export const RatingModal = ({ isOpen, onClose, onSubmit }: RatingModalProps) => 
       setComment('');
     } catch (error) {
       console.error('Error al enviar valoración:', error);
-      alert('Hubo un error al enviar tu valoración. Por favor, intenta nuevamente.');
     } finally {
       setIsSubmitting(false);
     }
@@ -38,8 +35,6 @@ export const RatingModal = ({ isOpen, onClose, onSubmit }: RatingModalProps) => 
 
   const handleClose = () => {
     if (!isSubmitting) {
-      setRating(0);
-      setComment('');
       onClose();
     }
   };
@@ -47,115 +42,113 @@ export const RatingModal = ({ isOpen, onClose, onSubmit }: RatingModalProps) => 
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 sm:p-6">
           {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={handleClose}
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
           />
 
           {/* Modal */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="relative w-full max-w-md bg-white dark:bg-neutral-800 rounded-2xl shadow-2xl p-6"
+            initial={{ opacity: 0, y: 100, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 100, scale: 0.95 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+            className="relative w-full max-w-sm bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl overflow-hidden border border-neutral-100 dark:border-neutral-800"
           >
-            {/* Header */}
-            <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold text-neutral-900 dark:text-white mb-2">
-                {t('rating.title')}
-              </h2>
-              <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                {t('rating.subtitle')}
-              </p>
-            </div>
+            <div className="p-6 sm:p-8">
+              {/* Header */}
+              <div className="text-center mb-8">
+                <h2 className="text-xl font-semibold text-neutral-900 dark:text-white mb-2">
+                  {t('rating.title', '¿Cómo fue tu experiencia?')}
+                </h2>
+                <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                  {t('rating.subtitle', 'Tu opinión nos ayuda a mejorar Clara.')}
+                </p>
+              </div>
 
-            {/* Stars */}
-            <div className="flex justify-center gap-2 mb-6">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <button
-                  key={star}
-                  type="button"
-                  onClick={() => setRating(star)}
-                  onMouseEnter={() => setHoveredRating(star)}
-                  onMouseLeave={() => setHoveredRating(0)}
-                  className="transition-transform hover:scale-110 focus:outline-none"
-                  disabled={isSubmitting}
-                >
-                  <svg
-                    className={`w-12 h-12 transition-colors ${star <= (hoveredRating || rating)
-                        ? 'fill-yellow-400 text-yellow-400'
-                        : 'fill-neutral-200 dark:fill-neutral-700 text-neutral-200 dark:text-neutral-700'
-                      }`}
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
+              {/* Stars */}
+              <div className="flex justify-center gap-3 mb-8">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => setRating(star)}
+                    onMouseEnter={() => setHoveredRating(star)}
+                    onMouseLeave={() => setHoveredRating(0)}
+                    className="group relative focus:outline-none"
+                    disabled={isSubmitting}
                   >
-                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                  </svg>
+                    <Star
+                      className={`w-8 h-8 transition-all duration-200 ${
+                        star <= (hoveredRating || rating)
+                          ? 'fill-amber-400 text-amber-400 scale-110'
+                          : 'fill-transparent text-neutral-300 dark:text-neutral-700 group-hover:text-neutral-400'
+                      }`}
+                      strokeWidth={1.5}
+                    />
+                  </button>
+                ))}
+              </div>
+
+              {/* Comment (Optional) */}
+              <AnimatePresence>
+                {rating > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="overflow-hidden"
+                  >
+                    <textarea
+                      value={comment}
+                      onChange={(e) => setComment(e.target.value)}
+                      placeholder={t('rating.commentPlaceholder', 'Cuéntanos más (opcional)...')}
+                      disabled={isSubmitting}
+                      className="w-full px-4 py-3 mb-6 text-sm bg-neutral-50 dark:bg-neutral-800 
+                               border border-neutral-200 dark:border-neutral-700 rounded-xl
+                               text-neutral-900 dark:text-white placeholder-neutral-400
+                               focus:outline-none focus:ring-2 focus:ring-brand-green-500/20 focus:border-brand-green-500
+                               resize-none transition-all"
+                      rows={3}
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Actions */}
+              <div className="flex gap-3">
+                <button
+                  onClick={handleClose}
+                  disabled={isSubmitting}
+                  className="flex-1 px-4 py-2.5 text-sm font-medium text-neutral-600 dark:text-neutral-400 
+                           bg-transparent hover:bg-neutral-50 dark:hover:bg-neutral-800 
+                           rounded-xl transition-colors"
+                >
+                  {t('rating.cancel', 'Ahora no')}
                 </button>
-              ))}
-            </div>
-
-            {/* Rating text */}
-            {rating > 0 && (
-              <motion.p
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="text-center text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-4"
-              >
-                {t(`rating.ratings.${rating}`)}
-              </motion.p>
-            )}
-
-            {/* Comment */}
-            <div className="mb-6">
-              <label
-                htmlFor="comment"
-                className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2"
-              >
-                {t('rating.comment')}
-              </label>
-              <textarea
-                id="comment"
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                placeholder={t('rating.commentPlaceholder')}
-                disabled={isSubmitting}
-                className="w-full px-4 py-3 border border-neutral-300 dark:border-neutral-600 rounded-xl
-                         bg-white dark:bg-neutral-700 text-neutral-900 dark:text-white
-                         placeholder-neutral-400 dark:placeholder-neutral-500
-                         focus:outline-none focus:ring-2 focus:ring-brand-green-500 dark:focus:ring-brand-green-400
-                         resize-none transition-colors"
-                rows={4}
-                maxLength={500}
-              />
-              <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 text-right">
-                {comment.length}/500
-              </p>
-            </div>
-
-            {/* Buttons */}
-            <div className="flex gap-3">
-              <Button
-                onClick={handleClose}
-                disabled={isSubmitting}
-                className="flex-1 bg-neutral-200 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300
-                         hover:bg-neutral-300 dark:hover:bg-neutral-600 transition-colors"
-              >
-                {t('rating.cancel')}
-              </Button>
-              <Button
-                onClick={handleSubmit}
-                disabled={rating === 0 || isSubmitting}
-                className="flex-1 bg-brand-green-600 hover:bg-brand-green-700 text-white
-                         disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                {isSubmitting ? t('rating.submitting') : t('rating.submit')}
-              </Button>
+                <button
+                  onClick={handleSubmit}
+                  disabled={rating === 0 || isSubmitting}
+                  className="flex-1 px-4 py-2.5 text-sm font-medium text-white 
+                           bg-brand-green-600 hover:bg-brand-green-700 
+                           disabled:opacity-50 disabled:cursor-not-allowed
+                           rounded-xl shadow-sm shadow-brand-green-600/20 
+                           transition-all active:scale-95"
+                >
+                  {isSubmitting ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    </span>
+                  ) : (
+                    t('rating.submit', 'Enviar')
+                  )}
+                </button>
+              </div>
             </div>
           </motion.div>
         </div>
