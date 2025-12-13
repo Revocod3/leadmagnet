@@ -626,7 +626,7 @@ export const ChatContainer = () => {
           {/* 3D Card */}
           <div className="w-full max-w-3xl h-full relative bg-brand-cream-100 dark:bg-neutral-900 bg-chat-lighting shadow-2xl overflow-hidden flex flex-col sm:rounded-2xl sm:h-full sm:border sm:border-white/10 transition-all duration-300 z-10">
 
-            {/* Header - Absolute within card */}
+            {/* Header - Flex item (no absolute) */}
             <ChatHeader
               isDarkMode={isDarkMode}
               onToggleDarkMode={toggleDarkMode}
@@ -635,13 +635,13 @@ export const ChatContainer = () => {
                 currentQuestionIndex: currentQuestionInfo.questionIndex,
                 totalQuestionsInBlock: currentBlock.questions.length,
               } : null}
-              className="absolute top-0 left-0 right-0 z-50"
+              className="flex-shrink-0 relative z-50"
             />
 
             {/* Main content - Chat Messages */}
             <main
               ref={messagesContainerRef}
-              className="flex-1 overflow-y-auto smooth-scroll scroll-pt-4 pt-20 pb-32"
+              className="flex-1 overflow-y-auto smooth-scroll scroll-pt-4"
             >
               <div className="px-4 pt-4 pb-4">
                 {/* Empty State - Loading state while initializing */}
@@ -794,7 +794,7 @@ export const ChatContainer = () => {
               </div>
             </main>
 
-            {/* Footer flotante transparente */}
+            {/* Footer - Flex item (no absolute) */}
             <ChatFooter
               inputMessage={inputMessage}
               setInputMessage={setInputMessage}
@@ -815,7 +815,7 @@ export const ChatContainer = () => {
               showImageLimitMessage={showImageLimitMessage}
               isKeyboardOpen={isKeyboardOpen}
               onInputFocus={scrollToBottom}
-              className="absolute bottom-0 left-0 right-0 z-30"
+              className="flex-shrink-0 relative z-30"
             />
           </div>
         </div>

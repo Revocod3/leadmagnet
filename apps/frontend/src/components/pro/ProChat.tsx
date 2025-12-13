@@ -320,7 +320,7 @@ export const ProChat = ({ onSubscriptionExpired, activeTab, onTabChange }: ProCh
           {/* 3D Card */}
           <div className="w-full h-full sm:max-w-3xl sm:h-full relative bg-brand-cream-100 dark:bg-neutral-900 bg-chat-lighting shadow-2xl overflow-hidden flex flex-col sm:rounded-2xl sm:border sm:border-white/10 transition-all duration-300 z-10">
 
-            {/* Header */}
+            {/* Header - Flex item (no absolute) */}
             <ChatHeader
               isDarkMode={isDarkMode}
               onToggleDarkMode={toggleDarkMode}
@@ -330,7 +330,7 @@ export const ProChat = ({ onSubscriptionExpired, activeTab, onTabChange }: ProCh
               progressInfo={progressInfo}
               {...(activeTab && { activeTab })}
               {...(onTabChange && { onTabChange })}
-              className="absolute top-0 left-0 right-0 z-50"
+              className="flex-shrink-0 relative z-50"
             />
 
             {/* Chat Content */}
@@ -344,9 +344,9 @@ export const ProChat = ({ onSubscriptionExpired, activeTab, onTabChange }: ProCh
             >
               <main
                 ref={messagesContainerRef}
-                className="flex-1 overflow-y-auto smooth-scroll scroll-pt-4 pt-20 pb-32"
+                className="flex-1 overflow-y-auto smooth-scroll scroll-pt-4"
                 style={{
-                  paddingBottom: isKeyboardOpen ? '100px' : '140px',
+                  paddingBottom: isKeyboardOpen ? '20px' : '20px',
                 }}
               >
                 <div className="container-narrow pt-4 pb-4">
@@ -587,7 +587,7 @@ export const ProChat = ({ onSubscriptionExpired, activeTab, onTabChange }: ProCh
               </main>
             </div>
 
-            {/* Footer - Always show unless there's an error */}
+            {/* Footer - Flex item (no absolute) */}
             {!error && (
               <ChatFooter
                 inputMessage={inputMessage}
@@ -609,7 +609,7 @@ export const ProChat = ({ onSubscriptionExpired, activeTab, onTabChange }: ProCh
                 showImageLimitMessage={false} // PRO has unlimited images
                 isKeyboardOpen={isKeyboardOpen}
                 onInputFocus={scrollToBottom}
-                className="absolute bottom-0 left-0 right-0 z-30"
+                className="flex-shrink-0 relative z-30"
               />
             )}
           </div>
