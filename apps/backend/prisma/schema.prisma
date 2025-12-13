@@ -319,7 +319,8 @@ model UserGlobalContext {
   programStartDate      DateTime?
   
   // Premium Onboarding (55 questions flow)
-  onboardingTurn        Int      @default(0)  // Current turn in onboarding (0=not started, 1=welcome, 2-56=questions, 57+=completed)
+  onboardingTurn        Int      @default(0)  // Current turn in onboarding (0=not started, 1=welcome, 2-56=questions, 57+=completed) - DEPRECATED, use currentQuestionId
+  currentQuestionId     String   @default("welcome") // Current question ID in onboarding (welcome, dig_1, dig_2, ..., completed)
   onboardingCompleted   Boolean  @default(false)
   
   // Radiografía Premium

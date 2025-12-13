@@ -43,6 +43,10 @@ interface UseProChatReturn {
   // Messages
   messages: FlowMessage[];
 
+  // Onboarding state (for progress tracking)
+  isOnboarding: boolean;
+  onboardingTurn: number;
+
   // State flags
   isLoading: boolean;
   isSending: boolean;
@@ -66,6 +70,10 @@ export const useProChat = (onSubscriptionExpired?: () => void): UseProChatReturn
 
   // Messages state - using FlowMessage for ChatMessage component compatibility
   const [messages, setMessages] = useState<FlowMessage[]>([]);
+
+  // Onboarding state - tracked from backend responses
+  const [isOnboarding, setIsOnboarding] = useState(true);
+  const [onboardingTurn, setOnboardingTurn] = useState(1);
 
   // UI state
   const [isSending, setIsSending] = useState(false);
@@ -145,6 +153,14 @@ export const useProChat = (onSubscriptionExpired?: () => void): UseProChatReturn
       setMessages(flowMessages);
       setConversationTitle(data.conversation.title);
       setSelectedConversationId(conversationId);
+
+      // Update onboarding state from backend
+      if (data.isOnboarding !== undefined) {
+        setIsOnboarding(data.isOnboarding);
+      }
+      if (data.onboardingTurn !== undefined) {
+        setOnboardingTurn(data.onboardingTurn);
+      }
     } catch (err: any) {
       console.error('Error loading conversation:', err);
 
@@ -191,6 +207,15 @@ export const useProChat = (onSubscriptionExpired?: () => void): UseProChatReturn
         timestamp: new Date().toISOString(),
         isNew: true, // Animate new welcome message
       }]);
+
+      // Set onboarding state from backend response
+      if (data.isOnboarding !== undefined) {
+        setIsOnboarding(data.isOnboarding);
+      }
+      if (data.onboardingTurn !== undefined) {
+        setOnboardingTurn(data.onboardingTurn);
+      }
+
       setError(null);
     },
     onError: (err: any) => {
@@ -325,6 +350,14 @@ export const useProChat = (onSubscriptionExpired?: () => void): UseProChatReturn
       // Send message with File (same as free flow - uses FormData)
       const response = await apiClient.sendProMessage(selectedConversationId, userMessage, imageFile);
 
+      // Update onboarding state from backend response
+      if (response.isOnboarding !== undefined) {
+        setIsOnboarding(response.isOnboarding);
+      }
+      if (response.onboardingTurn !== undefined) {
+        setOnboardingTurn(response.onboardingTurn);
+      }
+
       // Add assistant response
       const assistantMessage: FlowMessage = {
         role: 'assistant',
@@ -391,6 +424,10 @@ export const useProChat = (onSubscriptionExpired?: () => void): UseProChatReturn
 
     // Messages
     messages,
+
+    // Onboarding state
+    isOnboarding,
+    onboardingTurn,
 
     // State flags
     isLoading,

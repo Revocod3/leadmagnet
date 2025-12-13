@@ -17,9 +17,12 @@ import {
 } from '../config/assistant-instructions-pro';
 import {
   PRO_WELCOME_MESSAGE,
+  PRO_ONBOARDING_INSTRUCTIONS,
   TOTAL_ONBOARDING_QUESTIONS,
-  buildOnboardingInstructions,
-} from '../config/pro-onboarding-instructions';
+  extractCurrentQuestion,
+  isOnboardingCompleted as checkOnboardingCompleted,
+  QUESTION_ID_TO_TURN,
+} from '../config/pro-onboarding-instructions-complete';
 import { globalContextService } from './global-context.service';
 import { logger } from '../utils/logger';
 
@@ -122,7 +125,7 @@ export class AgentProService {
 
       // Check if onboarding is completed
       const isOnboardingCompleted = globalContext.onboardingCompleted;
-      const currentOnboardingTurn = globalContext.onboardingTurn || 0;
+      const currentQuestionId = globalContext.currentQuestionId || 'welcome';
 
       // Check if this is the first conversation
       const isFirstConversation = await globalContextService.isFirstConversation(userId);
@@ -145,29 +148,29 @@ export class AgentProService {
 
       // Generate welcome message based on onboarding state
       let welcomeMessage: string;
+      let onboardingTurn = 1;
 
       if (!isOnboardingCompleted) {
         // User hasn't completed onboarding - start or continue onboarding
-        const newTurn = currentOnboardingTurn === 0 ? 1 : currentOnboardingTurn;
 
-        // Update onboarding turn
-        await prisma.userGlobalContext.update({
-          where: { userId },
-          data: { onboardingTurn: newTurn },
-        });
-
-        // Build onboarding instructions for this turn
-        const onboardingInstructions = buildOnboardingInstructions(newTurn, firstName);
-
-        // If turn 1, use the static welcome message
-        if (newTurn === 1) {
+        // If starting fresh, use the static welcome message
+        if (currentQuestionId === 'welcome') {
           welcomeMessage = PRO_WELCOME_MESSAGE.replace('{nombre}', firstName);
+          onboardingTurn = 1;
+
+          // Update current question
+          await prisma.userGlobalContext.update({
+            where: { userId },
+            data: { currentQuestionId: 'welcome' },
+          });
         } else {
-          // Continue from where they left off
+          // Continue from where they left off - use the model to generate contextual greeting
+          onboardingTurn = QUESTION_ID_TO_TURN[currentQuestionId] || 1;
+
           const response = await openai.responses.create({
             model: MODELS.TEXT,
             conversation: openaiConversationId,
-            instructions: onboardingInstructions,
+            instructions: PRO_ONBOARDING_INSTRUCTIONS.replace(/\{nombre\}/g, firstName),
             input: [
               {
                 type: 'message',
@@ -175,7 +178,7 @@ export class AgentProService {
                 content: [
                   {
                     type: 'input_text',
-                    text: `[SISTEMA] El usuario ${firstName} vuelve al onboarding. Continúa desde donde lo dejó (turno ${newTurn}).`
+                    text: `[SISTEMA] El usuario ${firstName} vuelve al onboarding. Continúa desde la pregunta [PREGUNTA_ACTUAL: ${currentQuestionId}]. Salúdalo brevemente y continúa el onboarding.`
                   },
                 ],
               },
@@ -204,14 +207,14 @@ export class AgentProService {
           },
         });
 
-        logger.info(`Clara Premium onboarding conversation started for user ${userId}, turn ${newTurn}`);
+        logger.info(`Clara Premium onboarding conversation started for user ${userId}, question ${currentQuestionId}, turn ${onboardingTurn}`);
 
         return {
           conversationId: conversation.id,
           welcomeMessage,
           isFirstConversation,
           isOnboarding: true,
-          onboardingTurn: newTurn,
+          onboardingTurn,
         };
       }
 
@@ -307,6 +310,8 @@ Contexto resumido: ${formattedGlobalContext}`
       title: string | null;
       createdAt: Date;
     };
+    isOnboarding: boolean;
+    onboardingTurn: number;
   }> {
     try {
       const conversation = await prisma.proConversation.findUnique({
@@ -326,6 +331,12 @@ Contexto resumido: ${formattedGlobalContext}`
         throw new Error('Unauthorized access to conversation');
       }
 
+      // Get global context to include onboarding state
+      const globalContext = await globalContextService.getOrCreateContext(userId);
+      const isOnboarding = !globalContext.onboardingCompleted;
+      const currentQuestionId = globalContext.currentQuestionId || 'welcome';
+      const onboardingTurn = QUESTION_ID_TO_TURN[currentQuestionId] || 1;
+
       return {
         messages: conversation.messages.map(m => ({
           role: m.role,
@@ -337,6 +348,8 @@ Contexto resumido: ${formattedGlobalContext}`
           title: conversation.title,
           createdAt: conversation.createdAt,
         },
+        isOnboarding,
+        onboardingTurn,
       };
     } catch (error) {
       logger.error('Error continuing Clara Premium conversation:', { error });
@@ -383,7 +396,7 @@ Contexto resumido: ${formattedGlobalContext}`
       // Get global context to check onboarding state
       const globalContext = await globalContextService.getOrCreateContext(userId);
       const isOnboarding = !globalContext.onboardingCompleted;
-      let currentTurn = globalContext.onboardingTurn || 0;
+      const currentQuestionId = globalContext.currentQuestionId || 'welcome';
 
       // Use only first name
       const firstName = (userName || 'Usuario').trim().split(/\s+/)[0] || 'Usuario';
@@ -401,34 +414,9 @@ Contexto resumido: ${formattedGlobalContext}`
       let instructions: string;
 
       if (isOnboarding) {
-        // Increment turn for onboarding
-        currentTurn = currentTurn + 1;
-
-        // Check if onboarding is now complete (55 questions + welcome = 56 turns)
-        const isNowComplete = currentTurn > TOTAL_ONBOARDING_QUESTIONS + 1;
-
-        if (isNowComplete) {
-          // Mark onboarding as completed
-          await prisma.userGlobalContext.update({
-            where: { userId },
-            data: {
-              onboardingCompleted: true,
-              onboardingTurn: currentTurn,
-            },
-          });
-
-          // Use normal instructions for post-onboarding
-          instructions = await this.buildFullInstructions(userId, firstName);
-        } else {
-          // Update turn count
-          await prisma.userGlobalContext.update({
-            where: { userId },
-            data: { onboardingTurn: currentTurn },
-          });
-
-          // Build onboarding instructions for this turn
-          instructions = buildOnboardingInstructions(currentTurn, firstName);
-        }
+        // Use complete onboarding instructions (like free flow)
+        // The model manages the flow naturally and reports progress via [PREGUNTA_ACTUAL: xxx]
+        instructions = PRO_ONBOARDING_INSTRUCTIONS.replace(/\{nombre\}/g, firstName);
       } else {
         // Normal conversation - use full instructions
         instructions = await this.buildFullInstructions(userId, firstName);
@@ -471,8 +459,35 @@ Contexto resumido: ${formattedGlobalContext}`
         ],
       } as any);
 
-      const assistantMessage = this.extractTextFromResponse(response) ||
+      let assistantMessage = this.extractTextFromResponse(response) ||
         'Lo siento, hubo un error. ¿Puedes repetirme eso?';
+
+      // Extract current question ID from Clara's response (metadata system)
+      const newQuestionId = extractCurrentQuestion(assistantMessage);
+      const onboardingStillActive = isOnboarding && newQuestionId !== 'completed';
+      const onboardingJustCompleted = isOnboarding && newQuestionId === 'completed';
+
+      // Update global context with new question ID if in onboarding
+      if (isOnboarding && newQuestionId) {
+        if (onboardingJustCompleted) {
+          // Mark onboarding as completed
+          await prisma.userGlobalContext.update({
+            where: { userId },
+            data: {
+              onboardingCompleted: true,
+              currentQuestionId: 'completed',
+            },
+          });
+          logger.info(`✅ Onboarding completed for user ${userId}`);
+        } else {
+          // Update current question ID
+          await prisma.userGlobalContext.update({
+            where: { userId },
+            data: { currentQuestionId: newQuestionId },
+          });
+          logger.info(`Updated question ID for user ${userId}: ${currentQuestionId} → ${newQuestionId}`);
+        }
+      }
 
       // Save assistant message
       await prisma.proMessage.create({
@@ -520,14 +535,15 @@ Contexto resumido: ${formattedGlobalContext}`
       // - First 6 messages of conversation
       // - Every N messages after that
       // - Every 5 questions during onboarding to capture responses
+      const currentTurnForExtraction = newQuestionId ? (QUESTION_ID_TO_TURN[newQuestionId] || 1) : 1;
       const shouldExtractContext = isRadiography ||
         !hasContextData ||
         newMessageCount <= 6 ||
         newMessageCount % CONTEXT_EXTRACTION_INTERVAL === 0 ||
-        (isOnboarding && currentTurn % 5 === 0);
+        (onboardingStillActive && currentTurnForExtraction % 5 === 0);
 
       if (shouldExtractContext) {
-        logger.info(`Extracting context for user ${userId}: radiography=${isRadiography}, hasContext=${hasContextData}, msgCount=${newMessageCount}, onboarding=${isOnboarding}`);
+        logger.info(`Extracting context for user ${userId}: radiography=${isRadiography}, hasContext=${hasContextData}, msgCount=${newMessageCount}, onboarding=${onboardingStillActive}`);
         this.extractContextAsync(userId, fullMessageHistory);
       }
 
@@ -539,14 +555,18 @@ Contexto resumido: ${formattedGlobalContext}`
       // Determine if we should generate title
       const shouldGenerateTitle = !conversation.title && newMessageCount >= 2;
 
-      logger.info(`Clara Premium message processed for conversation ${conversationId}, onboarding=${isOnboarding}, turn=${currentTurn}`);
+      // Calculate turn number for frontend compatibility
+      const finalQuestionId = newQuestionId || currentQuestionId;
+      const onboardingTurn = QUESTION_ID_TO_TURN[finalQuestionId] || 1;
+
+      logger.info(`Clara Premium message processed for conversation ${conversationId}, onboarding=${onboardingStillActive}, question=${finalQuestionId}, turn=${onboardingTurn}`);
 
       return {
         message: assistantMessage,
         shouldGenerateTitle,
         shouldExtractContext,
-        isOnboarding: isOnboarding && currentTurn <= TOTAL_ONBOARDING_QUESTIONS + 1,
-        onboardingTurn: currentTurn,
+        isOnboarding: onboardingStillActive,
+        onboardingTurn,
       };
     } catch (error) {
       logger.error('Error processing Clara Premium message:', { error });

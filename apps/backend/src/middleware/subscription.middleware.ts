@@ -50,10 +50,22 @@ export async function requireProSubscription(
 
     if (!activeSubscription) {
       // User has PRO role but no active subscription - downgrade them
-      await prisma.user.update({
-        where: { id: user.userId },
-        data: { role: 'FREE' },
-      });
+      try {
+        await prisma.user.update({
+          where: { id: user.userId },
+          data: { role: 'FREE' },
+        });
+      } catch (error: any) {
+        // If user not found (P2025), they might have been deleted.
+        if (error.code === 'P2025') {
+          res.status(401).json({
+            success: false,
+            error: 'Usuario no encontrado. Por favor, inicia sesión nuevamente.',
+          } as ApiResponse);
+          return;
+        }
+        console.error('[Subscription Middleware] Error downgrading user:', error);
+      }
 
       res.status(403).json({
         success: false,

@@ -23,10 +23,9 @@ import { ImageViewerModal } from '../modals/ImageViewerModal';
 import { QuickReplyChips } from '../chat/QuickReplyChips';
 import { InfoWedge } from '../chat/InfoWedge';
 import {
-  detectCurrentBlock,
-  detectQuestionInBlock,
-  isOnboardingComplete,
-  QUICK_REPLIES
+  shouldShowInfoWedge,
+  getQuestionByTurn,
+  QUESTION_ID_TO_TURN,
 } from '../../config/pro-onboarding-config';
 import type { Tab } from './ProPremiumContainer';
 
@@ -50,6 +49,8 @@ export const ProChat = ({ onSubscriptionExpired, activeTab, onTabChange }: ProCh
     error,
     sendMessage,
     state,
+    isOnboarding,
+    onboardingTurn,
   } = useProChat(onSubscriptionExpired);
 
   // Local UI state
@@ -107,40 +108,24 @@ export const ProChat = ({ onSubscriptionExpired, activeTab, onTabChange }: ProCh
   }, [scrollToBottom]);
 
   // Helper to get current question info for Quick Replies
+  // USA EL TURNO DEL BACKEND - no depende de regex ni del contenido del mensaje
   const currentQuestionInfo = useMemo(() => {
-    if (!messages.length) return null;
-    const lastMessage = messages[messages.length - 1];
-    if (!lastMessage || lastMessage.role !== 'assistant') return null;
+    // Si no estamos en onboarding, no hay quick replies
+    if (!isOnboarding) return null;
 
-    const block = detectCurrentBlock(lastMessage.content);
-    if (!block) return null;
-
-    const questionNum = detectQuestionInBlock(lastMessage.content, block.id);
-    // Construct ID like 'dig_1', 'emo_2', etc.
-    // We need to map block.id to the prefix used in QUICK_REPLIES keys
-    // In config: 'digestivo' -> 'dig', 'emocional' -> 'emo', etc.
-    // Let's look at QUICK_REPLIES keys in config file.
-    // They are like 'dig_1', 'emo_1'.
-    // So we need a mapping or just take first 3 chars.
-    const prefix = block.id.substring(0, 3);
-    const questionId = `${prefix}_${questionNum}`;
-
-    const rawOptions = QUICK_REPLIES[questionId];
-
-    if (!rawOptions) return null;
-
-    const options = rawOptions.map(opt => ({
-      value: opt.text,
-      label: opt.shortText || opt.text
-    }));
+    // Usar el turno del backend para calcular la posición exacta
+    const result = getQuestionByTurn(onboardingTurn);
+    if (!result) return null;
 
     return {
-      block,
-      questionNum,
-      questionId,
-      options
+      block: result.block,
+      questionNum: result.questionIndex + 1, // 1-indexed for display
+      questionId: result.questionId,
+      options: result.options,
+      blockIndex: result.blockIndex,
+      questionIndex: result.questionIndex,
     };
-  }, [messages]);
+  }, [isOnboarding, onboardingTurn]);
   useEffect(() => {
     const lastMessage = messages[messages.length - 1];
     if (lastMessage?.role === 'assistant') {
@@ -288,36 +273,27 @@ export const ProChat = ({ onSubscriptionExpired, activeTab, onTabChange }: ProCh
   };
 
   // Detect onboarding progress from latest assistant message
+  // Uses currentQuestionInfo which already has the detection done
   const progressInfo = useMemo(() => {
-    // Find the latest assistant message
-    const lastAssistantMessage = [...messages].reverse().find(m => m.role === 'assistant');
-    if (!lastAssistantMessage) return null;
+    if (!currentQuestionInfo || !isOnboarding) return null;
 
-    // Check if onboarding is complete
-    if (isOnboardingComplete(lastAssistantMessage.content)) return null;
-
-    // Detect current block
-    const currentBlock = detectCurrentBlock(lastAssistantMessage.content);
-    if (!currentBlock) return null;
-
-    // Detect question number within block
-    const questionInBlock = detectQuestionInBlock(lastAssistantMessage.content, currentBlock.id);
+    const { block, questionIndex } = currentQuestionInfo;
 
     // Convert to FlowBlock format for ProgressChip compatibility
     return {
       currentBlock: {
-        id: currentBlock.id,
-        name: currentBlock.name,
+        id: block.id,
+        name: block.name,
         emoji: '📋', // Generic emoji for onboarding
-        color: currentBlock.color,
-        colorLight: currentBlock.bgColor,
+        color: block.color,
+        colorLight: block.bgColor,
         questions: [],
-        infoWedge: currentBlock.infoWedge,
+        infoWedge: block.infoWedge,
       },
-      currentQuestionIndex: questionInBlock - 1, // 0-indexed
-      totalQuestionsInBlock: currentBlock.questionsCount,
+      currentQuestionIndex: questionIndex, // Already 0-indexed
+      totalQuestionsInBlock: block.questionsCount,
     };
-  }, [messages]);
+  }, [isOnboarding, currentQuestionInfo]);
 
   const handleChipSelect = (option: { value: string; label: string }) => {
     handleSendMessage(undefined, option.value);
@@ -495,18 +471,50 @@ export const ProChat = ({ onSubscriptionExpired, activeTab, onTabChange }: ProCh
                   <div className="space-y-3">
                     <AnimatePresence mode="popLayout">
                       {messages.map((message, index) => {
-                        // Logic to detect if we should show InfoWedge
+                        // Extract question ID from Clara's message metadata
                         let showInfoWedge = false;
                         let wedgeBlock = null;
 
-                        if (message.role === 'assistant') {
-                          const block = detectCurrentBlock(message.content);
-                          if (block) {
-                            const questionNum = detectQuestionInBlock(message.content, block.id);
-                            // Show wedge if it's the first question of the block
-                            if (questionNum === 1) {
-                              showInfoWedge = true;
-                              wedgeBlock = block;
+                        if (message.role === 'assistant' && index > 0) {
+                          // Extract [PREGUNTA_ACTUAL: xxx] from current message
+                          const currentMatch = message.content.match(/\[PREGUNTA_ACTUAL:\s*(\w+)\]/);
+                          const currentQuestionId = currentMatch ? currentMatch[1] : null;
+
+                          // Find previous assistant message
+                          let prevAssistantIndex = -1;
+                          for (let i = index - 1; i >= 0; i--) {
+                            if (messages[i]?.role === 'assistant') {
+                              prevAssistantIndex = i;
+                              break;
+                            }
+                          }
+
+                          if (prevAssistantIndex >= 0 && messages[prevAssistantIndex]) {
+                            const prevMatch = messages[prevAssistantIndex]!.content.match(/\[PREGUNTA_ACTUAL:\s*(\w+)\]/);
+                            const prevQuestionId = prevMatch ? prevMatch[1] : null;
+
+                            // Special case: First InfoWedge (Digestivo) appears when transitioning from welcome to dig_1
+                            if (prevQuestionId === 'welcome' && currentQuestionId === 'dig_1') {
+                              const currentInfo = getQuestionByTurn(QUESTION_ID_TO_TURN['dig_1']);
+                              if (currentInfo) {
+                                showInfoWedge = true;
+                                wedgeBlock = currentInfo.block;
+                              }
+                            }
+                            // All other InfoWedges appear when we LEAVE a block (transition)
+                            else if (prevQuestionId && currentQuestionId && currentQuestionId !== 'welcome' && currentQuestionId !== 'completed') {
+                              // Convert question IDs to block indices
+                              const currentTurn = QUESTION_ID_TO_TURN[currentQuestionId] || 0;
+                              const prevTurn = QUESTION_ID_TO_TURN[prevQuestionId] || 0;
+
+                              const currentInfo = getQuestionByTurn(currentTurn);
+                              const prevInfo = getQuestionByTurn(prevTurn);
+
+                              // Show InfoWedge when changing blocks (transition from old block to new)
+                              if (currentInfo && prevInfo && currentInfo.blockIndex !== prevInfo.blockIndex) {
+                                showInfoWedge = true;
+                                wedgeBlock = currentInfo.block;
+                              }
                             }
                           }
                         }
@@ -524,7 +532,14 @@ export const ProChat = ({ onSubscriptionExpired, activeTab, onTabChange }: ProCh
                               </div>
                             )}
                             <ChatMessage
-                              message={message}
+                              message={{
+                                ...message,
+                                // Remove metadata from display: [PREGUNTA_ACTUAL: xxx] and PREGUNTA X (xxx):
+                                content: message.content
+                                  .replace(/\[PREGUNTA_ACTUAL:\s*\w+\]/g, '')
+                                  .replace(/PREGUNTA \d+ \(\w+\):/g, '')
+                                  .trim()
+                              }}
                               state={state}
                               isLatest={index === messages.length - 1}
                               onTypewriterComplete={index === messages.length - 1 ? handleTypewriterComplete : undefined}
