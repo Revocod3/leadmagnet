@@ -2,6 +2,8 @@ import { useRef, useEffect } from 'react';
 import { Plus, Mic, ArrowUp, Camera, Image } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
+import { twMerge } from 'tailwind-merge';
+
 interface ChatFooterProps {
   inputMessage: string;
   setInputMessage: (message: string) => void;
@@ -22,6 +24,7 @@ interface ChatFooterProps {
   showImageLimitMessage: boolean;
   isKeyboardOpen?: boolean;
   onInputFocus?: () => void;
+  className?: string;
 }
 
 export const ChatFooter = ({
@@ -44,6 +47,7 @@ export const ChatFooter = ({
   showImageLimitMessage,
   // isKeyboardOpen = false,
   onInputFocus,
+  className,
 }: ChatFooterProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -87,7 +91,7 @@ export const ChatFooter = ({
 
   return (
     <footer
-      className="fixed bottom-0 left-0 right-0 z-30 pointer-events-none"
+      className={twMerge("fixed bottom-0 left-0 right-0 z-30 pointer-events-none", className)}
     >
       {/* Gradiente de abajo hacia arriba */}
       <div className="absolute inset-0 bg-gradient-to-t from-neutral-50 via-neutral-50/80 via-50% to-transparent dark:from-neutral-900 dark:via-neutral-900/80 dark:via-50% dark:to-transparent pointer-events-none" />

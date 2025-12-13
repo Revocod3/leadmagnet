@@ -8,6 +8,8 @@ import type { FlowBlock } from '../../config/diagnostic-flow-config';
 
 type Tab = 'chat' | 'diario' | 'progreso';
 
+import { twMerge } from 'tailwind-merge';
+
 interface ProgressInfo {
   currentBlock: FlowBlock;
   currentQuestionIndex: number;
@@ -23,6 +25,7 @@ interface ChatHeaderProps {
   activeTab?: Tab;
   onTabChange?: (tab: Tab) => void;
   progressInfo?: ProgressInfo | null;
+  className?: string;
 }
 
 export const ChatHeader = ({
@@ -34,6 +37,7 @@ export const ChatHeader = ({
   activeTab,
   onTabChange,
   progressInfo,
+  className,
 }: ChatHeaderProps) => {
   const navigate = useNavigate();
   const { isAuthenticated, user, logout } = useAuthStore();
@@ -52,7 +56,7 @@ export const ChatHeader = ({
     setShowMenu(false);
   };
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 pointer-events-none">
+    <header className={twMerge("fixed top-0 left-0 right-0 z-50 pointer-events-none", className)}>
       {/* Gradiente de arriba hacia abajo */}
       <div className="absolute inset-0 bg-gradient-to-b from-brand-cream-100 via-brand-cream-100/80 via-50% to-transparent dark:from-neutral-900 dark:via-neutral-900/80 dark:via-50% dark:to-transparent pointer-events-none" />
 
