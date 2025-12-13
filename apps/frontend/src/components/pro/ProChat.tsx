@@ -329,7 +329,7 @@ export const ProChat = ({ onSubscriptionExpired, activeTab, onTabChange }: ProCh
           {/* Chat Content */}
           <div
             ref={chatContainerRef}
-            className="mobile-chat-container flex-1 bg-neutral-50 dark:bg-neutral-900 bg-chat-lighting transition-colors duration-200"
+            className="mobile-chat-container flex-1 bg-brand-cream-100 dark:bg-neutral-900 bg-chat-lighting transition-colors duration-200"
             style={{
               height: isKeyboardOpen ? `calc(100dvh - ${keyboardHeight}px)` : undefined,
             }}
