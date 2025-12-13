@@ -56,7 +56,7 @@ export const ChatHeader = ({
     setShowMenu(false);
   };
   return (
-    <header className={twMerge("top-0 left-0 right-0 pointer-events-none", className)}>
+    <header className={twMerge("absolute top-0 left-0 right-0 z-50 pointer-events-none", className)}>
       {/* Gradiente de arriba hacia abajo */}
       <div className="absolute inset-0 bg-gradient-to-b from-brand-cream-100 via-brand-cream-100/80 via-50% to-transparent dark:from-neutral-900 dark:via-neutral-900/80 dark:via-50% dark:to-transparent pointer-events-none" />
 
