@@ -61,25 +61,9 @@ export const useDiagnosticFlow = () => {
   const [etymology, setEtymology] = useState<string>('');
   const [isInitialized, setIsInitialized] = useState(false);
 
-  // Auto-save messages to localStorage when they change (for FREE flow persistence)
-  useEffect(() => {
-    if (messages.length === 0) return;
-
-    const sessionStore = useSessionStore.getState();
-    const chatStore = useChatStore.getState();
-    const sessionId = sessionStore.session?.id;
-
-    if (!sessionId) return;
-
-    // Save current messages to localStorage
-    chatStore.setMessages(messages);
-    chatStore.saveFreeChatState(sessionId, state.step === 'diagnosis_ready');
-
-    // Mark diagnostic as completed if we reached that step
-    if (state.step === 'diagnosis_ready') {
-      chatStore.setDiagnosticCompleted(true);
-    }
-  }, [messages, state.step]);
+  // NO persistir conversación - Ulises quiere que siempre empiece desde cero
+  // El flujo diagnóstico gratuito NO se guarda en localStorage
+  // Si el usuario cierra la pestaña y vuelve, empieza de nuevo
 
   // Poll for diagnosis when in generating state
   useEffect(() => {
@@ -176,54 +160,12 @@ export const useDiagnosticFlow = () => {
     }));
 
     try {
-      // 0) Check if FREE chat state is expired (24h after diagnosis completed)
-      if (chatStore.isFreeChatExpired()) {
-        chatStore.clearFreeChatState();
-        // Also clear the session to force a new one
-        sessionStore.clearSession();
-        return;
-      }
+      // NO restaurar desde localStorage ni desde servidor
+      // Siempre empezar desde cero - Requisito de Ulises
+      // Limpiar cualquier estado previo
+      chatStore.clearFreeChatState();
 
-      // 1) Try to restore from localStorage first (fastest)
-      const restoredFromLocal = chatStore.restoreFreeChatState(sessionId);
-      if (restoredFromLocal && chatStore.freeChatState.messages.length > 0) {
-        // Mark all restored messages as not new (don't animate typewriter)
-        const restoredMessages = (chatStore.freeChatState.messages as FlowMessage[]).map(m => ({
-          ...m,
-          isNew: false,
-        }));
-        setMessages(restoredMessages);
-
-        // Check if diagnostic was already completed
-        if (chatStore.freeChatState.diagnosticCompleted) {
-          setState((prev) => ({ ...prev, step: 'diagnosis_ready' }));
-        }
-        return;
-      }
-
-      // 2) Try to restore chat history from server
-      try {
-        const history = await apiClient.getChatHistory(sessionId);
-        if (history && history.length > 0) {
-          const restoredMessages = history.map((m) => ({
-            role: m.role === 'system' ? 'assistant' : (m.role as 'user' | 'assistant'),
-            content: m.content,
-            timestamp: m.timestamp || m.createdAt || new Date().toISOString(),
-            isNew: false, // Don't animate restored messages
-          })) as FlowMessage[];
-
-          setMessages(restoredMessages);
-
-          // Save to localStorage for future fast restore
-          chatStore.setMessages(restoredMessages);
-          chatStore.saveFreeChatState(sessionId);
-
-          return; // History restored; no need to call init
-        }
-      } catch (historyErr) {
-      }
-
-      // 3) No history: call backend to initialize diagnostic flow with user name
+      // Inicializar conversación desde el backend
       const welcomeMsg = await apiClient.initializeChat(sessionId, sessionStore.language);
 
       if (welcomeMsg && welcomeMsg.content) {

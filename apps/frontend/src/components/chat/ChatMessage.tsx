@@ -179,19 +179,19 @@ export const ChatMessage = forwardRef<HTMLDivElement, ChatMessageProps>(({
           </div>
         )}
 
-        {/* Show closing CTA as InfoWedge outside bubble - purple/fuchsia theme */}
+        {/* Show closing CTA as InfoWedge outside bubble - emerald theme like PRO first block */}
         {message.type === 'closing_cta' && (
           <div className="w-full mt-4">
             <InfoWedge
               content={message.content}
-              blockColor="#c026d3" // Fuchsia-600
-              blockColorLight="#fae8ff" // Fuchsia-100
+              blockColor="#059669" // emerald-600 from PRO onboarding
+              blockColorLight="#D1FAE5" // emerald-100 from PRO onboarding
             />
             {/* CTA Button for closing message */}
             <div className="mt-4">
               <a
                 href="/pricing"
-                className="group w-full py-4 sm:py-5 px-4 sm:px-6 rounded-2xl bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-600 hover:from-purple-700 hover:via-fuchsia-700 hover:to-pink-700 text-white font-bold text-sm sm:text-base flex items-center justify-center gap-2 sm:gap-3 transition-all duration-300 shadow-2xl hover:shadow-fuchsia-500/50 transform hover:-translate-y-1 hover:scale-[1.02] relative overflow-hidden"
+                className="group w-full py-4 sm:py-5 px-4 sm:px-6 rounded-2xl bg-gradient-to-r from-emerald-600 via-emerald-700 to-emerald-800 hover:from-emerald-700 hover:via-emerald-800 hover:to-emerald-900 text-white font-bold text-sm sm:text-base flex items-center justify-center gap-2 sm:gap-3 transition-all duration-300 shadow-2xl hover:shadow-emerald-500/50 transform hover:-translate-y-1 hover:scale-[1.02] relative overflow-hidden"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -skew-x-12 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000"></div>
                 <div className="relative z-10 flex items-center gap-2 sm:gap-3">
