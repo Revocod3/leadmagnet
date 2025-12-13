@@ -15,6 +15,8 @@ const openai = new OpenAI();
 // Maximum tokens for context (to avoid overwhelming the LLM)
 const MAX_CONTEXT_TOKENS = 2000;
 
+const TIME_ZONE = 'Europe/Madrid';
+
 interface ExtractedContext {
   digestiveProfile?: {
     symptoms?: string[];
@@ -93,6 +95,33 @@ interface GlobalContextData {
 }
 
 export class GlobalContextService {
+
+  private getMadridDateParts(date: Date): { year: number; month: number; day: number } {
+    const formatter = new Intl.DateTimeFormat('en-CA', {
+      timeZone: TIME_ZONE,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
+
+    const parts = formatter.formatToParts(date);
+    const year = Number(parts.find(p => p.type === 'year')?.value);
+    const month = Number(parts.find(p => p.type === 'month')?.value);
+    const day = Number(parts.find(p => p.type === 'day')?.value);
+
+    return { year, month, day };
+  }
+
+  private getMadridStartOfDayUtc(date: Date): Date {
+    const p = this.getMadridDateParts(date);
+    return new Date(Date.UTC(p.year, p.month - 1, p.day));
+  }
+
+  private diffCalendarDaysMadrid(from: Date, to: Date): number {
+    const fromMidnight = this.getMadridStartOfDayUtc(from).getTime();
+    const toMidnight = this.getMadridStartOfDayUtc(to).getTime();
+    return Math.floor((toMidnight - fromMidnight) / (1000 * 60 * 60 * 24));
+  }
 
   /**
    * Get or create global context for a user
@@ -533,7 +562,7 @@ ${context.strengths.map(s => `💪 ${s}`).join('\n')}`);
     if (context.programStartDate) {
       const now = new Date();
       const start = new Date(context.programStartDate);
-      daysInProgram = Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+      daysInProgram = Math.max(0, this.diffCalendarDaysMadrid(start, now));
     }
 
     // Determine phase and week
@@ -550,22 +579,6 @@ ${context.strengths.map(s => `💪 ${s}`).join('\n')}`);
       else currentPhase = 'maintenance';
     }
 
-    // Update consecutive days
-    let consecutiveDays = context.consecutiveDays;
-    if (context.lastCheckInDate) {
-      const lastCheckIn = new Date(context.lastCheckInDate);
-      const today = new Date();
-      const daysDiff = Math.floor((today.getTime() - lastCheckIn.getTime()) / (1000 * 60 * 60 * 24));
-
-      if (daysDiff === 1) {
-        consecutiveDays++;
-      } else if (daysDiff > 1) {
-        consecutiveDays = 1;
-      }
-    } else {
-      consecutiveDays = 1;
-    }
-
     // Update in database
     await prisma.userGlobalContext.update({
       where: { userId },
@@ -573,12 +586,48 @@ ${context.strengths.map(s => `💪 ${s}`).join('\n')}`);
         daysInProgram,
         weekNumber,
         currentPhase,
-        consecutiveDays,
-        lastCheckInDate: new Date()
       }
     });
 
     logger.info(`Updated phase for user ${userId}: ${currentPhase}, week ${weekNumber}, ${daysInProgram} days`);
+  }
+
+  /**
+   * Record a user interaction to keep temporal context accurate.
+   * Updates lastCheckInDate and consecutiveDays.
+   */
+  async recordInteraction(userId: string, at: Date = new Date()): Promise<void> {
+    const context = await this.getOrCreateContext(userId);
+
+    let consecutiveDays = context.consecutiveDays || 0;
+
+    if (context.lastCheckInDate) {
+      const lastCheckIn = new Date(context.lastCheckInDate);
+      const daysDiff = this.diffCalendarDaysMadrid(lastCheckIn, at);
+
+      if (daysDiff === 0) {
+        // Same day: keep streak
+      } else if (daysDiff === 1) {
+        consecutiveDays = Math.max(1, consecutiveDays + 1);
+      } else if (daysDiff > 1) {
+        consecutiveDays = 1;
+      } else {
+        // Clock skew or future dates: don't break streak, just keep value
+        consecutiveDays = Math.max(1, consecutiveDays || 1);
+      }
+    } else {
+      consecutiveDays = 1;
+    }
+
+    await prisma.userGlobalContext.update({
+      where: { userId },
+      data: {
+        consecutiveDays,
+        lastCheckInDate: at,
+      },
+    });
+
+    logger.info(`Recorded interaction for user ${userId}: streak=${consecutiveDays}`);
   }
 
   /**
@@ -610,11 +659,14 @@ ${context.strengths.map(s => `💪 ${s}`).join('\n')}`);
     mood?: number;
     bloating?: number;
   }>> {
+    const todayMadridMidnightUtc = this.getMadridStartOfDayUtc(new Date());
+    const fromDate = new Date(todayMadridMidnightUtc.getTime() - days * 24 * 60 * 60 * 1000);
+
     const entries = await prisma.diaryEntry.findMany({
       where: {
         userId,
         date: {
-          gte: new Date(Date.now() - days * 24 * 60 * 60 * 1000)
+          gte: fromDate
         }
       },
       orderBy: { date: 'desc' },
@@ -787,10 +839,7 @@ Responde SOLO con JSON:
     if (!tagsGeneratedAt) return true;
 
     const now = new Date();
-    const daysSinceGeneration = Math.floor(
-      (now.getTime() - new Date(tagsGeneratedAt).getTime()) / (1000 * 60 * 60 * 24)
-    );
-
+    const daysSinceGeneration = this.diffCalendarDaysMadrid(new Date(tagsGeneratedAt), now);
     return daysSinceGeneration >= 14; // Regenerate every 2 weeks
   }
 }

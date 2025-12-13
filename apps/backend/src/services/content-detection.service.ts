@@ -188,12 +188,11 @@ CRITERIOS:
     }
 
     try {
-      // Check if a similar challenge already exists
+      // MicroChallenge.title is unique in the schema, so treat title as the primary key.
       const existingChallenge = await prisma.microChallenge.findFirst({
         where: {
           title: analysis.challengeTitle,
-          category: analysis.challengeCategory
-        }
+        },
       });
 
       let challengeId: string;
@@ -201,20 +200,42 @@ CRITERIOS:
       if (existingChallenge) {
         challengeId = existingChallenge.id;
       } else {
-        // Create new micro challenge
-        const newChallenge = await prisma.microChallenge.create({
-          data: {
-            title: analysis.challengeTitle,
-            description: analysis.challengeDescription || analysis.challengeTitle,
-            category: analysis.challengeCategory,
-            durationDays: analysis.challengeDuration || 1,
-            difficulty: 'easy',
-            points: 10,
-            instructions: analysis.challengeDescription || analysis.challengeTitle,
-            followUpQuestion: '¿Cómo te fue con este reto?'
-          }
-        });
-        challengeId = newChallenge.id;
+        try {
+          const newChallenge = await prisma.microChallenge.create({
+            data: {
+              title: analysis.challengeTitle,
+              description: analysis.challengeDescription || analysis.challengeTitle,
+              category: analysis.challengeCategory,
+              durationDays: analysis.challengeDuration || 1,
+              difficulty: 'easy',
+              points: 10,
+              instructions: analysis.challengeDescription || analysis.challengeTitle,
+              followUpQuestion: '¿Cómo te fue con este reto?'
+            }
+          });
+          challengeId = newChallenge.id;
+        } catch (createErr) {
+          // In case of a race (unique title), re-fetch by title
+          const refetched = await prisma.microChallenge.findFirst({
+            where: { title: analysis.challengeTitle },
+          });
+          if (!refetched) throw createErr;
+          challengeId = refetched.id;
+        }
+      }
+
+      // Avoid assigning the same active challenge multiple times
+      const existingUserChallenge = await prisma.userChallenge.findFirst({
+        where: {
+          userId,
+          challengeId,
+          status: { in: ['assigned', 'in_progress'] },
+        },
+      });
+
+      if (existingUserChallenge) {
+        logger.info(`[CONTENT] Challenge already active for user ${userId}: ${analysis.challengeTitle}`);
+        return;
       }
 
       // Assign challenge to user

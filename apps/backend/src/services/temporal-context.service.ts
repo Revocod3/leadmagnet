@@ -9,6 +9,33 @@ import { logger } from '../utils/logger';
 
 export class TemporalContextService {
 
+  private static readonly TIME_ZONE = 'Europe/Madrid';
+
+  private getMadridDateParts(date: Date): { year: number; month: number; day: number; hour: number } {
+    const formatter = new Intl.DateTimeFormat('en-CA', {
+      timeZone: TemporalContextService.TIME_ZONE,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      hour12: false,
+    });
+
+    const parts = formatter.formatToParts(date);
+    const year = Number(parts.find(p => p.type === 'year')?.value);
+    const month = Number(parts.find(p => p.type === 'month')?.value);
+    const day = Number(parts.find(p => p.type === 'day')?.value);
+    const hour = Number(parts.find(p => p.type === 'hour')?.value);
+
+    return { year, month, day, hour };
+  }
+
+  private getMadridDayOfWeek(date: Date): number {
+    const p = this.getMadridDateParts(date);
+    // Build a UTC date from the Madrid calendar date and get weekday (0=Sunday..6=Saturday)
+    return new Date(Date.UTC(p.year, p.month - 1, p.day)).getUTCDay();
+  }
+
   /**
    * Calculate days since a given date
    */
@@ -16,8 +43,12 @@ export class TemporalContextService {
     if (!date) return -1;
 
     const now = new Date();
-    const diffMs = now.getTime() - new Date(date).getTime();
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const nowParts = this.getMadridDateParts(now);
+    const thenParts = this.getMadridDateParts(new Date(date));
+
+    const nowMidnightUtc = Date.UTC(nowParts.year, nowParts.month - 1, nowParts.day);
+    const thenMidnightUtc = Date.UTC(thenParts.year, thenParts.month - 1, thenParts.day);
+    const diffDays = Math.floor((nowMidnightUtc - thenMidnightUtc) / (1000 * 60 * 60 * 24));
 
     return diffDays;
   }
@@ -26,7 +57,7 @@ export class TemporalContextService {
    * Get current time of day for appropriate greetings
    */
   private getTimeOfDay(): number {
-    return new Date().getHours();
+    return this.getMadridDateParts(new Date()).hour;
   }
 
   /**
@@ -176,7 +207,7 @@ Este es el primer contacto con ${userName}. No hay historial previo de interacci
     }
 
     // Add day-specific reminders if applicable
-    const dayOfWeek = new Date().getDay();
+    const dayOfWeek = this.getMadridDayOfWeek(new Date());
     if (dayOfWeek === 1 && daysSince === 1) {
       // Monday after weekend
       triggers += `

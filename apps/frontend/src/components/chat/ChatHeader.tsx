@@ -61,7 +61,7 @@ export const ChatHeader = ({
         <div className="backdrop-blur-xl bg-white/90 dark:bg-neutral-800/90 rounded-full px-4 py-2 shadow-lg border border-neutral-200/50 dark:border-neutral-700/50">
           <div className="flex flex-col items-start">
             <span className="text-sm font-semibold text-neutral-900 dark:text-white">
-              {isAuthenticated ? 'Clara PRO' : 'ChatOVP'}
+              ChatOVP
             </span>
             <span className="text-[10px] font-medium text-brand-green-500 flex items-center gap-1.5 online-pulse">
               <span className="w-2 h-2 bg-brand-green-500 rounded-full online-pulse"></span>

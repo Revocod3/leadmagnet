@@ -318,6 +318,21 @@ export class ProController {
         });
       }
 
+      const contentMeta = result.contentAnalysis
+        ? {
+            shouldOfferPDF: result.contentAnalysis.shouldOfferPDF,
+            documentTitle: result.contentAnalysis.documentTitle,
+          }
+        : {};
+
+      const isUrgent = Boolean(urgencyCheck.isUrgent || result.contentAnalysis?.isUrgent);
+      const urgencyMeta = isUrgent
+        ? {
+            isUrgent: true,
+            urgencyReason: result.contentAnalysis?.urgencyReason || urgencyCheck.reason,
+          }
+        : {};
+
       res.json({
         success: true,
         data: {
@@ -325,13 +340,8 @@ export class ProController {
           content: result.message,
           isOnboarding: result.isOnboarding,
           onboardingTurn: result.onboardingTurn,
-          // Include content analysis if available (for PDF download button, urgency banner, etc.)
-          ...(result.contentAnalysis && {
-            shouldOfferPDF: result.contentAnalysis.shouldOfferPDF,
-            documentTitle: result.contentAnalysis.documentTitle,
-            isUrgent: result.contentAnalysis.isUrgent,
-            urgencyReason: result.contentAnalysis.urgencyReason
-          })
+          ...contentMeta,
+          ...urgencyMeta,
         },
       } as ApiResponse);
     } catch (error) {

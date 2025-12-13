@@ -612,23 +612,37 @@ Contexto resumido: ${formattedGlobalContext}`
       } | undefined = undefined;
 
       if (!onboardingStillActive && assistantMessage.length > 200) {
-        this.analyzeContentAsync(userId, conversationId, assistantMessage);
-
-        // Quick sync analysis for urgency (to return immediately)
-        const quickAnalysis = await contentDetectionService.analyzeResponse(
+        // Single analysis (used for immediate metadata + background persistence)
+        const analysis = await contentDetectionService.analyzeResponse(
           userId,
           conversationId,
           assistantMessage
         );
 
-        if (quickAnalysis.shouldOfferPDF || quickAnalysis.isUrgent) {
+        if (analysis.shouldOfferPDF || analysis.isUrgent) {
           contentAnalysisResult = {
-            shouldOfferPDF: quickAnalysis.shouldOfferPDF,
-            ...(quickAnalysis.documentTitle && { documentTitle: quickAnalysis.documentTitle }),
-            isUrgent: quickAnalysis.isUrgent,
-            ...(quickAnalysis.urgencyReason && { urgencyReason: quickAnalysis.urgencyReason })
+            shouldOfferPDF: analysis.shouldOfferPDF,
+            ...(analysis.documentTitle && { documentTitle: analysis.documentTitle }),
+            isUrgent: analysis.isUrgent,
+            ...(analysis.urgencyReason && { urgencyReason: analysis.urgencyReason })
           };
         }
+
+        // Persist detected content in background (no second LLM call)
+        this.persistContentFromAnalysisAsync(userId, conversationId, assistantMessage, analysis);
+      }
+
+      // Keep temporal context accurate (streak/last check-in) per message
+      globalContextService.recordInteraction(userId).catch(err => {
+        logger.error('❌ Error recording interaction:', {
+          error: err instanceof Error ? err.message : String(err),
+          userId,
+        });
+      });
+
+      // Regenerate profile tags periodically (non-blocking)
+      if (!onboardingStillActive && globalContextService.shouldRegenerateTags(updatedGlobalContext.tagsGeneratedAt)) {
+        this.generateTagsAsync(userId);
       }
 
       // Determine if we should generate title
@@ -695,42 +709,36 @@ Contexto resumido: ${formattedGlobalContext}`
   }
 
   /**
-   * Analyze content and save documents/challenges asynchronously (non-blocking)
+   * Persist content analysis results (documents/challenges) asynchronously.
+   * This avoids re-calling the LLM when we already have the analysis.
    */
-  private analyzeContentAsync(
+  private persistContentFromAnalysisAsync(
     userId: string,
     conversationId: string,
-    assistantMessage: string
+    assistantMessage: string,
+    analysis: Awaited<ReturnType<typeof contentDetectionService.analyzeResponse>>
   ): void {
-    logger.info(`Starting async content analysis for user ${userId}, conversation ${conversationId}`);
-
-    contentDetectionService.analyzeResponse(userId, conversationId, assistantMessage)
-      .then(async (analysis) => {
-        // Save document if valuable
+    Promise.resolve()
+      .then(async () => {
         if (analysis.isValuableDocument) {
-          await contentDetectionService.saveDocument(
-            userId,
-            conversationId,
-            analysis,
-            assistantMessage
-          );
+          await contentDetectionService.saveDocument(userId, conversationId, analysis, assistantMessage);
         }
 
-        // Create challenge if detected
         if (analysis.isChallenge) {
           await contentDetectionService.createChallenge(userId, analysis);
         }
-
-        logger.info(`✅ Content analysis complete for user ${userId}:`, {
+      })
+      .then(() => {
+        logger.info(`✅ Content persistence complete for user ${userId}:`, {
           isDocument: analysis.isValuableDocument,
-          isChallenge: analysis.isChallenge
+          isChallenge: analysis.isChallenge,
         });
       })
       .catch(err => {
-        logger.error('❌ Error analyzing content:', {
+        logger.error('❌ Error persisting analyzed content:', {
           error: err instanceof Error ? err.message : String(err),
           userId,
-          conversationId
+          conversationId,
         });
       });
   }
