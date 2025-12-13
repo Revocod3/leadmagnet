@@ -320,17 +320,17 @@ export class ProController {
 
       const contentMeta = result.contentAnalysis
         ? {
-            shouldOfferPDF: result.contentAnalysis.shouldOfferPDF,
-            documentTitle: result.contentAnalysis.documentTitle,
-          }
+          shouldOfferPDF: result.contentAnalysis.shouldOfferPDF,
+          documentTitle: result.contentAnalysis.documentTitle,
+        }
         : {};
 
       const isUrgent = Boolean(urgencyCheck.isUrgent || result.contentAnalysis?.isUrgent);
       const urgencyMeta = isUrgent
         ? {
-            isUrgent: true,
-            urgencyReason: result.contentAnalysis?.urgencyReason || urgencyCheck.reason,
-          }
+          isUrgent: true,
+          urgencyReason: result.contentAnalysis?.urgencyReason || urgencyCheck.reason,
+        }
         : {};
 
       res.json({
