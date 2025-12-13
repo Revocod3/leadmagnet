@@ -10,6 +10,7 @@ import multer from 'multer';
 import { prisma } from '../config/database';
 import { agentProService } from '../services/agent-pro.service';
 import { globalContextService } from '../services/global-context.service';
+import { contentDetectionService } from '../services/content-detection.service';
 import type { ApiResponse } from '../types';
 import { logger } from '../utils/logger';
 
@@ -282,6 +283,13 @@ export class ProController {
         return;
       }
 
+      // Pre-check for medical urgency in user message
+      const urgencyCheck = contentDetectionService.detectUrgency(message);
+      if (urgencyCheck.isUrgent) {
+        logger.warn(`[URGENCY] Detected urgency in user message: ${urgencyCheck.reason}`, { userId });
+        // Let Clara respond (she has instructions for urgencies), but flag it
+      }
+
       const result = await agentProService.processMessage(
         conversationId,
         userId,
@@ -317,6 +325,13 @@ export class ProController {
           content: result.message,
           isOnboarding: result.isOnboarding,
           onboardingTurn: result.onboardingTurn,
+          // Include content analysis if available (for PDF download button, urgency banner, etc.)
+          ...(result.contentAnalysis && {
+            shouldOfferPDF: result.contentAnalysis.shouldOfferPDF,
+            documentTitle: result.contentAnalysis.documentTitle,
+            isUrgent: result.contentAnalysis.isUrgent,
+            urgencyReason: result.contentAnalysis.urgencyReason
+          })
         },
       } as ApiResponse);
     } catch (error) {

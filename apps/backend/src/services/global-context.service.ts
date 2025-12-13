@@ -80,11 +80,14 @@ interface GlobalContextData {
   programStartDate: Date | null;
   // Premium onboarding
   onboardingTurn: number;
+  currentQuestionId: string;
   onboardingCompleted: boolean;
   radiographyCompleted: boolean;
   radiographyContent: string | null;
   personalityType: string | null;
   communicationStyle: Record<string, unknown>;
+  profileTags: string[];
+  tagsGeneratedAt: Date | null;
   lastCheckInDate: Date | null;
   consecutiveDays: number;
 }
@@ -670,6 +673,125 @@ ${context.strengths.map(s => `💪 ${s}`).join('\n')}`);
       where: { userId }
     });
     return conversationCount <= 1;
+  }
+
+  /**
+   * Generate simplified profile tags from complete user context
+   * Called after onboarding completion or periodically to update
+   */
+  async generateProfileTags(userId: string): Promise<string[]> {
+    try {
+      logger.info(`[TAGS] Generating profile tags for user ${userId}`);
+
+      const context = await this.getOrCreateContext(userId);
+
+      // Build comprehensive profile for tag generation
+      const profileSummary = `
+PERFIL COMPLETO DEL USUARIO:
+
+Perfil Digestivo:
+${JSON.stringify(context.digestiveProfile, null, 2)}
+
+Perfil Emocional:
+${JSON.stringify(context.emotionalProfile, null, 2)}
+
+Perfil Cultural:
+${JSON.stringify(context.culturalProfile, null, 2)}
+
+Perfil de Hábitos:
+${JSON.stringify(context.habitsProfile, null, 2)}
+
+Historial Médico:
+${JSON.stringify(context.medicalHistory, null, 2)}
+
+Objetivos:
+${JSON.stringify(context.goals, null, 2)}
+
+Triggers Identificados:
+${JSON.stringify(context.identifiedTriggers, null, 2)}
+
+Fortalezas:
+${JSON.stringify(context.strengths, null, 2)}
+
+Tipo de Personalidad: ${context.personalityType || 'No identificado'}
+`;
+
+      const tagPrompt = `Analiza este perfil completo de usuario y genera 5-7 etiquetas simplificadas que resuman su perfil.
+
+${profileSummary}
+
+Las etiquetas deben ser del formato:
+- **Digestivo**: "lento" | "rápido" | "sensible" | "inflamado-diario" | "mixto" | "estreñimiento" | "diarrea"
+- **Emocional**: "ansioso" | "motivado" | "cansado" | "escéptico" | "emocional" | "racional" | "equilibrado"
+- **Alimentación**: "procesada" | "natural" | "mixta" | "restrictiva" | "sin-cocinar" | "come-fuera"
+- **Estilo de vida**: "sedentario" | "activo" | "turnos" | "viajero" | "oficina" | "movimiento"
+- **Objetivo**: "estética" | "salud" | "energía" | "bienestar" | "perder-peso" | "reducir-inflamación"
+- **Ritmo**: "rápido" | "pausado" | "irregular" | "estructurado"
+- **Estrés**: "alto" | "medio" | "bajo"
+
+REGLAS:
+1. Genera entre 5-7 tags que MEJOR representen al usuario
+2. Elige UN tag por categoría (no todos)
+3. Prioriza las categorías más relevantes para el usuario
+4. Los tags deben ser accionables para Clara
+5. Si falta información para una categoría, omítela
+
+Responde SOLO con JSON:
+{
+  "tags": ["tag1", "tag2", "tag3", ...]
+}`;
+
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: 'Eres un experto en crear perfiles simplificados. Responde solo con JSON válido.' },
+          { role: 'user', content: tagPrompt }
+        ],
+        response_format: { type: 'json_object' },
+        max_tokens: 500,
+        temperature: 0.2
+      });
+
+      const result = completion.choices[0]?.message?.content;
+      if (!result) {
+        logger.warn('[TAGS] No tags generated from AI');
+        return [];
+      }
+
+      const parsed = JSON.parse(result);
+      const tags = parsed.tags || [];
+
+      logger.info(`[TAGS] Generated tags for user ${userId}:`, tags);
+
+      // Save tags to database
+      await prisma.userGlobalContext.update({
+        where: { userId },
+        data: {
+          profileTags: tags,
+          tagsGeneratedAt: new Date()
+        }
+      });
+
+      return tags;
+
+    } catch (error) {
+      logger.error('[TAGS] Error generating profile tags:', { error, userId });
+      return [];
+    }
+  }
+
+  /**
+   * Check if tags need to be regenerated (every 2 weeks)
+   */
+  shouldRegenerateTags(tagsGeneratedAt: Date | null): boolean {
+    if (!tagsGeneratedAt) return true;
+
+    const now = new Date();
+    const daysSinceGeneration = Math.floor(
+      (now.getTime() - new Date(tagsGeneratedAt).getTime()) / (1000 * 60 * 60 * 24)
+    );
+
+    return daysSinceGeneration >= 14; // Regenerate every 2 weeks
   }
 }
 

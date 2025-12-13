@@ -494,7 +494,7 @@ export const TOTAL_ONBOARDING_QUESTIONS = 55;
  */
 export function extractCurrentQuestion(message: string): string | null {
   const match = message.match(/\[PREGUNTA_ACTUAL:\s*(\w+)\]/);
-  return match ? match[1] : null;
+  return match && match[1] ? match[1] : null;
 }
 
 /**

@@ -24,6 +24,8 @@ import {
   QUESTION_ID_TO_TURN,
 } from '../config/pro-onboarding-instructions-complete';
 import { globalContextService } from './global-context.service';
+import { temporalContextService } from './temporal-context.service';
+import { contentDetectionService } from './content-detection.service';
 import { logger } from '../utils/logger';
 
 // Extract context every N messages
@@ -70,6 +72,16 @@ export class AgentProService {
     const recentDiaryEntries = await globalContextService.getRecentDiaryEntries(userId);
     const currentChallenge = await globalContextService.getCurrentChallenge(userId);
 
+    // Build temporal context triggers based on last interaction
+    const temporalTriggers = temporalContextService.buildTemporalTriggers(
+      globalContext.lastCheckInDate,
+      userName,
+      globalContext.consecutiveDays
+    );
+
+    // Check for celebration milestones
+    const celebration = temporalContextService.getCelebrationForStreak(globalContext.consecutiveDays);
+
     const contextData: ClaraPremiumContext = {
       userName,
       userId,
@@ -98,9 +110,27 @@ export class AgentProService {
       isFirstConversation ? null : globalContext as unknown as Record<string, unknown>
     );
 
+    // Append celebration if exists
+    let celebrationSection = '';
+    if (celebration) {
+      celebrationSection = `
+
+═══════════════════════════════════════════════════════════════
+🎉 CELEBRACIÓN DE MILESTONE
+═══════════════════════════════════════════════════════════════
+
+**IMPORTANTE:** El usuario ha alcanzado ${globalContext.consecutiveDays} días consecutivos.
+En algún momento NATURAL de la conversación (no de inmediato), menciona:
+"${celebration}"
+
+No lo digas al principio. Espera el momento adecuado en la conversación.
+═══════════════════════════════════════════════════════════════
+`;
+    }
+
     return CLARA_PREMIUM_INSTRUCTIONS
       .replace('{{GLOBAL_CONTEXT}}', globalContextSection)
-      .replace('{{DYNAMIC_INSTRUCTIONS}}', dynamicInstructions);
+      .replace('{{DYNAMIC_INSTRUCTIONS}}', dynamicInstructions + '\n' + temporalTriggers + celebrationSection);
   }
 
   /**
@@ -225,6 +255,13 @@ export class AgentProService {
       const formattedGlobalContext = await globalContextService.getFormattedContext(userId);
       const currentChallenge = await globalContextService.getCurrentChallenge(userId);
 
+      // Get temporal context for greeting
+      const temporalTriggers = temporalContextService.buildTemporalTriggers(
+        globalContext.lastCheckInDate,
+        firstName,
+        globalContext.consecutiveDays
+      );
+
       const pendingHighlights: string[] = [];
       if (currentChallenge) {
         pendingHighlights.push(`Reto activo: "${currentChallenge.title}" (estado: ${currentChallenge.status})`);
@@ -249,11 +286,15 @@ export class AgentProService {
               {
                 type: 'input_text',
                 text: `[SISTEMA] El usuario ${firstName} vuelve al chat. Genera un saludo de retorno (no onboarding) de máximo 3 líneas.
+
+${temporalTriggers}
+
 Reglas:
 - Usa solo el primer nombre: ${firstName}
-- Arranca con un saludo del tipo "Qué tal ${firstName}," o similar (sin presentarte de nuevo).
+- SIGUE LAS INDICACIONES DEL CONTEXTO TEMPORAL arriba para el tipo de saludo
 - Usa el contexto para sonar al día y menciona 1 pendiente si existe (retos, objetivos, avances): ${pendingText}
 - No repitas frases de bienvenida genéricas ni discursos largos.
+
 Contexto resumido: ${formattedGlobalContext}`
               },
             ],
@@ -372,6 +413,12 @@ Contexto resumido: ${formattedGlobalContext}`
     shouldExtractContext: boolean;
     isOnboarding: boolean;
     onboardingTurn: number;
+    contentAnalysis?: {
+      shouldOfferPDF: boolean;
+      documentTitle?: string;
+      isUrgent: boolean;
+      urgencyReason?: string;
+    };
   }> {
     try {
       // Get conversation with messages
@@ -479,6 +526,9 @@ Contexto resumido: ${formattedGlobalContext}`
             },
           });
           logger.info(`✅ Onboarding completed for user ${userId}`);
+
+          // Generate profile tags in background (non-blocking)
+          this.generateTagsAsync(userId);
         } else {
           // Update current question ID
           await prisma.userGlobalContext.update({
@@ -552,6 +602,35 @@ Contexto resumido: ${formattedGlobalContext}`
         await globalContextService.completeRadiography(userId, assistantMessage);
       }
 
+      // Analyze content for valuable documents, challenges, and urgency
+      // Only analyze non-onboarding responses to avoid false positives
+      let contentAnalysisResult: {
+        shouldOfferPDF: boolean;
+        documentTitle?: string;
+        isUrgent: boolean;
+        urgencyReason?: string;
+      } | undefined = undefined;
+
+      if (!onboardingStillActive && assistantMessage.length > 200) {
+        this.analyzeContentAsync(userId, conversationId, assistantMessage);
+
+        // Quick sync analysis for urgency (to return immediately)
+        const quickAnalysis = await contentDetectionService.analyzeResponse(
+          userId,
+          conversationId,
+          assistantMessage
+        );
+
+        if (quickAnalysis.shouldOfferPDF || quickAnalysis.isUrgent) {
+          contentAnalysisResult = {
+            shouldOfferPDF: quickAnalysis.shouldOfferPDF,
+            ...(quickAnalysis.documentTitle && { documentTitle: quickAnalysis.documentTitle }),
+            isUrgent: quickAnalysis.isUrgent,
+            ...(quickAnalysis.urgencyReason && { urgencyReason: quickAnalysis.urgencyReason })
+          };
+        }
+      }
+
       // Determine if we should generate title
       const shouldGenerateTitle = !conversation.title && newMessageCount >= 2;
 
@@ -567,6 +646,7 @@ Contexto resumido: ${formattedGlobalContext}`
         shouldExtractContext,
         isOnboarding: onboardingStillActive,
         onboardingTurn,
+        ...(contentAnalysisResult && { contentAnalysis: contentAnalysisResult }),
       };
     } catch (error) {
       logger.error('Error processing Clara Premium message:', { error });
@@ -592,6 +672,65 @@ Contexto resumido: ${formattedGlobalContext}`
           error: err instanceof Error ? err.message : String(err),
           userId,
           messageCount: messages.length
+        });
+      });
+  }
+
+  /**
+   * Generate profile tags asynchronously (non-blocking)
+   */
+  private generateTagsAsync(userId: string): void {
+    logger.info(`Starting async profile tags generation for user ${userId}`);
+
+    globalContextService.generateProfileTags(userId)
+      .then((tags) => {
+        logger.info(`✅ Profile tags generated successfully for user ${userId}:`, { tags });
+      })
+      .catch(err => {
+        logger.error('❌ Error generating profile tags:', {
+          error: err instanceof Error ? err.message : String(err),
+          userId
+        });
+      });
+  }
+
+  /**
+   * Analyze content and save documents/challenges asynchronously (non-blocking)
+   */
+  private analyzeContentAsync(
+    userId: string,
+    conversationId: string,
+    assistantMessage: string
+  ): void {
+    logger.info(`Starting async content analysis for user ${userId}, conversation ${conversationId}`);
+
+    contentDetectionService.analyzeResponse(userId, conversationId, assistantMessage)
+      .then(async (analysis) => {
+        // Save document if valuable
+        if (analysis.isValuableDocument) {
+          await contentDetectionService.saveDocument(
+            userId,
+            conversationId,
+            analysis,
+            assistantMessage
+          );
+        }
+
+        // Create challenge if detected
+        if (analysis.isChallenge) {
+          await contentDetectionService.createChallenge(userId, analysis);
+        }
+
+        logger.info(`✅ Content analysis complete for user ${userId}:`, {
+          isDocument: analysis.isValuableDocument,
+          isChallenge: analysis.isChallenge
+        });
+      })
+      .catch(err => {
+        logger.error('❌ Error analyzing content:', {
+          error: err instanceof Error ? err.message : String(err),
+          userId,
+          conversationId
         });
       });
   }
