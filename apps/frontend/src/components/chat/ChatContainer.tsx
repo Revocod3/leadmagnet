@@ -613,37 +613,29 @@ export const ChatContainer = () => {
   return (
     <>
       {/* Wrapper con dark mode */}
-      <div className={`${isDarkMode ? 'dark' : ''} h-full`}>
+      <div className={`${isDarkMode ? 'dark' : ''}`}>
+        {/* Header flotante transparente */}
+        <ChatHeader
+          isDarkMode={isDarkMode}
+          onToggleDarkMode={toggleDarkMode}
+          progressInfo={showProgressBar && currentBlock && currentQuestionInfo ? {
+            currentBlock,
+            currentQuestionIndex: currentQuestionInfo.questionIndex,
+            totalQuestionsInBlock: currentBlock.questions.length,
+          } : null}
+        />
 
-        {/* Outer Container - Dark Backdrop with Pattern */}
+        {/* Main content - Chat Messages */}
         <div
           ref={chatContainerRef}
-          className="mobile-chat-container bg-chat-lighting flex justify-center sm:items-center relative"
+          className="mobile-chat-container bg-brand-cream-100 dark:bg-neutral-900 bg-chat-lighting transition-colors duration-200"
         >
-          {/* Dark Overlay for background */}
-          <div className="absolute inset-0 bg-neutral-900/80 backdrop-blur-[2px] z-0" />
-
-          {/* 3D Card */}
-          <div className="w-full max-w-3xl h-full relative bg-brand-cream-100 dark:bg-neutral-900 bg-chat-lighting shadow-2xl overflow-hidden flex flex-col sm:rounded-2xl sm:h-full sm:border sm:border-white/10 transition-all duration-300 z-10">
-
-            {/* Header - Flex item (no absolute) */}
-            <ChatHeader
-              isDarkMode={isDarkMode}
-              onToggleDarkMode={toggleDarkMode}
-              progressInfo={showProgressBar && currentBlock && currentQuestionInfo ? {
-                currentBlock,
-                currentQuestionIndex: currentQuestionInfo.questionIndex,
-                totalQuestionsInBlock: currentBlock.questions.length,
-              } : null}
-              className="flex-shrink-0 relative z-50"
-            />
-
-            {/* Main content - Chat Messages */}
-            <main
-              ref={messagesContainerRef}
-              className="flex-1 overflow-y-auto smooth-scroll scroll-pt-4"
-            >
-              <div className="px-4 pt-4 pb-4">
+          {/* Messages Area */}
+          <main
+            ref={messagesContainerRef}
+            className="mobile-chat-main smooth-scroll scroll-pt-4 pt-20 pb-32"
+          >
+            <div className="container-narrow pt-4 pb-4">
                 {/* Empty State - Loading state while initializing */}
                 {messages.length === 0 && !isProcessing && (
                   <div className="flex flex-col items-center justify-center min-h-[50vh] text-center px-4">
@@ -789,36 +781,34 @@ export const ChatContainer = () => {
                     </motion.div>
                   )}
 
-                  <div ref={messagesEndRef} />
-                </div>
+                <div ref={messagesEndRef} />
               </div>
-            </main>
-
-            {/* Footer - Flex item (no absolute) */}
-            <ChatFooter
-              inputMessage={inputMessage}
-              setInputMessage={setInputMessage}
-              isProcessing={isProcessing}
-              onSendMessage={handleSendMessage}
-              onKeyDown={handleKeyDown}
-              isListening={isListening}
-              onVoiceInput={handleVoiceInput}
-              isSpeechSupported={isSpeechSupported}
-              isPlusMenuOpen={isPlusMenuOpen}
-              setIsPlusMenuOpen={setIsPlusMenuOpen}
-              onCameraClick={() => setIsCameraOpen(true)}
-              onFileSelect={handleFileSelect}
-              selectedImage={selectedImage}
-              setSelectedImage={setSelectedImage}
-              isUploadingImage={isUploadingImage}
-              onImageClick={handleImageClick}
-              showImageLimitMessage={showImageLimitMessage}
-              isKeyboardOpen={isKeyboardOpen}
-              onInputFocus={scrollToBottom}
-              className="flex-shrink-0 relative z-30"
-            />
-          </div>
+            </div>
+          </main>
         </div>
+
+        {/* Footer flotante transparente */}
+        <ChatFooter
+          inputMessage={inputMessage}
+          setInputMessage={setInputMessage}
+          isProcessing={isProcessing}
+          onSendMessage={handleSendMessage}
+          onKeyDown={handleKeyDown}
+          isListening={isListening}
+          onVoiceInput={handleVoiceInput}
+          isSpeechSupported={isSpeechSupported}
+          isPlusMenuOpen={isPlusMenuOpen}
+          setIsPlusMenuOpen={setIsPlusMenuOpen}
+          onCameraClick={() => setIsCameraOpen(true)}
+          onFileSelect={handleFileSelect}
+          selectedImage={selectedImage}
+          setSelectedImage={setSelectedImage}
+          isUploadingImage={isUploadingImage}
+          onImageClick={handleImageClick}
+          showImageLimitMessage={showImageLimitMessage}
+          isKeyboardOpen={isKeyboardOpen}
+          onInputFocus={scrollToBottom}
+        />
       </div>
 
       {/* Modals */}
