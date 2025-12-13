@@ -23,7 +23,6 @@ import { ImageViewerModal } from '../modals/ImageViewerModal';
 import { QuickReplyChips } from '../chat/QuickReplyChips';
 import { InfoWedge } from '../chat/InfoWedge';
 import {
-  shouldShowInfoWedge,
   getQuestionByTurn,
   QUESTION_ID_TO_TURN,
 } from '../../config/pro-onboarding-config';
@@ -495,7 +494,8 @@ export const ProChat = ({ onSubscriptionExpired, activeTab, onTabChange }: ProCh
 
                             // Special case: First InfoWedge (Digestivo) appears when transitioning from welcome to dig_1
                             if (prevQuestionId === 'welcome' && currentQuestionId === 'dig_1') {
-                              const currentInfo = getQuestionByTurn(QUESTION_ID_TO_TURN['dig_1']);
+                              const dig1Turn = QUESTION_ID_TO_TURN['dig_1'];
+                              const currentInfo = typeof dig1Turn === 'number' ? getQuestionByTurn(dig1Turn) : null;
                               if (currentInfo) {
                                 showInfoWedge = true;
                                 wedgeBlock = currentInfo.block;
