@@ -35,7 +35,7 @@ export const ChatMessage = forwardRef<HTMLDivElement, ChatMessageProps>(({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }}
       transition={{ duration: 0.3 }}
-      className={`flex ${isUser ? 'justify-end' : 'justify-start relative'}`}
+      className={`flex relative ${isUser ? 'justify-end' : 'justify-start'}`}
     >
       {/* Avatar for assistant - subtle and minimal */}
       {!isUser && (
@@ -44,8 +44,15 @@ export const ChatMessage = forwardRef<HTMLDivElement, ChatMessageProps>(({
         </div>
       )}
 
+      {/* Avatar for user - positioned like assistant */}
+      {isUser && (
+        <div className="absolute right-0 top-0 z-10 w-6 h-6 md:w-7 md:h-7 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs md:text-sm font-semibold shadow-sm border border-white/20">
+          {state.userName?.charAt(0).toUpperCase() || 'U'}
+        </div>
+      )}
+
       {/* Message Content Wrapper */}
-      <div className={`flex flex-col ${isUser ? 'items-end max-w-[88%] sm:max-w-[80%] md:max-w-[75%]' : 'max-w-[92%] sm:max-w-[85%] md:max-w-[80%] ml-2.5 md:ml-3'}`}>
+      <div className={`flex flex-col ${isUser ? 'items-end max-w-[92%] sm:max-w-[85%] md:max-w-[80%] mr-2.5 md:mr-3' : 'max-w-[92%] sm:max-w-[85%] md:max-w-[80%] ml-2.5 md:ml-3'}`}>
         {/* Image attached to message - rendered outside the bubble for cleaner look */}
         {isUser && message.imageUrl && (
           <div className="mb-2">
@@ -61,8 +68,8 @@ export const ChatMessage = forwardRef<HTMLDivElement, ChatMessageProps>(({
         {(!isUser || message.content !== 'Imagen adjunta') && message.type !== 'closing_cta' && (
           <div
             className={`${isUser
-              ? 'text-white rounded-2xl px-4 py-2.5 md:px-5 md:py-3 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.01] border border-white/20'
-              : 'backdrop-blur-xl bg-white/90 dark:bg-white/10 text-neutral-900 dark:text-neutral-100 rounded-2xl px-4 py-3 md:px-5 md:py-4 shadow-lg border border-white/30 dark:border-white/20'
+              ? 'text-white rounded-2xl rounded-tr-none px-4 py-2.5 md:px-5 md:py-3 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.01] border border-white/20'
+              : 'backdrop-blur-xl bg-white/90 dark:bg-white/10 text-neutral-900 dark:text-neutral-100 rounded-2xl rounded-tl-none px-4 py-3 md:px-5 md:py-4 shadow-lg border border-white/30 dark:border-white/20'
               }`}
             style={isUser ? {
               backgroundColor: '#9DAC67',
@@ -179,19 +186,19 @@ export const ChatMessage = forwardRef<HTMLDivElement, ChatMessageProps>(({
           </div>
         )}
 
-        {/* Show closing CTA as InfoWedge outside bubble - purple/fuchsia theme */}
+        {/* Show closing CTA as InfoWedge outside bubble - emerald theme like PRO first block */}
         {message.type === 'closing_cta' && (
           <div className="w-full mt-4">
             <InfoWedge
               content={message.content}
-              blockColor="#c026d3" // Fuchsia-600
-              blockColorLight="#fae8ff" // Fuchsia-100
+              blockColor="#059669" // emerald-600 from PRO onboarding
+              blockColorLight="#D1FAE5" // emerald-100 from PRO onboarding
             />
             {/* CTA Button for closing message */}
             <div className="mt-4">
               <a
                 href="/pricing"
-                className="group w-full py-4 sm:py-5 px-4 sm:px-6 rounded-2xl bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-600 hover:from-purple-700 hover:via-fuchsia-700 hover:to-pink-700 text-white font-bold text-sm sm:text-base flex items-center justify-center gap-2 sm:gap-3 transition-all duration-300 shadow-2xl hover:shadow-fuchsia-500/50 transform hover:-translate-y-1 hover:scale-[1.02] relative overflow-hidden"
+                className="group w-full py-4 sm:py-5 px-4 sm:px-6 rounded-2xl bg-gradient-to-r from-emerald-600 via-emerald-700 to-emerald-800 hover:from-emerald-700 hover:via-emerald-800 hover:to-emerald-900 text-white font-bold text-sm sm:text-base flex items-center justify-center gap-2 sm:gap-3 transition-all duration-300 shadow-2xl hover:shadow-emerald-500/50 transform hover:-translate-y-1 hover:scale-[1.02] relative overflow-hidden"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -skew-x-12 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000"></div>
                 <div className="relative z-10 flex items-center gap-2 sm:gap-3">
@@ -213,13 +220,6 @@ export const ChatMessage = forwardRef<HTMLDivElement, ChatMessageProps>(({
           />
         )}
       </div>
-
-      {/* Avatar for user */}
-      {isUser && (
-        <div className="flex-shrink-0 w-7 h-7 md:w-8 md:h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs md:text-sm font-semibold shadow-sm">
-          {state.userName?.charAt(0).toUpperCase() || 'U'}
-        </div>
-      )}
     </motion.div>
   );
 });

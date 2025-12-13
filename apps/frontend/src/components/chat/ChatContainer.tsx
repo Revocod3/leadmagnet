@@ -4,12 +4,15 @@ import { useDiagnosticFlow } from '../../hooks/useDiagnosticFlow';
 import { useSpeechToText } from '../../hooks/useSpeechToText';
 import { usePDFGenerator } from '../../hooks/usePDFGenerator';
 import { useSessionStore } from '../../stores/sessionStore';
+import { useChatStore } from '../../stores/chatStore';
 import { useAuthStore } from '../../stores/authStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { CameraModal } from '../modals/CameraModal';
 import { ImageViewerModal } from '../modals/ImageViewerModal';
 import { EmailCaptureModal } from '../modals/EmailCaptureModal';
+import { RatingModal } from '../modals/RatingModal';
+import { RestoreDiagnosticModal } from '../modals/RestoreDiagnosticModal';
 import { ChatMessage } from './ChatMessage';
 import { ChatHeader } from './ChatHeader';
 import { ChatFooter } from './ChatFooter';
@@ -94,6 +97,48 @@ export const ChatContainer = () => {
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [showImageLimitMessage, setShowImageLimitMessage] = useState(false);
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [hasRated, setHasRated] = useState(false);
+  const [showRestoreModal, setShowRestoreModal] = useState(false);
+  const [hasCheckedRestore, setHasCheckedRestore] = useState(false);
+  const [shouldInitialize, setShouldInitialize] = useState(false);
+
+  // Check if already rated on mount/session change
+  useEffect(() => {
+    if (session?.id) {
+      const rated = localStorage.getItem(`rated_${session.id}`) === 'true';
+      setHasRated(rated);
+    }
+  }, [session?.id]);
+
+  // Check for previous session on mount (FREE users only)
+  useEffect(() => {
+    if (!hasCheckedRestore && !user) {
+      // Solo para usuarios FREE - PRO users mantienen su sesión
+      const storedSession = localStorage.getItem('ovp-session-storage');
+      if (storedSession) {
+        try {
+          const parsed = JSON.parse(storedSession);
+          const session = parsed?.state?.session;
+
+          // Si hay sesión previa, preguntar qué hacer
+          if (session?.id) {
+            setShowRestoreModal(true);
+          } else {
+            // No hay sesión previa, inicializar normalmente
+            setShouldInitialize(true);
+          }
+        } catch (e) {
+          // Error parseando, inicializar normalmente
+          setShouldInitialize(true);
+        }
+      } else {
+        // No hay nada guardado, inicializar normalmente
+        setShouldInitialize(true);
+      }
+      setHasCheckedRestore(true);
+    }
+  }, [hasCheckedRestore, user]);
 
   const {
     messages,
@@ -186,6 +231,31 @@ export const ChatContainer = () => {
     setIsTypewriterComplete(true);
   };
 
+  // Trigger Rating Modal when diagnosis is ready and user scrolls to bottom
+  useEffect(() => {
+    if (state.step === 'diagnosis_ready' && !hasRated && !showRatingModal) {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          if (entries[0]?.isIntersecting) {
+            // Add a small delay to not be too intrusive immediately
+            setTimeout(() => {
+              setShowRatingModal(true);
+            }, 1500);
+            observer.disconnect();
+          }
+        },
+        { threshold: 0.1 }
+      );
+
+      if (messagesEndRef.current) {
+        observer.observe(messagesEndRef.current);
+      }
+
+      return () => observer.disconnect();
+    }
+    return undefined;
+  }, [state.step, hasRated, showRatingModal]);
+
   // Create session if it doesn't exist OR if session doesn't belong to current user
   useEffect(() => {
     const createSessionIfNeeded = async () => {
@@ -229,20 +299,21 @@ export const ChatContainer = () => {
     createSessionIfNeeded();
   }, [session?.id, session?.userId, session?.userName, user, language, setSession]);
 
-  // Initialize only once when session is available
+  // Initialize only once when session is available AND shouldInitialize is true
   useEffect(() => {
     // Solo inicializar si:
     // 1. No hay mensajes
     // 2. Hay una sesión activa
     // 3. El sessionId NO es temporal (ya fue reemplazado por uno real del backend)
     // 4. No estamos procesando
+    // 5. shouldInitialize es true (usuario eligió continuar o es sesión nueva)
     const isRealSession = session?.id && !session.id.startsWith('free_');
 
-    if (messages.length === 0 && isRealSession && !isProcessing) {
+    if (messages.length === 0 && isRealSession && !isProcessing && shouldInitialize) {
       initialize();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.id]);
+  }, [session?.id, shouldInitialize]);
 
   // Auto-scroll cuando cambian los mensajes
   useEffect(() => {
@@ -378,6 +449,60 @@ export const ChatContainer = () => {
     }
   };
 
+  const handleRatingSubmit = async (rating: number, comment: string) => {
+    if (!session?.id) return;
+
+    try {
+      await apiClient.submitRating({
+        sessionId: session.id,
+        rating,
+        comment,
+        flowType: 'free'
+      });
+
+      localStorage.setItem(`rated_${session.id}`, 'true');
+      setHasRated(true);
+      setShowRatingModal(false);
+    } catch (error) {
+      console.error('Error submitting rating:', error);
+    }
+  };
+
+  const handleRatingClose = () => {
+    if (session?.id) {
+      // Marcar como "rated" incluso si cierra sin valorar
+      // para que no vuelva a aparecer el modal
+      localStorage.setItem(`rated_${session.id}`, 'true');
+      setHasRated(true);
+    }
+    setShowRatingModal(false);
+  };
+
+  // Handler para continuar con sesión previa
+  const handleContinuePreviousSession = () => {
+    setShowRestoreModal(false);
+    setShouldInitialize(true);
+  };
+
+  // Handler para empezar de nuevo (clear completo)
+  const handleRestartDiagnostic = () => {
+    // Limpiar TODA la persistencia
+    localStorage.clear();
+
+    // Limpiar stores
+    const { clearSession } = useSessionStore.getState();
+    const { clearFreeChatState } = useChatStore.getState();
+
+    clearSession();
+    clearFreeChatState();
+
+    // Cerrar modal y forzar reinicio completo
+    setShowRestoreModal(false);
+
+    // Recargar la página para empezar completamente limpio
+    window.location.reload();
+  };
+
   const generatePDFDirectly = async () => {
     if (!state.diagnosisContent) return;
 
@@ -488,195 +613,212 @@ export const ChatContainer = () => {
   return (
     <>
       {/* Wrapper con dark mode */}
-      <div className={`${isDarkMode ? 'dark' : ''}`}>
-        {/* Header flotante transparente con Progress Chip integrado */}
-        <ChatHeader
-          isDarkMode={isDarkMode}
-          onToggleDarkMode={toggleDarkMode}
-          progressInfo={showProgressBar && currentBlock && currentQuestionInfo ? {
-            currentBlock,
-            currentQuestionIndex: currentQuestionInfo.questionIndex,
-            totalQuestionsInBlock: currentBlock.questions.length,
-          } : null}
-        />
+      <div className={`${isDarkMode ? 'dark' : ''} h-full`}>
 
-        {/* Main content - Chat Messages */}
+        {/* Outer Container - Dark Backdrop with Pattern */}
         <div
           ref={chatContainerRef}
-          className="mobile-chat-container bg-neutral-50 dark:bg-neutral-900 bg-chat-lighting transition-colors duration-200"
+          className="mobile-chat-container bg-chat-lighting flex justify-center sm:items-center relative"
         >
-          {/* Messages Area */}
-          <main
-            ref={messagesContainerRef}
-            className="mobile-chat-main smooth-scroll scroll-pt-4 pt-20 pb-32"
-          >
-            <div className="container-narrow pt-4 pb-4">
-              {/* Empty State - Loading state while initializing */}
-              {messages.length === 0 && !isProcessing && (
-                <div className="flex flex-col items-center justify-center min-h-[50vh] text-center px-4">
-                  <motion.div
-                    animate={{ scale: [1, 1.05, 1] }}
-                    transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-                    className="mb-6"
-                  >
-                    <div className="w-24 h-24 rounded-full overflow-hidden shadow-xl">
-                      <img
-                        src="/assets/images/favicon.webp"
-                        alt="OVP"
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  </motion.div>
-                  <h2 className="text-2xl font-bold text-foreground mb-2">
-                    Preparando tu diagnóstico
-                  </h2>
-                  <p className="text-secondary max-w-md">
-                    Un momento por favor
-                  </p>
-                </div>
-              )}
+          {/* Dark Overlay for background */}
+          <div className="absolute inset-0 bg-neutral-900/80 backdrop-blur-[2px] z-0" />
 
-              {/* Messages */}
-              <div className="space-y-3">
-                <AnimatePresence mode="popLayout">
-                  {messages.map((message, index) => {
+          {/* 3D Card */}
+          <div className="w-full max-w-3xl h-full relative bg-brand-cream-100 dark:bg-neutral-900 bg-chat-lighting shadow-2xl overflow-hidden flex flex-col sm:rounded-2xl sm:h-full sm:border sm:border-white/10 transition-all duration-300 z-10">
 
-                    // Detectar si este mensaje inicia un nuevo bloque (para mostrar InfoWedge)
-                    let showInfoWedgeBefore = false;
-                    let wedgeBlock: FlowBlock | null = null;
+            {/* Header - Absolute within card */}
+            <ChatHeader
+              isDarkMode={isDarkMode}
+              onToggleDarkMode={toggleDarkMode}
+              progressInfo={showProgressBar && currentBlock && currentQuestionInfo ? {
+                currentBlock,
+                currentQuestionIndex: currentQuestionInfo.questionIndex,
+                totalQuestionsInBlock: currentBlock.questions.length,
+              } : null}
+              className="absolute top-0 left-0 right-0 z-50"
+            />
 
-                    if (message.role === 'assistant' && index > 0) {
-                      const currentMsgQuestion = detectCurrentQuestion(message.content);
-
-                      // Detectar si es mensaje de diagnóstico (generando o listo)
-                      const isDiagnosisMessage = message.type === 'diagnosis_ready' ||
-                        message.type === 'comment' ||
-                        /diagnóstico personalizado|toda la información que necesito/i.test(message.content);
-
-                      // Buscar la pregunta del mensaje de asistente anterior
-                      let prevAssistantIndex = index - 1;
-                      while (prevAssistantIndex >= 0 && messages[prevAssistantIndex]?.role !== 'assistant') {
-                        prevAssistantIndex--;
-                      }
-
-                      if (prevAssistantIndex >= 0 && messages[prevAssistantIndex]) {
-                        const prevMsgQuestion = detectCurrentQuestion(messages[prevAssistantIndex]!.content);
-
-                        // Si cambiamos de bloque, mostrar el InfoWedge del bloque anterior
-                        if (currentMsgQuestion && prevMsgQuestion &&
-                          currentMsgQuestion.blockIndex !== prevMsgQuestion.blockIndex) {
-                          showInfoWedgeBefore = true;
-                          wedgeBlock = prevMsgQuestion.block;
-                        }
-
-                        // Si el mensaje anterior era la última pregunta del bloque emocional (pregunta 21)
-                        // y el actual es el diagnóstico, mostrar el InfoWedge del bloque emocional
-                        if (prevMsgQuestion &&
-                          prevMsgQuestion.blockIndex === 3 &&
-                          prevMsgQuestion.questionIndex === 5 &&
-                          isDiagnosisMessage) {
-                          showInfoWedgeBefore = true;
-                          wedgeBlock = prevMsgQuestion.block;
-                        }
-                      }
-                    }
-
-                    return (
-                      <div key={index}>
-                        {/* InfoWedge antes del mensaje si cambiamos de bloque */}
-                        {showInfoWedgeBefore && wedgeBlock && (
-                          <div className="mb-4">
-                            <InfoWedge
-                              content={wedgeBlock.infoWedge}
-                              blockColor={wedgeBlock.color}
-                              blockColorLight={wedgeBlock.colorLight}
-                              blockEmoji={wedgeBlock.emoji}
-                            />
-                          </div>
-                        )}
-
-                        <ChatMessage
-                          ref={message.type === 'diagnosis_ready' ? diagnosisMessageRef : undefined}
-                          message={message}
-                          state={state}
-                          isLatest={index === messages.length - 1}
-                          onDownloadPDF={handleDownloadPDF}
-                          isGeneratingPDF={isGeneratingPDF}
-                          onTypewriterComplete={index === messages.length - 1 ? handleTypewriterComplete : undefined}
+            {/* Main content - Chat Messages */}
+            <main
+              ref={messagesContainerRef}
+              className="flex-1 overflow-y-auto smooth-scroll scroll-pt-4 pt-20 pb-32"
+            >
+              <div className="px-4 pt-4 pb-4">
+                {/* Empty State - Loading state while initializing */}
+                {messages.length === 0 && !isProcessing && (
+                  <div className="flex flex-col items-center justify-center min-h-[50vh] text-center px-4">
+                    <motion.div
+                      animate={{ scale: [1, 1.05, 1] }}
+                      transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                      className="mb-6"
+                    >
+                      <div className="w-24 h-24 rounded-full overflow-hidden shadow-xl">
+                        <img
+                          src="/assets/images/favicon.webp"
+                          alt="OVP"
+                          className="w-full h-full object-cover"
                         />
                       </div>
-                    );
-                  })}
-                </AnimatePresence>
+                    </motion.div>
+                    <h2 className="text-2xl font-bold text-foreground mb-2">
+                      Preparando tu diagnóstico
+                    </h2>
+                    <p className="text-secondary max-w-md">
+                      Un momento por favor
+                    </p>
+                  </div>
+                )}
 
-                {/* Quick Reply Chips - mostrar después de que el typewriter termine */}
-                {!isProcessing &&
-                  isTypewriterComplete &&
-                  currentQuestion?.type === 'multiple_choice' &&
-                  currentQuestion?.options &&
-                  currentBlock &&
-                  state.step !== 'diagnosis_ready' && (
-                    <QuickReplyChips
-                      options={currentQuestion.options}
-                      onSelect={handleChipSelect}
-                      disabled={isProcessing}
-                      blockColor={currentBlock.color}
-                    />
+                {/* Messages */}
+                <div className="space-y-3">
+                  <AnimatePresence mode="popLayout">
+                    {messages.map((message, index) => {
+
+                      // Detectar si este mensaje inicia un nuevo bloque (para mostrar InfoWedge)
+                      let showInfoWedgeBefore = false;
+                      let wedgeBlock: FlowBlock | null = null;
+
+                      if (message.role === 'assistant' && index > 0) {
+                        const currentMsgQuestion = detectCurrentQuestion(message.content);
+
+                        // Detectar si es mensaje de diagnóstico (generando o listo)
+                        const isDiagnosisMessage = message.type === 'diagnosis_ready' ||
+                          message.type === 'comment' ||
+                          /diagnóstico personalizado|toda la información que necesito/i.test(message.content);
+
+                        // Buscar la pregunta del mensaje de asistente anterior
+                        let prevAssistantIndex = index - 1;
+                        while (prevAssistantIndex >= 0 && messages[prevAssistantIndex]?.role !== 'assistant') {
+                          prevAssistantIndex--;
+                        }
+
+                        if (prevAssistantIndex >= 0 && messages[prevAssistantIndex]) {
+                          const prevMsgQuestion = detectCurrentQuestion(messages[prevAssistantIndex]!.content);
+
+                          // Si cambiamos de bloque, mostrar el InfoWedge del bloque anterior
+                          if (currentMsgQuestion && prevMsgQuestion &&
+                            currentMsgQuestion.blockIndex !== prevMsgQuestion.blockIndex) {
+                            showInfoWedgeBefore = true;
+                            wedgeBlock = prevMsgQuestion.block;
+                          }
+
+                          // Si el mensaje anterior era la última pregunta del bloque emocional (pregunta 21)
+                          // y el actual es el diagnóstico, mostrar el InfoWedge del bloque emocional
+                          if (prevMsgQuestion &&
+                            prevMsgQuestion.blockIndex === 3 &&
+                            prevMsgQuestion.questionIndex === 5 &&
+                            isDiagnosisMessage) {
+                            showInfoWedgeBefore = true;
+                            wedgeBlock = prevMsgQuestion.block;
+                          }
+                        }
+                      }
+
+                      return (
+                        <div key={index}>
+                          {/* InfoWedge antes del mensaje si cambiamos de bloque */}
+                          {showInfoWedgeBefore && wedgeBlock && (
+                            <div className="mb-4">
+                              <InfoWedge
+                                content={wedgeBlock.infoWedge}
+                                blockColor={wedgeBlock.color}
+                                blockColorLight={wedgeBlock.colorLight}
+                                blockEmoji={wedgeBlock.emoji}
+                              />
+                            </div>
+                          )}
+
+                          <ChatMessage
+                            ref={message.type === 'diagnosis_ready' ? diagnosisMessageRef : undefined}
+                            message={{
+                              ...message,
+                              // Remove metadata from display to avoid breaking quick replies
+                              content: message.content
+                                .replace(/\[PREGUNTA_ACTUAL:\s*\w+\]/g, '')
+                                .replace(/PREGUNTA \d+ \(\w+\):/g, '')
+                                .trim()
+                            }}
+                            state={state}
+                            isLatest={index === messages.length - 1}
+                            onDownloadPDF={handleDownloadPDF}
+                            isGeneratingPDF={isGeneratingPDF}
+                            onTypewriterComplete={index === messages.length - 1 ? handleTypewriterComplete : undefined}
+                          />
+                        </div>
+                      );
+                    })}
+                  </AnimatePresence>
+
+                  {/* Quick Reply Chips - mostrar después de que el typewriter termine */}
+                  {!isProcessing &&
+                    isTypewriterComplete &&
+                    currentQuestion?.type === 'multiple_choice' &&
+                    currentQuestion?.options &&
+                    currentBlock &&
+                    state.step !== 'diagnosis_ready' && (
+                      <QuickReplyChips
+                        options={currentQuestion.options}
+                        onSelect={handleChipSelect}
+                        disabled={isProcessing}
+                        blockColor={currentBlock.color}
+                      />
+                    )}
+
+                  {/* Info Wedge REMOVIDO - Clara ya incluye la cuña informativa en su mensaje */}
+
+                  {/* Diagnosis Generating Indicator - Special state */}
+                  {/* Solo mostrar después de que el typewriter termine para mantener jerarquía visual */}
+                  {state.step === 'generating_diagnosis' && !isProcessing && isTypewriterComplete && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0 }}
+                    >
+                      <DiagnosisGeneratingIndicator />
+                    </motion.div>
                   )}
 
-                {/* Info Wedge REMOVIDO - Clara ya incluye la cuña informativa en su mensaje */}
+                  {/* Typing Indicator - Normal processing */}
+                  {isProcessing && state.step !== 'generating_diagnosis' && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0 }}
+                    >
+                      <TypingIndicator />
+                    </motion.div>
+                  )}
 
-                {/* Diagnosis Generating Indicator - Special state */}
-                {/* Solo mostrar después de que el typewriter termine para mantener jerarquía visual */}
-                {state.step === 'generating_diagnosis' && !isProcessing && isTypewriterComplete && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0 }}
-                  >
-                    <DiagnosisGeneratingIndicator />
-                  </motion.div>
-                )}
-
-                {/* Typing Indicator - Normal processing */}
-                {isProcessing && state.step !== 'generating_diagnosis' && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0 }}
-                  >
-                    <TypingIndicator />
-                  </motion.div>
-                )}
-
-                <div ref={messagesEndRef} />
+                  <div ref={messagesEndRef} />
+                </div>
               </div>
-            </div>
-          </main>
-        </div>
+            </main>
 
-        {/* Footer flotante transparente */}
-        <ChatFooter
-          inputMessage={inputMessage}
-          setInputMessage={setInputMessage}
-          isProcessing={isProcessing}
-          onSendMessage={handleSendMessage}
-          onKeyDown={handleKeyDown}
-          isListening={isListening}
-          onVoiceInput={handleVoiceInput}
-          isSpeechSupported={isSpeechSupported}
-          isPlusMenuOpen={isPlusMenuOpen}
-          setIsPlusMenuOpen={setIsPlusMenuOpen}
-          onCameraClick={() => setIsCameraOpen(true)}
-          onFileSelect={handleFileSelect}
-          selectedImage={selectedImage}
-          setSelectedImage={setSelectedImage}
-          isUploadingImage={isUploadingImage}
-          onImageClick={handleImageClick}
-          showImageLimitMessage={showImageLimitMessage}
-          isKeyboardOpen={isKeyboardOpen}
-          onInputFocus={scrollToBottom}
-        />
+            {/* Footer flotante transparente */}
+            <ChatFooter
+              inputMessage={inputMessage}
+              setInputMessage={setInputMessage}
+              isProcessing={isProcessing}
+              onSendMessage={handleSendMessage}
+              onKeyDown={handleKeyDown}
+              isListening={isListening}
+              onVoiceInput={handleVoiceInput}
+              isSpeechSupported={isSpeechSupported}
+              isPlusMenuOpen={isPlusMenuOpen}
+              setIsPlusMenuOpen={setIsPlusMenuOpen}
+              onCameraClick={() => setIsCameraOpen(true)}
+              onFileSelect={handleFileSelect}
+              selectedImage={selectedImage}
+              setSelectedImage={setSelectedImage}
+              isUploadingImage={isUploadingImage}
+              onImageClick={handleImageClick}
+              showImageLimitMessage={showImageLimitMessage}
+              isKeyboardOpen={isKeyboardOpen}
+              onInputFocus={scrollToBottom}
+              className="absolute bottom-0 left-0 right-0 z-30"
+            />
+          </div>
+        </div>
       </div>
 
       {/* Modals */}
@@ -697,6 +839,18 @@ export const ChatContainer = () => {
         onClose={() => setIsEmailModalOpen(false)}
         onSubmit={handleEmailSubmit}
         userName={state.userName}
+      />
+
+      <RatingModal
+        isOpen={showRatingModal}
+        onClose={handleRatingClose}
+        onSubmit={handleRatingSubmit}
+      />
+
+      <RestoreDiagnosticModal
+        isOpen={showRestoreModal}
+        onContinue={handleContinuePreviousSession}
+        onRestart={handleRestartDiagnostic}
       />
 
     </>
