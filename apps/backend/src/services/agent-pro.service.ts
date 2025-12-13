@@ -15,7 +15,17 @@ import {
   buildGlobalContextSection,
   type ClaraPremiumContext
 } from '../config/assistant-instructions-pro';
+import {
+  PRO_WELCOME_MESSAGE,
+  PRO_ONBOARDING_INSTRUCTIONS,
+  TOTAL_ONBOARDING_QUESTIONS,
+  extractCurrentQuestion,
+  isOnboardingCompleted as checkOnboardingCompleted,
+  QUESTION_ID_TO_TURN,
+} from '../config/pro-onboarding-instructions-complete';
 import { globalContextService } from './global-context.service';
+import { temporalContextService } from './temporal-context.service';
+import { contentDetectionService } from './content-detection.service';
 import { logger } from '../utils/logger';
 
 // Extract context every N messages
@@ -62,6 +72,16 @@ export class AgentProService {
     const recentDiaryEntries = await globalContextService.getRecentDiaryEntries(userId);
     const currentChallenge = await globalContextService.getCurrentChallenge(userId);
 
+    // Build temporal context triggers based on last interaction
+    const temporalTriggers = temporalContextService.buildTemporalTriggers(
+      globalContext.lastCheckInDate,
+      userName,
+      globalContext.consecutiveDays
+    );
+
+    // Check for celebration milestones
+    const celebration = temporalContextService.getCelebrationForStreak(globalContext.consecutiveDays);
+
     const contextData: ClaraPremiumContext = {
       userName,
       userId,
@@ -90,9 +110,27 @@ export class AgentProService {
       isFirstConversation ? null : globalContext as unknown as Record<string, unknown>
     );
 
+    // Append celebration if exists
+    let celebrationSection = '';
+    if (celebration) {
+      celebrationSection = `
+
+═══════════════════════════════════════════════════════════════
+🎉 CELEBRACIÓN DE MILESTONE
+═══════════════════════════════════════════════════════════════
+
+**IMPORTANTE:** El usuario ha alcanzado ${globalContext.consecutiveDays} días consecutivos.
+En algún momento NATURAL de la conversación (no de inmediato), menciona:
+"${celebration}"
+
+No lo digas al principio. Espera el momento adecuado en la conversación.
+═══════════════════════════════════════════════════════════════
+`;
+    }
+
     return CLARA_PREMIUM_INSTRUCTIONS
       .replace('{{GLOBAL_CONTEXT}}', globalContextSection)
-      .replace('{{DYNAMIC_INSTRUCTIONS}}', dynamicInstructions);
+      .replace('{{DYNAMIC_INSTRUCTIONS}}', dynamicInstructions + '\n' + temporalTriggers + celebrationSection);
   }
 
   /**
@@ -105,6 +143,8 @@ export class AgentProService {
     conversationId: string;
     welcomeMessage: string;
     isFirstConversation: boolean;
+    isOnboarding: boolean;
+    onboardingTurn: number;
   }> {
     try {
       // Get or create global context
@@ -112,6 +152,10 @@ export class AgentProService {
 
       // Use only first name for all greetings
       const firstName = (userName || 'Usuario').trim().split(/\s+/)[0] || 'Usuario';
+
+      // Check if onboarding is completed
+      const isOnboardingCompleted = globalContext.onboardingCompleted;
+      const currentQuestionId = globalContext.currentQuestionId || 'welcome';
 
       // Check if this is the first conversation
       const isFirstConversation = await globalContextService.isFirstConversation(userId);
@@ -132,59 +176,134 @@ export class AgentProService {
         },
       });
 
-      // Build full instructions
+      // Generate welcome message based on onboarding state
+      let welcomeMessage: string;
+      let onboardingTurn = 1;
+
+      if (!isOnboardingCompleted) {
+        // User hasn't completed onboarding - start or continue onboarding
+
+        // If starting fresh, use the static welcome message
+        if (currentQuestionId === 'welcome') {
+          welcomeMessage = PRO_WELCOME_MESSAGE.replace('{nombre}', firstName);
+          onboardingTurn = 1;
+
+          // Update current question
+          await prisma.userGlobalContext.update({
+            where: { userId },
+            data: { currentQuestionId: 'welcome' },
+          });
+        } else {
+          // Continue from where they left off - use the model to generate contextual greeting
+          onboardingTurn = QUESTION_ID_TO_TURN[currentQuestionId] || 1;
+
+          const response = await openai.responses.create({
+            model: MODELS.TEXT,
+            conversation: openaiConversationId,
+            instructions: PRO_ONBOARDING_INSTRUCTIONS.replace(/\{nombre\}/g, firstName),
+            input: [
+              {
+                type: 'message',
+                role: 'user',
+                content: [
+                  {
+                    type: 'input_text',
+                    text: `[SISTEMA] El usuario ${firstName} vuelve al onboarding. Continúa desde la pregunta [PREGUNTA_ACTUAL: ${currentQuestionId}]. Salúdalo brevemente y continúa el onboarding.`
+                  },
+                ],
+              },
+            ],
+          } as any);
+
+          welcomeMessage = this.extractTextFromResponse(response) ||
+            `¡Hola ${firstName}! Continuemos con el onboarding donde lo dejamos.`;
+        }
+
+        // Save welcome message
+        await prisma.proMessage.create({
+          data: {
+            conversationId: conversation.id,
+            role: 'assistant',
+            content: welcomeMessage,
+          },
+        });
+
+        // Update conversation
+        await prisma.proConversation.update({
+          where: { id: conversation.id },
+          data: {
+            messageCount: 1,
+            lastMessageAt: new Date(),
+          },
+        });
+
+        logger.info(`Clara Premium onboarding conversation started for user ${userId}, question ${currentQuestionId}, turn ${onboardingTurn}`);
+
+        return {
+          conversationId: conversation.id,
+          welcomeMessage,
+          isFirstConversation,
+          isOnboarding: true,
+          onboardingTurn,
+        };
+      }
+
+      // Build full instructions for normal conversation
       const fullInstructions = await this.buildFullInstructions(userId, firstName);
 
-      // Generate welcome message
-      let welcomeMessage: string;
+      // Returning user with completed onboarding - generate contextual greeting
+      const formattedGlobalContext = await globalContextService.getFormattedContext(userId);
+      const currentChallenge = await globalContextService.getCurrentChallenge(userId);
 
-      if (isFirstConversation && !globalContext.radiographyCompleted) {
-        // First time user - use official welcome message
-        welcomeMessage = WELCOME_MESSAGE_TEMPLATE.replace(/\{\{nombre\}\}/g, firstName);
-      } else {
-        // Returning user - generate contextual greeting via Responses API
-        const formattedGlobalContext = await globalContextService.getFormattedContext(userId);
-        const currentChallenge = await globalContextService.getCurrentChallenge(userId);
+      // Get temporal context for greeting
+      const temporalTriggers = temporalContextService.buildTemporalTriggers(
+        globalContext.lastCheckInDate,
+        firstName,
+        globalContext.consecutiveDays
+      );
 
-        const pendingHighlights: string[] = [];
-        if (currentChallenge) {
-          pendingHighlights.push(`Reto activo: "${currentChallenge.title}" (estado: ${currentChallenge.status})`);
-        }
-        if (Array.isArray(globalContext.goals) && globalContext.goals.length > 0) {
-          pendingHighlights.push(`Objetivo principal: ${globalContext.goals[0]}`);
-        }
+      const pendingHighlights: string[] = [];
+      if (currentChallenge) {
+        pendingHighlights.push(`Reto activo: "${currentChallenge.title}" (estado: ${currentChallenge.status})`);
+      }
+      if (Array.isArray(globalContext.goals) && globalContext.goals.length > 0) {
+        pendingHighlights.push(`Objetivo principal: ${globalContext.goals[0]}`);
+      }
 
-        const pendingText = pendingHighlights.length > 0
-          ? `Pendientes clave: ${pendingHighlights.join(' | ')}`
-          : 'No hay pendientes explícitos, pregunta en qué quiere avanzar hoy.';
+      const pendingText = pendingHighlights.length > 0
+        ? `Pendientes clave: ${pendingHighlights.join(' | ')}`
+        : 'No hay pendientes explícitos, pregunta en qué quiere avanzar hoy.';
 
-        const response = await openai.responses.create({
-          model: MODELS.TEXT,
-          conversation: openaiConversationId,
-          instructions: fullInstructions,
-          input: [
-            {
-              type: 'message',
-              role: 'user',
-              content: [
-                {
-                  type: 'input_text',
-                  text: `[SISTEMA] El usuario ${firstName} vuelve al chat. Genera un saludo de retorno (no onboarding) de máximo 3 líneas.
+      const response = await openai.responses.create({
+        model: MODELS.TEXT,
+        conversation: openaiConversationId,
+        instructions: fullInstructions,
+        input: [
+          {
+            type: 'message',
+            role: 'user',
+            content: [
+              {
+                type: 'input_text',
+                text: `[SISTEMA] El usuario ${firstName} vuelve al chat. Genera un saludo de retorno (no onboarding) de máximo 3 líneas.
+
+${temporalTriggers}
+
 Reglas:
 - Usa solo el primer nombre: ${firstName}
-- Arranca con un saludo del tipo "Qué tal ${firstName}," o similar (sin presentarte de nuevo).
+- SIGUE LAS INDICACIONES DEL CONTEXTO TEMPORAL arriba para el tipo de saludo
 - Usa el contexto para sonar al día y menciona 1 pendiente si existe (retos, objetivos, avances): ${pendingText}
 - No repitas frases de bienvenida genéricas ni discursos largos.
-Contexto resumido: ${formattedGlobalContext}`
-                },
-              ],
-            },
-          ],
-        } as any);
 
-        welcomeMessage = this.extractTextFromResponse(response) ||
-          `¡Hola ${userName}! 💖 ¿Cómo te encuentras hoy?`;
-      }
+Contexto resumido: ${formattedGlobalContext}`
+              },
+            ],
+          },
+        ],
+      } as any);
+
+      welcomeMessage = this.extractTextFromResponse(response) ||
+        `¡Hola ${firstName}! 💖 ¿Cómo te encuentras hoy?`;
 
       // Save welcome message
       await prisma.proMessage.create({
@@ -210,6 +329,8 @@ Contexto resumido: ${formattedGlobalContext}`
         conversationId: conversation.id,
         welcomeMessage,
         isFirstConversation,
+        isOnboarding: false,
+        onboardingTurn: 0,
       };
     } catch (error) {
       logger.error('Error starting Clara Premium conversation:', { error });
@@ -230,6 +351,8 @@ Contexto resumido: ${formattedGlobalContext}`
       title: string | null;
       createdAt: Date;
     };
+    isOnboarding: boolean;
+    onboardingTurn: number;
   }> {
     try {
       const conversation = await prisma.proConversation.findUnique({
@@ -249,6 +372,12 @@ Contexto resumido: ${formattedGlobalContext}`
         throw new Error('Unauthorized access to conversation');
       }
 
+      // Get global context to include onboarding state
+      const globalContext = await globalContextService.getOrCreateContext(userId);
+      const isOnboarding = !globalContext.onboardingCompleted;
+      const currentQuestionId = globalContext.currentQuestionId || 'welcome';
+      const onboardingTurn = QUESTION_ID_TO_TURN[currentQuestionId] || 1;
+
       return {
         messages: conversation.messages.map(m => ({
           role: m.role,
@@ -260,6 +389,8 @@ Contexto resumido: ${formattedGlobalContext}`
           title: conversation.title,
           createdAt: conversation.createdAt,
         },
+        isOnboarding,
+        onboardingTurn,
       };
     } catch (error) {
       logger.error('Error continuing Clara Premium conversation:', { error });
@@ -280,6 +411,14 @@ Contexto resumido: ${formattedGlobalContext}`
     message: string;
     shouldGenerateTitle: boolean;
     shouldExtractContext: boolean;
+    isOnboarding: boolean;
+    onboardingTurn: number;
+    contentAnalysis?: {
+      shouldOfferPDF: boolean;
+      documentTitle?: string;
+      isUrgent: boolean;
+      urgencyReason?: string;
+    };
   }> {
     try {
       // Get conversation with messages
@@ -301,6 +440,14 @@ Contexto resumido: ${formattedGlobalContext}`
         throw new Error('Unauthorized access to conversation');
       }
 
+      // Get global context to check onboarding state
+      const globalContext = await globalContextService.getOrCreateContext(userId);
+      const isOnboarding = !globalContext.onboardingCompleted;
+      const currentQuestionId = globalContext.currentQuestionId || 'welcome';
+
+      // Use only first name
+      const firstName = (userName || 'Usuario').trim().split(/\s+/)[0] || 'Usuario';
+
       // Save user message
       await prisma.proMessage.create({
         data: {
@@ -310,8 +457,17 @@ Contexto resumido: ${formattedGlobalContext}`
         },
       });
 
-      // Build full instructions
-      const fullInstructions = await this.buildFullInstructions(userId, userName);
+      // Build instructions based on onboarding state
+      let instructions: string;
+
+      if (isOnboarding) {
+        // Use complete onboarding instructions (like free flow)
+        // The model manages the flow naturally and reports progress via [PREGUNTA_ACTUAL: xxx]
+        instructions = PRO_ONBOARDING_INSTRUCTIONS.replace(/\{nombre\}/g, firstName);
+      } else {
+        // Normal conversation - use full instructions
+        instructions = await this.buildFullInstructions(userId, firstName);
+      }
 
       // Get or create OpenAI conversation ID
       let openaiConversationId = conversation.openaiConversationId;
@@ -327,8 +483,6 @@ Contexto resumido: ${formattedGlobalContext}`
           data: { openaiConversationId },
         });
 
-        // Note: We don't replay history - the context is passed in instructions
-        // and the conversation history is included in the database
         logger.info(`Created new OpenAI conversation ${openaiConversationId} for DB conversation ${conversationId}`);
       }
 
@@ -338,10 +492,11 @@ Contexto resumido: ${formattedGlobalContext}`
         const base64Image = imageBuffer.toString('base64');
         content.push({ type: 'input_image', image_url: `data:image/jpeg;base64,${base64Image}` });
       }
+
       const response = await openai.responses.create({
         model: MODELS.TEXT,
         conversation: openaiConversationId,
-        instructions: fullInstructions,
+        instructions,
         input: [
           {
             type: 'message',
@@ -351,8 +506,38 @@ Contexto resumido: ${formattedGlobalContext}`
         ],
       } as any);
 
-      const assistantMessage = this.extractTextFromResponse(response) ||
+      let assistantMessage = this.extractTextFromResponse(response) ||
         'Lo siento, hubo un error. ¿Puedes repetirme eso?';
+
+      // Extract current question ID from Clara's response (metadata system)
+      const newQuestionId = extractCurrentQuestion(assistantMessage);
+      const onboardingStillActive = isOnboarding && newQuestionId !== 'completed';
+      const onboardingJustCompleted = isOnboarding && newQuestionId === 'completed';
+
+      // Update global context with new question ID if in onboarding
+      if (isOnboarding && newQuestionId) {
+        if (onboardingJustCompleted) {
+          // Mark onboarding as completed
+          await prisma.userGlobalContext.update({
+            where: { userId },
+            data: {
+              onboardingCompleted: true,
+              currentQuestionId: 'completed',
+            },
+          });
+          logger.info(`✅ Onboarding completed for user ${userId}`);
+
+          // Generate profile tags in background (non-blocking)
+          this.generateTagsAsync(userId);
+        } else {
+          // Update current question ID
+          await prisma.userGlobalContext.update({
+            where: { userId },
+            data: { currentQuestionId: newQuestionId },
+          });
+          logger.info(`Updated question ID for user ${userId}: ${currentQuestionId} → ${newQuestionId}`);
+        }
+      }
 
       // Save assistant message
       await prisma.proMessage.create({
@@ -386,10 +571,10 @@ Contexto resumido: ${formattedGlobalContext}`
         { role: 'assistant', content: assistantMessage }
       ];
 
-      // Check if context is empty (no profile data yet)
-      const globalContext = await globalContextService.getOrCreateContext(userId);
-      const hasContextData = globalContext.digestiveProfile &&
-        Object.keys(globalContext.digestiveProfile as object).length > 0;
+      // Re-fetch global context to check updated state
+      const updatedGlobalContext = await globalContextService.getOrCreateContext(userId);
+      const hasContextData = updatedGlobalContext.digestiveProfile &&
+        Object.keys(updatedGlobalContext.digestiveProfile as object).length > 0;
 
       // Check if this looks like a radiography response (long, structured message)
       const isRadiography = this.isRadiographyMessage(assistantMessage);
@@ -399,13 +584,16 @@ Contexto resumido: ${formattedGlobalContext}`
       // - Always if context is empty
       // - First 6 messages of conversation
       // - Every N messages after that
+      // - Every 5 questions during onboarding to capture responses
+      const currentTurnForExtraction = newQuestionId ? (QUESTION_ID_TO_TURN[newQuestionId] || 1) : 1;
       const shouldExtractContext = isRadiography ||
         !hasContextData ||
         newMessageCount <= 6 ||
-        newMessageCount % CONTEXT_EXTRACTION_INTERVAL === 0;
+        newMessageCount % CONTEXT_EXTRACTION_INTERVAL === 0 ||
+        (onboardingStillActive && currentTurnForExtraction % 5 === 0);
 
       if (shouldExtractContext) {
-        logger.info(`Extracting context for user ${userId}: radiography=${isRadiography}, hasContext=${hasContextData}, msgCount=${newMessageCount}`);
+        logger.info(`Extracting context for user ${userId}: radiography=${isRadiography}, hasContext=${hasContextData}, msgCount=${newMessageCount}, onboarding=${onboardingStillActive}`);
         this.extractContextAsync(userId, fullMessageHistory);
       }
 
@@ -414,15 +602,65 @@ Contexto resumido: ${formattedGlobalContext}`
         await globalContextService.completeRadiography(userId, assistantMessage);
       }
 
+      // Analyze content for valuable documents, challenges, and urgency
+      // Only analyze non-onboarding responses to avoid false positives
+      let contentAnalysisResult: {
+        shouldOfferPDF: boolean;
+        documentTitle?: string;
+        isUrgent: boolean;
+        urgencyReason?: string;
+      } | undefined = undefined;
+
+      if (!onboardingStillActive && assistantMessage.length > 200) {
+        // Single analysis (used for immediate metadata + background persistence)
+        const analysis = await contentDetectionService.analyzeResponse(
+          userId,
+          conversationId,
+          assistantMessage
+        );
+
+        if (analysis.shouldOfferPDF || analysis.isUrgent) {
+          contentAnalysisResult = {
+            shouldOfferPDF: analysis.shouldOfferPDF,
+            ...(analysis.documentTitle && { documentTitle: analysis.documentTitle }),
+            isUrgent: analysis.isUrgent,
+            ...(analysis.urgencyReason && { urgencyReason: analysis.urgencyReason })
+          };
+        }
+
+        // Persist detected content in background (no second LLM call)
+        this.persistContentFromAnalysisAsync(userId, conversationId, assistantMessage, analysis);
+      }
+
+      // Keep temporal context accurate (streak/last check-in) per message
+      globalContextService.recordInteraction(userId).catch(err => {
+        logger.error('❌ Error recording interaction:', {
+          error: err instanceof Error ? err.message : String(err),
+          userId,
+        });
+      });
+
+      // Regenerate profile tags periodically (non-blocking)
+      if (!onboardingStillActive && globalContextService.shouldRegenerateTags(updatedGlobalContext.tagsGeneratedAt)) {
+        this.generateTagsAsync(userId);
+      }
+
       // Determine if we should generate title
       const shouldGenerateTitle = !conversation.title && newMessageCount >= 2;
 
-      logger.info(`Clara Premium message processed for conversation ${conversationId}`);
+      // Calculate turn number for frontend compatibility
+      const finalQuestionId = newQuestionId || currentQuestionId;
+      const onboardingTurn = QUESTION_ID_TO_TURN[finalQuestionId] || 1;
+
+      logger.info(`Clara Premium message processed for conversation ${conversationId}, onboarding=${onboardingStillActive}, question=${finalQuestionId}, turn=${onboardingTurn}`);
 
       return {
         message: assistantMessage,
         shouldGenerateTitle,
         shouldExtractContext,
+        isOnboarding: onboardingStillActive,
+        onboardingTurn,
+        ...(contentAnalysisResult && { contentAnalysis: contentAnalysisResult }),
       };
     } catch (error) {
       logger.error('Error processing Clara Premium message:', { error });
@@ -448,6 +686,59 @@ Contexto resumido: ${formattedGlobalContext}`
           error: err instanceof Error ? err.message : String(err),
           userId,
           messageCount: messages.length
+        });
+      });
+  }
+
+  /**
+   * Generate profile tags asynchronously (non-blocking)
+   */
+  private generateTagsAsync(userId: string): void {
+    logger.info(`Starting async profile tags generation for user ${userId}`);
+
+    globalContextService.generateProfileTags(userId)
+      .then((tags) => {
+        logger.info(`✅ Profile tags generated successfully for user ${userId}:`, { tags });
+      })
+      .catch(err => {
+        logger.error('❌ Error generating profile tags:', {
+          error: err instanceof Error ? err.message : String(err),
+          userId
+        });
+      });
+  }
+
+  /**
+   * Persist content analysis results (documents/challenges) asynchronously.
+   * This avoids re-calling the LLM when we already have the analysis.
+   */
+  private persistContentFromAnalysisAsync(
+    userId: string,
+    conversationId: string,
+    assistantMessage: string,
+    analysis: Awaited<ReturnType<typeof contentDetectionService.analyzeResponse>>
+  ): void {
+    Promise.resolve()
+      .then(async () => {
+        if (analysis.isValuableDocument) {
+          await contentDetectionService.saveDocument(userId, conversationId, analysis, assistantMessage);
+        }
+
+        if (analysis.isChallenge) {
+          await contentDetectionService.createChallenge(userId, analysis);
+        }
+      })
+      .then(() => {
+        logger.info(`✅ Content persistence complete for user ${userId}:`, {
+          isDocument: analysis.isValuableDocument,
+          isChallenge: analysis.isChallenge,
+        });
+      })
+      .catch(err => {
+        logger.error('❌ Error persisting analyzed content:', {
+          error: err instanceof Error ? err.message : String(err),
+          userId,
+          conversationId,
         });
       });
   }

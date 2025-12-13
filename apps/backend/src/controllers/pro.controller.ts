@@ -10,6 +10,7 @@ import multer from 'multer';
 import { prisma } from '../config/database';
 import { agentProService } from '../services/agent-pro.service';
 import { globalContextService } from '../services/global-context.service';
+import { contentDetectionService } from '../services/content-detection.service';
 import type { ApiResponse } from '../types';
 import { logger } from '../utils/logger';
 
@@ -130,7 +131,7 @@ export class ProController {
 
       const userName = user?.name || 'Usuario';
 
-      const { conversationId, welcomeMessage } = await agentProService.startConversation(
+      const { conversationId, welcomeMessage, isOnboarding, onboardingTurn } = await agentProService.startConversation(
         userId,
         userName
       );
@@ -143,6 +144,8 @@ export class ProController {
             role: 'assistant',
             content: welcomeMessage,
           },
+          isOnboarding,
+          onboardingTurn,
         },
       } as ApiResponse);
     } catch (error) {
@@ -280,6 +283,13 @@ export class ProController {
         return;
       }
 
+      // Pre-check for medical urgency in user message
+      const urgencyCheck = contentDetectionService.detectUrgency(message);
+      if (urgencyCheck.isUrgent) {
+        logger.warn(`[URGENCY] Detected urgency in user message: ${urgencyCheck.reason}`, { userId });
+        // Let Clara respond (she has instructions for urgencies), but flag it
+      }
+
       const result = await agentProService.processMessage(
         conversationId,
         userId,
@@ -308,11 +318,30 @@ export class ProController {
         });
       }
 
+      const contentMeta = result.contentAnalysis
+        ? {
+          shouldOfferPDF: result.contentAnalysis.shouldOfferPDF,
+          documentTitle: result.contentAnalysis.documentTitle,
+        }
+        : {};
+
+      const isUrgent = Boolean(urgencyCheck.isUrgent || result.contentAnalysis?.isUrgent);
+      const urgencyMeta = isUrgent
+        ? {
+          isUrgent: true,
+          urgencyReason: result.contentAnalysis?.urgencyReason || urgencyCheck.reason,
+        }
+        : {};
+
       res.json({
         success: true,
         data: {
           role: 'assistant',
           content: result.message,
+          isOnboarding: result.isOnboarding,
+          onboardingTurn: result.onboardingTurn,
+          ...contentMeta,
+          ...urgencyMeta,
         },
       } as ApiResponse);
     } catch (error) {

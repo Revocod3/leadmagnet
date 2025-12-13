@@ -295,6 +295,8 @@ class ApiClient {
   async createProConversation(): Promise<{
     conversationId: string;
     message: { role: string; content: string };
+    isOnboarding?: boolean;
+    onboardingTurn?: number;
   }> {
     const response = await this.client.post<ApiResponse<any>>('/pro/conversations', {}, {
       headers: this.getAuthHeaders(),
@@ -309,6 +311,8 @@ class ApiClient {
   async getProConversation(conversationId: string): Promise<{
     messages: Array<{ role: string; content: string; createdAt: string }>;
     conversation: { id: string; title: string | null; createdAt: string };
+    isOnboarding?: boolean;
+    onboardingTurn?: number;
   }> {
     const response = await this.client.get<ApiResponse<any>>(`/pro/conversations/${conversationId}`, {
       headers: this.getAuthHeaders(),
@@ -323,6 +327,8 @@ class ApiClient {
   async sendProMessage(conversationId: string, message: string, imageFile?: File): Promise<{
     role: string;
     content: string;
+    isOnboarding?: boolean;
+    onboardingTurn?: number;
   }> {
     let response;
 

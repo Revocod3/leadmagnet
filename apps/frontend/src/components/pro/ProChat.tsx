@@ -5,9 +5,10 @@
  * - Sidebar for conversation management
  * - Unlimited images
  * - PRO-specific features
+ * - Premium onboarding flow with ProgressChip
  */
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useProChat } from '../../hooks/useProChat';
 import { useSpeechToText } from '../../hooks/useSpeechToText';
@@ -19,6 +20,12 @@ import { TypingIndicator } from '../animations/TypingIndicator';
 import { ConversationsSidebar } from './ConversationsSidebar';
 import { CameraModal } from '../modals/CameraModal';
 import { ImageViewerModal } from '../modals/ImageViewerModal';
+import { QuickReplyChips } from '../chat/QuickReplyChips';
+import { InfoWedge } from '../chat/InfoWedge';
+import {
+  getQuestionByTurn,
+  QUESTION_ID_TO_TURN,
+} from '../../config/pro-onboarding-config';
 import type { Tab } from './ProPremiumContainer';
 
 interface ProChatProps {
@@ -41,6 +48,8 @@ export const ProChat = ({ onSubscriptionExpired, activeTab, onTabChange }: ProCh
     error,
     sendMessage,
     state,
+    isOnboarding,
+    onboardingTurn,
   } = useProChat(onSubscriptionExpired);
 
   // Local UI state
@@ -92,6 +101,30 @@ export const ProChat = ({ onSubscriptionExpired, activeTab, onTabChange }: ProCh
   }, [messages, scrollToBottom]);
 
   // Track typewriter lifecycle to sync scroll with assistant animation
+  const handleTypewriterComplete = useCallback(() => {
+    setIsTypewriterComplete(true);
+    scrollToBottom('smooth');
+  }, [scrollToBottom]);
+
+  // Helper to get current question info for Quick Replies
+  // USA EL TURNO DEL BACKEND - no depende de regex ni del contenido del mensaje
+  const currentQuestionInfo = useMemo(() => {
+    // Si no estamos en onboarding, no hay quick replies
+    if (!isOnboarding) return null;
+
+    // Usar el turno del backend para calcular la posición exacta
+    const result = getQuestionByTurn(onboardingTurn);
+    if (!result) return null;
+
+    return {
+      block: result.block,
+      questionNum: result.questionIndex + 1, // 1-indexed for display
+      questionId: result.questionId,
+      options: result.options,
+      blockIndex: result.blockIndex,
+      questionIndex: result.questionIndex,
+    };
+  }, [isOnboarding, onboardingTurn]);
   useEffect(() => {
     const lastMessage = messages[messages.length - 1];
     if (lastMessage?.role === 'assistant') {
@@ -101,7 +134,7 @@ export const ProChat = ({ onSubscriptionExpired, activeTab, onTabChange }: ProCh
         setIsTypewriterComplete(true);
       }
     }
-  }, [messages]);
+  }, [messages])
 
   // Auto-scroll when typewriter finishes so the latest chips/footer stay visible
   useEffect(() => {
@@ -238,6 +271,33 @@ export const ProChat = ({ onSubscriptionExpired, activeTab, onTabChange }: ProCh
     }
   };
 
+  // Detect onboarding progress from latest assistant message
+  // Uses currentQuestionInfo which already has the detection done
+  const progressInfo = useMemo(() => {
+    if (!currentQuestionInfo || !isOnboarding) return null;
+
+    const { block, questionIndex } = currentQuestionInfo;
+
+    // Convert to FlowBlock format for ProgressChip compatibility
+    return {
+      currentBlock: {
+        id: block.id,
+        name: block.name,
+        emoji: '📋', // Generic emoji for onboarding
+        color: block.color,
+        colorLight: block.bgColor,
+        questions: [],
+        infoWedge: block.infoWedge,
+      },
+      currentQuestionIndex: questionIndex, // Already 0-indexed
+      totalQuestionsInBlock: block.questionsCount,
+    };
+  }, [isOnboarding, currentQuestionInfo]);
+
+  const handleChipSelect = (option: { value: string; label: string }) => {
+    handleSendMessage(undefined, option.value);
+  };
+
   return (
     <>
       {/* Main layout with sidebar */}
@@ -261,6 +321,7 @@ export const ProChat = ({ onSubscriptionExpired, activeTab, onTabChange }: ProCh
             showConversationsOption={true}
             onToggleConversations={() => setShowSidebar(!showSidebar)}
             isConversationsSidebarOpen={showSidebar}
+            progressInfo={progressInfo}
             {...(activeTab && { activeTab })}
             {...(onTabChange && { onTabChange })}
           />
@@ -365,52 +426,35 @@ export const ProChat = ({ onSubscriptionExpired, activeTab, onTabChange }: ProCh
                   </div>
                 )}
 
-                {/* Empty State - Only when user has zero conversations */}
+                {/* Empty State - Only when user has zero conversations (rare: user deleted all) */}
                 {!error && conversations.length === 0 && !selectedConversationId && !isLoading && (
                   <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
                     <motion.div
-                      animate={{ scale: [1, 1.05, 1] }}
-                      transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5 }}
                       className="mb-6"
                     >
-                      <div className="w-24 h-24 rounded-full overflow-hidden shadow-xl">
+                      <div className="w-20 h-20 rounded-full overflow-hidden shadow-lg border-2 border-brand-green-100 dark:border-brand-green-800">
                         <img
                           src="/assets/images/favicon.webp"
-                          alt="OVP"
+                          alt="Clara"
                           className="w-full h-full object-cover"
                         />
                       </div>
                     </motion.div>
-                    <h2 className="text-2xl font-bold text-neutral-900 dark:text-white mb-2">
-                      ¡Hola! Soy Clara PRO
-                    </h2>
-                    <p className="text-neutral-600 dark:text-neutral-400 max-w-md mb-6">
-                      Tu compañera personal en el Método Objetivo Vientre Plano.
-                      Estoy aquí para acompañarte en cada paso de tu transformación.
-                    </p>
-                    <button
-                      onClick={handleNewConversation}
-                      disabled={isCreatingConversation}
-                      className="px-6 py-3 bg-brand-green-500 hover:bg-brand-green-600 text-white rounded-xl font-medium transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 mx-auto"
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2, duration: 0.4 }}
                     >
-                      {isCreatingConversation ? (
-                        <>
-                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
-                          Creando conversación...
-                        </>
-                      ) : (
-                        'Iniciar conversación'
-                      )}
-                    </button>
-
-                    {conversations.length > 0 && (
-                      <button
-                        onClick={() => setShowSidebar(true)}
-                        className="mt-4 px-4 py-2 text-brand-green-600 dark:text-brand-green-400 hover:bg-brand-green-50 dark:hover:bg-brand-green-900/20 rounded-lg font-medium transition-colors"
-                      >
-                        Ver conversaciones anteriores ({conversations.length})
-                      </button>
-                    )}
+                      <h2 className="text-xl font-semibold text-neutral-900 dark:text-white mb-2">
+                        ¡Hola! Soy Clara
+                      </h2>
+                      <p className="text-neutral-500 dark:text-neutral-400 text-sm max-w-sm">
+                        Escribe un mensaje para comenzar tu acompañamiento personalizado
+                      </p>
+                    </motion.div>
                   </div>
                 )}
 
@@ -425,16 +469,97 @@ export const ProChat = ({ onSubscriptionExpired, activeTab, onTabChange }: ProCh
                 {!error && selectedConversationId && !isLoading && (
                   <div className="space-y-3">
                     <AnimatePresence mode="popLayout">
-                      {messages.map((message, index) => (
-                        <ChatMessage
-                          key={`${selectedConversationId}-${index}`}
-                          message={message}
-                          state={state}
-                          isLatest={index === messages.length - 1}
-                          onTypewriterComplete={() => setIsTypewriterComplete(true)}
-                        />
-                      ))}
+                      {messages.map((message, index) => {
+                        // Extract question ID from Clara's message metadata
+                        let showInfoWedge = false;
+                        let wedgeBlock = null;
+
+                        if (message.role === 'assistant' && index > 0) {
+                          // Extract [PREGUNTA_ACTUAL: xxx] from current message
+                          const currentMatch = message.content.match(/\[PREGUNTA_ACTUAL:\s*(\w+)\]/);
+                          const currentQuestionId = currentMatch ? currentMatch[1] : null;
+
+                          // Find previous assistant message
+                          let prevAssistantIndex = -1;
+                          for (let i = index - 1; i >= 0; i--) {
+                            if (messages[i]?.role === 'assistant') {
+                              prevAssistantIndex = i;
+                              break;
+                            }
+                          }
+
+                          if (prevAssistantIndex >= 0 && messages[prevAssistantIndex]) {
+                            const prevMatch = messages[prevAssistantIndex]!.content.match(/\[PREGUNTA_ACTUAL:\s*(\w+)\]/);
+                            const prevQuestionId = prevMatch ? prevMatch[1] : null;
+
+                            // Special case: First InfoWedge (Digestivo) appears when transitioning from welcome to dig_1
+                            if (prevQuestionId === 'welcome' && currentQuestionId === 'dig_1') {
+                              const dig1Turn = QUESTION_ID_TO_TURN['dig_1'];
+                              const currentInfo = typeof dig1Turn === 'number' ? getQuestionByTurn(dig1Turn) : null;
+                              if (currentInfo) {
+                                showInfoWedge = true;
+                                wedgeBlock = currentInfo.block;
+                              }
+                            }
+                            // All other InfoWedges appear when we LEAVE a block (transition)
+                            else if (prevQuestionId && currentQuestionId && currentQuestionId !== 'welcome' && currentQuestionId !== 'completed') {
+                              // Convert question IDs to block indices
+                              const currentTurn = QUESTION_ID_TO_TURN[currentQuestionId] || 0;
+                              const prevTurn = QUESTION_ID_TO_TURN[prevQuestionId] || 0;
+
+                              const currentInfo = getQuestionByTurn(currentTurn);
+                              const prevInfo = getQuestionByTurn(prevTurn);
+
+                              // Show InfoWedge when changing blocks (transition from old block to new)
+                              if (currentInfo && prevInfo && currentInfo.blockIndex !== prevInfo.blockIndex) {
+                                showInfoWedge = true;
+                                wedgeBlock = currentInfo.block;
+                              }
+                            }
+                          }
+                        }
+
+                        return (
+                          <div key={`${selectedConversationId}-${index}`}>
+                            {showInfoWedge && wedgeBlock && (
+                              <div className="mb-4">
+                                <InfoWedge
+                                  content={wedgeBlock.infoWedge}
+                                  blockColor={wedgeBlock.color}
+                                  blockColorLight={wedgeBlock.bgColor}
+                                  blockEmoji="✨"
+                                />
+                              </div>
+                            )}
+                            <ChatMessage
+                              message={{
+                                ...message,
+                                // Remove metadata from display: [PREGUNTA_ACTUAL: xxx] and PREGUNTA X (xxx):
+                                content: message.content
+                                  .replace(/\[PREGUNTA_ACTUAL:\s*\w+\]/g, '')
+                                  .replace(/PREGUNTA \d+ \(\w+\):/g, '')
+                                  .trim()
+                              }}
+                              state={state}
+                              isLatest={index === messages.length - 1}
+                              onTypewriterComplete={index === messages.length - 1 ? handleTypewriterComplete : undefined}
+                            />
+                          </div>
+                        );
+                      })}
                     </AnimatePresence>
+
+                    {/* Quick Reply Chips */}
+                    {!isSending &&
+                      isTypewriterComplete &&
+                      currentQuestionInfo?.options && (
+                        <QuickReplyChips
+                          options={currentQuestionInfo.options}
+                          onSelect={handleChipSelect}
+                          disabled={isSending}
+                          blockColor={currentQuestionInfo.block.color}
+                        />
+                      )}
 
                     {/* Typing Indicator */}
                     {isSending && (
@@ -454,8 +579,8 @@ export const ProChat = ({ onSubscriptionExpired, activeTab, onTabChange }: ProCh
             </main>
           </div>
 
-          {/* Footer - Only show when conversation is selected and no error */}
-          {!error && selectedConversationId && (
+          {/* Footer - Always show unless there's an error */}
+          {!error && (
             <ChatFooter
               inputMessage={inputMessage}
               setInputMessage={setInputMessage}

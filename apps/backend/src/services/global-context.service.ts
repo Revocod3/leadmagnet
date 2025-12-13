@@ -15,6 +15,8 @@ const openai = new OpenAI();
 // Maximum tokens for context (to avoid overwhelming the LLM)
 const MAX_CONTEXT_TOKENS = 2000;
 
+const TIME_ZONE = 'Europe/Madrid';
+
 interface ExtractedContext {
   digestiveProfile?: {
     symptoms?: string[];
@@ -78,15 +80,48 @@ interface GlobalContextData {
   weekNumber: number;
   daysInProgram: number;
   programStartDate: Date | null;
+  // Premium onboarding
+  onboardingTurn: number;
+  currentQuestionId: string;
+  onboardingCompleted: boolean;
   radiographyCompleted: boolean;
   radiographyContent: string | null;
   personalityType: string | null;
   communicationStyle: Record<string, unknown>;
+  profileTags: string[];
+  tagsGeneratedAt: Date | null;
   lastCheckInDate: Date | null;
   consecutiveDays: number;
 }
 
 export class GlobalContextService {
+
+  private getMadridDateParts(date: Date): { year: number; month: number; day: number } {
+    const formatter = new Intl.DateTimeFormat('en-CA', {
+      timeZone: TIME_ZONE,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
+
+    const parts = formatter.formatToParts(date);
+    const year = Number(parts.find(p => p.type === 'year')?.value);
+    const month = Number(parts.find(p => p.type === 'month')?.value);
+    const day = Number(parts.find(p => p.type === 'day')?.value);
+
+    return { year, month, day };
+  }
+
+  private getMadridStartOfDayUtc(date: Date): Date {
+    const p = this.getMadridDateParts(date);
+    return new Date(Date.UTC(p.year, p.month - 1, p.day));
+  }
+
+  private diffCalendarDaysMadrid(from: Date, to: Date): number {
+    const fromMidnight = this.getMadridStartOfDayUtc(from).getTime();
+    const toMidnight = this.getMadridStartOfDayUtc(to).getTime();
+    return Math.floor((toMidnight - fromMidnight) / (1000 * 60 * 60 * 24));
+  }
 
   /**
    * Get or create global context for a user
@@ -527,7 +562,7 @@ ${context.strengths.map(s => `💪 ${s}`).join('\n')}`);
     if (context.programStartDate) {
       const now = new Date();
       const start = new Date(context.programStartDate);
-      daysInProgram = Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+      daysInProgram = Math.max(0, this.diffCalendarDaysMadrid(start, now));
     }
 
     // Determine phase and week
@@ -544,22 +579,6 @@ ${context.strengths.map(s => `💪 ${s}`).join('\n')}`);
       else currentPhase = 'maintenance';
     }
 
-    // Update consecutive days
-    let consecutiveDays = context.consecutiveDays;
-    if (context.lastCheckInDate) {
-      const lastCheckIn = new Date(context.lastCheckInDate);
-      const today = new Date();
-      const daysDiff = Math.floor((today.getTime() - lastCheckIn.getTime()) / (1000 * 60 * 60 * 24));
-
-      if (daysDiff === 1) {
-        consecutiveDays++;
-      } else if (daysDiff > 1) {
-        consecutiveDays = 1;
-      }
-    } else {
-      consecutiveDays = 1;
-    }
-
     // Update in database
     await prisma.userGlobalContext.update({
       where: { userId },
@@ -567,12 +586,48 @@ ${context.strengths.map(s => `💪 ${s}`).join('\n')}`);
         daysInProgram,
         weekNumber,
         currentPhase,
-        consecutiveDays,
-        lastCheckInDate: new Date()
       }
     });
 
     logger.info(`Updated phase for user ${userId}: ${currentPhase}, week ${weekNumber}, ${daysInProgram} days`);
+  }
+
+  /**
+   * Record a user interaction to keep temporal context accurate.
+   * Updates lastCheckInDate and consecutiveDays.
+   */
+  async recordInteraction(userId: string, at: Date = new Date()): Promise<void> {
+    const context = await this.getOrCreateContext(userId);
+
+    let consecutiveDays = context.consecutiveDays || 0;
+
+    if (context.lastCheckInDate) {
+      const lastCheckIn = new Date(context.lastCheckInDate);
+      const daysDiff = this.diffCalendarDaysMadrid(lastCheckIn, at);
+
+      if (daysDiff === 0) {
+        // Same day: keep streak
+      } else if (daysDiff === 1) {
+        consecutiveDays = Math.max(1, consecutiveDays + 1);
+      } else if (daysDiff > 1) {
+        consecutiveDays = 1;
+      } else {
+        // Clock skew or future dates: don't break streak, just keep value
+        consecutiveDays = Math.max(1, consecutiveDays || 1);
+      }
+    } else {
+      consecutiveDays = 1;
+    }
+
+    await prisma.userGlobalContext.update({
+      where: { userId },
+      data: {
+        consecutiveDays,
+        lastCheckInDate: at,
+      },
+    });
+
+    logger.info(`Recorded interaction for user ${userId}: streak=${consecutiveDays}`);
   }
 
   /**
@@ -604,11 +659,14 @@ ${context.strengths.map(s => `💪 ${s}`).join('\n')}`);
     mood?: number;
     bloating?: number;
   }>> {
+    const todayMadridMidnightUtc = this.getMadridStartOfDayUtc(new Date());
+    const fromDate = new Date(todayMadridMidnightUtc.getTime() - days * 24 * 60 * 60 * 1000);
+
     const entries = await prisma.diaryEntry.findMany({
       where: {
         userId,
         date: {
-          gte: new Date(Date.now() - days * 24 * 60 * 60 * 1000)
+          gte: fromDate
         }
       },
       orderBy: { date: 'desc' },
@@ -667,6 +725,122 @@ ${context.strengths.map(s => `💪 ${s}`).join('\n')}`);
       where: { userId }
     });
     return conversationCount <= 1;
+  }
+
+  /**
+   * Generate simplified profile tags from complete user context
+   * Called after onboarding completion or periodically to update
+   */
+  async generateProfileTags(userId: string): Promise<string[]> {
+    try {
+      logger.info(`[TAGS] Generating profile tags for user ${userId}`);
+
+      const context = await this.getOrCreateContext(userId);
+
+      // Build comprehensive profile for tag generation
+      const profileSummary = `
+PERFIL COMPLETO DEL USUARIO:
+
+Perfil Digestivo:
+${JSON.stringify(context.digestiveProfile, null, 2)}
+
+Perfil Emocional:
+${JSON.stringify(context.emotionalProfile, null, 2)}
+
+Perfil Cultural:
+${JSON.stringify(context.culturalProfile, null, 2)}
+
+Perfil de Hábitos:
+${JSON.stringify(context.habitsProfile, null, 2)}
+
+Historial Médico:
+${JSON.stringify(context.medicalHistory, null, 2)}
+
+Objetivos:
+${JSON.stringify(context.goals, null, 2)}
+
+Triggers Identificados:
+${JSON.stringify(context.identifiedTriggers, null, 2)}
+
+Fortalezas:
+${JSON.stringify(context.strengths, null, 2)}
+
+Tipo de Personalidad: ${context.personalityType || 'No identificado'}
+`;
+
+      const tagPrompt = `Analiza este perfil completo de usuario y genera 5-7 etiquetas simplificadas que resuman su perfil.
+
+${profileSummary}
+
+Las etiquetas deben ser del formato:
+- **Digestivo**: "lento" | "rápido" | "sensible" | "inflamado-diario" | "mixto" | "estreñimiento" | "diarrea"
+- **Emocional**: "ansioso" | "motivado" | "cansado" | "escéptico" | "emocional" | "racional" | "equilibrado"
+- **Alimentación**: "procesada" | "natural" | "mixta" | "restrictiva" | "sin-cocinar" | "come-fuera"
+- **Estilo de vida**: "sedentario" | "activo" | "turnos" | "viajero" | "oficina" | "movimiento"
+- **Objetivo**: "estética" | "salud" | "energía" | "bienestar" | "perder-peso" | "reducir-inflamación"
+- **Ritmo**: "rápido" | "pausado" | "irregular" | "estructurado"
+- **Estrés**: "alto" | "medio" | "bajo"
+
+REGLAS:
+1. Genera entre 5-7 tags que MEJOR representen al usuario
+2. Elige UN tag por categoría (no todos)
+3. Prioriza las categorías más relevantes para el usuario
+4. Los tags deben ser accionables para Clara
+5. Si falta información para una categoría, omítela
+
+Responde SOLO con JSON:
+{
+  "tags": ["tag1", "tag2", "tag3", ...]
+}`;
+
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [
+          { role: 'system', content: 'Eres un experto en crear perfiles simplificados. Responde solo con JSON válido.' },
+          { role: 'user', content: tagPrompt }
+        ],
+        response_format: { type: 'json_object' },
+        max_tokens: 500,
+        temperature: 0.2
+      });
+
+      const result = completion.choices[0]?.message?.content;
+      if (!result) {
+        logger.warn('[TAGS] No tags generated from AI');
+        return [];
+      }
+
+      const parsed = JSON.parse(result);
+      const tags = parsed.tags || [];
+
+      logger.info(`[TAGS] Generated tags for user ${userId}:`, tags);
+
+      // Save tags to database
+      await prisma.userGlobalContext.update({
+        where: { userId },
+        data: {
+          profileTags: tags,
+          tagsGeneratedAt: new Date()
+        }
+      });
+
+      return tags;
+
+    } catch (error) {
+      logger.error('[TAGS] Error generating profile tags:', { error, userId });
+      return [];
+    }
+  }
+
+  /**
+   * Check if tags need to be regenerated (every 2 weeks)
+   */
+  shouldRegenerateTags(tagsGeneratedAt: Date | null): boolean {
+    if (!tagsGeneratedAt) return true;
+
+    const now = new Date();
+    const daysSinceGeneration = this.diffCalendarDaysMadrid(new Date(tagsGeneratedAt), now);
+    return daysSinceGeneration >= 14; // Regenerate every 2 weeks
   }
 }
 
