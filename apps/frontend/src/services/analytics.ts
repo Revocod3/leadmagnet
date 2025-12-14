@@ -1,13 +1,15 @@
 /**
- * Google Analytics service for tracking events
+ * Analytics service for tracking events
  * Tracks user interactions across both free and PRO chat
+ * Supports Google Analytics and Meta Pixel
  */
 
-// Extend the Window interface to include gtag
+// Extend the Window interface to include gtag and fbq
 declare global {
   interface Window {
     gtag?: (...args: any[]) => void;
     dataLayer?: any[];
+    fbq?: (...args: any[]) => void;
   }
 }
 
@@ -150,4 +152,38 @@ export const trackError = (chatType: ChatType, errorType: string, errorMessage?:
     error_type: errorType,
     error_message: errorMessage,
   });
+};
+
+// ============================================================================
+// Meta Pixel Events
+// ============================================================================
+
+/**
+ * Track Lead event in Meta Pixel
+ * Call this when a user completes the diagnosis or captures email
+ */
+export const trackMetaLead = (params?: { value?: number; currency?: string }): void => {
+  if (typeof window.fbq === 'function') {
+    window.fbq('track', 'Lead', params);
+  }
+};
+
+/**
+ * Track CompleteRegistration event in Meta Pixel
+ * Call this when a user completes registration
+ */
+export const trackMetaCompleteRegistration = (params?: { value?: number; currency?: string }): void => {
+  if (typeof window.fbq === 'function') {
+    window.fbq('track', 'CompleteRegistration', params);
+  }
+};
+
+/**
+ * Track Purchase event in Meta Pixel
+ * Call this when a user completes a purchase
+ */
+export const trackMetaPurchase = (params: { value: number; currency: string }): void => {
+  if (typeof window.fbq === 'function') {
+    window.fbq('track', 'Purchase', params);
+  }
 };

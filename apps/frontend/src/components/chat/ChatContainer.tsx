@@ -23,6 +23,7 @@ import { InfoWedge } from './InfoWedge';
 import { getBlock, getQuestion, type FlowBlock, type FlowQuestion } from '../../config/diagnostic-flow-config';
 import { apiClient } from '../../services/api';
 import { useMobileKeyboard } from '../../hooks/useMobileKeyboard';
+import { trackMetaLead } from '../../services/analytics';
 
 /**
  * Patrones de texto para detectar cada pregunta en el mensaje de Clara.
@@ -437,6 +438,9 @@ export const ChatContainer = () => {
           userEmail: email,
         });
       }
+
+      // Track Meta Pixel Lead event
+      trackMetaLead();
 
       // Cerrar modal
       setIsEmailModalOpen(false);

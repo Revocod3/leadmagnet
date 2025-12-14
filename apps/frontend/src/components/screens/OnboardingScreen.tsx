@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { authService } from '../../services/auth';
 import { useAuthStore } from '../../stores/authStore';
+import { trackMetaCompleteRegistration } from '../../services/analytics';
 
 interface OnboardingScreenProps {
   onComplete: () => void;
@@ -44,6 +45,10 @@ export const OnboardingScreen = ({ onComplete }: OnboardingScreenProps) => {
       if (result.success && result.data) {
         // Update auth store with new user data and token
         setAuth(result.data.token, result.data.user as any);
+
+        // Track Meta Pixel CompleteRegistration event
+        trackMetaCompleteRegistration();
+
         onComplete();
       } else {
         setError(result.error || 'Error al completar el registro');
