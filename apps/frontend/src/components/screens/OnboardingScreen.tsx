@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { authService } from '../../services/auth';
 import { useAuthStore } from '../../stores/authStore';
-import { trackMetaCompleteRegistration } from '../../services/analytics';
+import { trackMetaCompleteRegistration, updateMetaAdvancedMatching } from '../../services/analytics';
 
 interface OnboardingScreenProps {
   onComplete: () => void;
@@ -45,6 +45,20 @@ export const OnboardingScreen = ({ onComplete }: OnboardingScreenProps) => {
       if (result.success && result.data) {
         // Update auth store with new user data and token
         setAuth(result.data.token, result.data.user as any);
+
+        // Update Meta Pixel Advanced Matching con datos del usuario
+        // Meta hashea automáticamente estos datos antes de enviarlo
+        const nameParts = name.trim().split(' ').filter(p => p.length > 0);
+        const firstName = nameParts[0];
+        if (firstName) {
+          const userData: { firstName: string; lastName?: string } = {
+            firstName,
+          };
+          if (nameParts.length > 1) {
+            userData.lastName = nameParts.slice(1).join(' ');
+          }
+          updateMetaAdvancedMatching(result.data.user.email, userData);
+        }
 
         // Track Meta Pixel CompleteRegistration event
         trackMetaCompleteRegistration();
