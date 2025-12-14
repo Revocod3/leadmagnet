@@ -20,7 +20,7 @@ import { TypingIndicator } from '../animations/TypingIndicator';
 import { DiagnosisGeneratingIndicator } from '../animations/DiagnosisGeneratingIndicator';
 import { QuickReplyChips } from './QuickReplyChips';
 import { InfoWedge } from './InfoWedge';
-import { getBlock, getQuestion, type FlowBlock, type FlowQuestion } from '../../config/diagnostic-flow-config';
+import { findQuestionById, getBlock, getQuestion, type FlowBlock, type FlowQuestion } from '../../config/diagnostic-flow-config';
 import { apiClient } from '../../services/api';
 import { useMobileKeyboard } from '../../hooks/useMobileKeyboard';
 import { trackMetaLead, updateMetaAdvancedMatching } from '../../services/analytics';
@@ -69,9 +69,31 @@ const detectCurrentQuestion = (lastAssistantMessage: string): {
 } | null => {
   if (!lastAssistantMessage) return null;
 
+  // 1) Preferir metadata estable enviada por backend (más fiable que heurísticas de texto)
+  // Formatos soportados:
+  // - [PREGUNTA_ACTUAL: pers_1]
+  // - PREGUNTA 5 (dig_2):
+  const metaMatch =
+    lastAssistantMessage.match(/\[PREGUNTA_ACTUAL:\s*(\w+)\]/i) ||
+    lastAssistantMessage.match(/PREGUNTA\s+\d+\s*\((\w+)\)\s*:/i);
+
+  const questionIdFromMeta = metaMatch?.[1];
+  if (questionIdFromMeta && !['welcome', 'completed'].includes(questionIdFromMeta)) {
+    const byId = findQuestionById(questionIdFromMeta);
+    if (byId) {
+      return byId;
+    }
+  }
+
+  // 2) Fallback: heurística por patrones (por si la IA no incluyó metadata)
+  const messageForPatternMatching = lastAssistantMessage
+    .replace(/\[PREGUNTA_ACTUAL:\s*\w+\]/gi, '')
+    .replace(/PREGUNTA\s+\d+\s*\(\w+\)\s*:/gi, '')
+    .trim();
+
   for (const { blockIndex, questionIndex, patterns } of QUESTION_PATTERNS) {
     for (const pattern of patterns) {
-      if (pattern.test(lastAssistantMessage)) {
+      if (pattern.test(messageForPatternMatching)) {
         const block = getBlock(blockIndex);
         const question = getQuestion(blockIndex, questionIndex);
         if (block && question) {
@@ -645,150 +667,150 @@ export const ChatContainer = () => {
             className="mobile-chat-main smooth-scroll scroll-pt-4 pt-20 pb-32"
           >
             <div className="container-narrow pt-4 pb-4">
-                {/* Empty State - Loading state while initializing */}
-                {messages.length === 0 && !isProcessing && (
-                  <div className="flex flex-col items-center justify-center min-h-[50vh] text-center px-4">
-                    <motion.div
-                      animate={{ scale: [1, 1.05, 1] }}
-                      transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-                      className="mb-6"
-                    >
-                      <div className="w-24 h-24 rounded-full overflow-hidden shadow-xl">
-                        <img
-                          src="/assets/images/favicon.webp"
-                          alt="OVP"
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    </motion.div>
-                    <h2 className="text-2xl font-bold text-foreground mb-2">
-                      Preparando tu diagnóstico
-                    </h2>
-                    <p className="text-secondary max-w-md">
-                      Un momento por favor
-                    </p>
-                  </div>
-                )}
+              {/* Empty State - Loading state while initializing */}
+              {messages.length === 0 && !isProcessing && (
+                <div className="flex flex-col items-center justify-center min-h-[50vh] text-center px-4">
+                  <motion.div
+                    animate={{ scale: [1, 1.05, 1] }}
+                    transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                    className="mb-6"
+                  >
+                    <div className="w-24 h-24 rounded-full overflow-hidden shadow-xl">
+                      <img
+                        src="/assets/images/favicon.webp"
+                        alt="OVP"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  </motion.div>
+                  <h2 className="text-2xl font-bold text-foreground mb-2">
+                    Preparando tu diagnóstico
+                  </h2>
+                  <p className="text-secondary max-w-md">
+                    Un momento por favor
+                  </p>
+                </div>
+              )}
 
-                {/* Messages */}
-                <div className="space-y-3">
-                  <AnimatePresence mode="popLayout">
-                    {messages.map((message, index) => {
+              {/* Messages */}
+              <div className="space-y-3">
+                <AnimatePresence mode="popLayout">
+                  {messages.map((message, index) => {
 
-                      // Detectar si este mensaje inicia un nuevo bloque (para mostrar InfoWedge)
-                      let showInfoWedgeBefore = false;
-                      let wedgeBlock: FlowBlock | null = null;
+                    // Detectar si este mensaje inicia un nuevo bloque (para mostrar InfoWedge)
+                    let showInfoWedgeBefore = false;
+                    let wedgeBlock: FlowBlock | null = null;
 
-                      if (message.role === 'assistant' && index > 0) {
-                        const currentMsgQuestion = detectCurrentQuestion(message.content);
+                    if (message.role === 'assistant' && index > 0) {
+                      const currentMsgQuestion = detectCurrentQuestion(message.content);
 
-                        // Detectar si es mensaje de diagnóstico (generando o listo)
-                        const isDiagnosisMessage = message.type === 'diagnosis_ready' ||
-                          message.type === 'comment' ||
-                          /diagnóstico personalizado|toda la información que necesito/i.test(message.content);
+                      // Detectar si es mensaje de diagnóstico (generando o listo)
+                      const isDiagnosisMessage = message.type === 'diagnosis_ready' ||
+                        message.type === 'comment' ||
+                        /diagnóstico personalizado|toda la información que necesito/i.test(message.content);
 
-                        // Buscar la pregunta del mensaje de asistente anterior
-                        let prevAssistantIndex = index - 1;
-                        while (prevAssistantIndex >= 0 && messages[prevAssistantIndex]?.role !== 'assistant') {
-                          prevAssistantIndex--;
-                        }
-
-                        if (prevAssistantIndex >= 0 && messages[prevAssistantIndex]) {
-                          const prevMsgQuestion = detectCurrentQuestion(messages[prevAssistantIndex]!.content);
-
-                          // Si cambiamos de bloque, mostrar el InfoWedge del bloque anterior
-                          if (currentMsgQuestion && prevMsgQuestion &&
-                            currentMsgQuestion.blockIndex !== prevMsgQuestion.blockIndex) {
-                            showInfoWedgeBefore = true;
-                            wedgeBlock = prevMsgQuestion.block;
-                          }
-
-                          // Si el mensaje anterior era la última pregunta del bloque emocional (pregunta 21)
-                          // y el actual es el diagnóstico, mostrar el InfoWedge del bloque emocional
-                          if (prevMsgQuestion &&
-                            prevMsgQuestion.blockIndex === 3 &&
-                            prevMsgQuestion.questionIndex === 5 &&
-                            isDiagnosisMessage) {
-                            showInfoWedgeBefore = true;
-                            wedgeBlock = prevMsgQuestion.block;
-                          }
-                        }
+                      // Buscar la pregunta del mensaje de asistente anterior
+                      let prevAssistantIndex = index - 1;
+                      while (prevAssistantIndex >= 0 && messages[prevAssistantIndex]?.role !== 'assistant') {
+                        prevAssistantIndex--;
                       }
 
-                      return (
-                        <div key={index}>
-                          {/* InfoWedge antes del mensaje si cambiamos de bloque */}
-                          {showInfoWedgeBefore && wedgeBlock && (
-                            <div className="mb-4">
-                              <InfoWedge
-                                content={wedgeBlock.infoWedge}
-                                blockColor={wedgeBlock.color}
-                                blockColorLight={wedgeBlock.colorLight}
-                                blockEmoji={wedgeBlock.emoji}
-                              />
-                            </div>
-                          )}
+                      if (prevAssistantIndex >= 0 && messages[prevAssistantIndex]) {
+                        const prevMsgQuestion = detectCurrentQuestion(messages[prevAssistantIndex]!.content);
 
-                          <ChatMessage
-                            ref={message.type === 'diagnosis_ready' ? diagnosisMessageRef : undefined}
-                            message={{
-                              ...message,
-                              // Remove metadata from display to avoid breaking quick replies
-                              content: message.content
-                                .replace(/\[PREGUNTA_ACTUAL:\s*\w+\]/g, '')
-                                .replace(/PREGUNTA \d+ \(\w+\):/g, '')
-                                .trim()
-                            }}
-                            state={state}
-                            isLatest={index === messages.length - 1}
-                            onDownloadPDF={handleDownloadPDF}
-                            isGeneratingPDF={isGeneratingPDF}
-                            onTypewriterComplete={index === messages.length - 1 ? handleTypewriterComplete : undefined}
-                          />
-                        </div>
-                      );
-                    })}
-                  </AnimatePresence>
+                        // Si cambiamos de bloque, mostrar el InfoWedge del bloque anterior
+                        if (currentMsgQuestion && prevMsgQuestion &&
+                          currentMsgQuestion.blockIndex !== prevMsgQuestion.blockIndex) {
+                          showInfoWedgeBefore = true;
+                          wedgeBlock = prevMsgQuestion.block;
+                        }
 
-                  {/* Quick Reply Chips - mostrar después de que el typewriter termine */}
-                  {!isProcessing &&
-                    isTypewriterComplete &&
-                    currentQuestion?.type === 'multiple_choice' &&
-                    currentQuestion?.options &&
-                    currentBlock &&
-                    state.step !== 'diagnosis_ready' && (
-                      <QuickReplyChips
-                        options={currentQuestion.options}
-                        onSelect={handleChipSelect}
-                        disabled={isProcessing}
-                        blockColor={currentBlock.color}
-                      />
-                    )}
+                        // Si el mensaje anterior era la última pregunta del bloque emocional (pregunta 21)
+                        // y el actual es el diagnóstico, mostrar el InfoWedge del bloque emocional
+                        if (prevMsgQuestion &&
+                          prevMsgQuestion.blockIndex === 3 &&
+                          prevMsgQuestion.questionIndex === 5 &&
+                          isDiagnosisMessage) {
+                          showInfoWedgeBefore = true;
+                          wedgeBlock = prevMsgQuestion.block;
+                        }
+                      }
+                    }
 
-                  {/* Info Wedge REMOVIDO - Clara ya incluye la cuña informativa en su mensaje */}
+                    return (
+                      <div key={index}>
+                        {/* InfoWedge antes del mensaje si cambiamos de bloque */}
+                        {showInfoWedgeBefore && wedgeBlock && (
+                          <div className="mb-4">
+                            <InfoWedge
+                              content={wedgeBlock.infoWedge}
+                              blockColor={wedgeBlock.color}
+                              blockColorLight={wedgeBlock.colorLight}
+                              blockEmoji={wedgeBlock.emoji}
+                            />
+                          </div>
+                        )}
 
-                  {/* Diagnosis Generating Indicator - Special state */}
-                  {/* Solo mostrar después de que el typewriter termine para mantener jerarquía visual */}
-                  {state.step === 'generating_diagnosis' && !isProcessing && isTypewriterComplete && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0 }}
-                    >
-                      <DiagnosisGeneratingIndicator />
-                    </motion.div>
+                        <ChatMessage
+                          ref={message.type === 'diagnosis_ready' ? diagnosisMessageRef : undefined}
+                          message={{
+                            ...message,
+                            // Remove metadata from display to avoid breaking quick replies
+                            content: message.content
+                              .replace(/\[PREGUNTA_ACTUAL:\s*\w+\]/g, '')
+                              .replace(/PREGUNTA \d+ \(\w+\):/g, '')
+                              .trim()
+                          }}
+                          state={state}
+                          isLatest={index === messages.length - 1}
+                          onDownloadPDF={handleDownloadPDF}
+                          isGeneratingPDF={isGeneratingPDF}
+                          onTypewriterComplete={index === messages.length - 1 ? handleTypewriterComplete : undefined}
+                        />
+                      </div>
+                    );
+                  })}
+                </AnimatePresence>
+
+                {/* Quick Reply Chips - mostrar después de que el typewriter termine */}
+                {!isProcessing &&
+                  isTypewriterComplete &&
+                  currentQuestion?.type === 'multiple_choice' &&
+                  currentQuestion?.options &&
+                  currentBlock &&
+                  state.step !== 'diagnosis_ready' && (
+                    <QuickReplyChips
+                      options={currentQuestion.options}
+                      onSelect={handleChipSelect}
+                      disabled={isProcessing}
+                      blockColor={currentBlock.color}
+                    />
                   )}
 
-                  {/* Typing Indicator - Normal processing */}
-                  {isProcessing && state.step !== 'generating_diagnosis' && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0 }}
-                    >
-                      <TypingIndicator />
-                    </motion.div>
-                  )}
+                {/* Info Wedge REMOVIDO - Clara ya incluye la cuña informativa en su mensaje */}
+
+                {/* Diagnosis Generating Indicator - Special state */}
+                {/* Solo mostrar después de que el typewriter termine para mantener jerarquía visual */}
+                {state.step === 'generating_diagnosis' && !isProcessing && isTypewriterComplete && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                  >
+                    <DiagnosisGeneratingIndicator />
+                  </motion.div>
+                )}
+
+                {/* Typing Indicator - Normal processing */}
+                {isProcessing && state.step !== 'generating_diagnosis' && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0 }}
+                  >
+                    <TypingIndicator />
+                  </motion.div>
+                )}
 
                 <div ref={messagesEndRef} />
               </div>

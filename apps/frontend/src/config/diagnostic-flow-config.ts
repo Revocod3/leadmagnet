@@ -429,6 +429,34 @@ export const getQuestion = (blockIndex: number, questionIndex: number): FlowQues
 };
 
 /**
+ * Encuentra una pregunta por su id estable (ej: pers_1, dig_2, ene_4).
+ * Útil cuando el backend incluye metadata tipo [PREGUNTA_ACTUAL: pers_1].
+ */
+export const findQuestionById = (questionId: string): {
+  blockIndex: number;
+  questionIndex: number;
+  block: FlowBlock;
+  question: FlowQuestion;
+} | null => {
+  if (!questionId) return null;
+
+  for (let blockIndex = 0; blockIndex < DIAGNOSTIC_FLOW.blocks.length; blockIndex++) {
+    const block = DIAGNOSTIC_FLOW.blocks[blockIndex];
+    if (!block) continue;
+
+    const questionIndex = block.questions.findIndex((q) => q.id === questionId);
+    if (questionIndex !== -1) {
+      const question = block.questions[questionIndex];
+      if (question) {
+        return { blockIndex, questionIndex, block, question };
+      }
+    }
+  }
+
+  return null;
+};
+
+/**
  * Calcula el progreso total del flujo (0-100)
  */
 export const calculateTotalProgress = (blockIndex: number, questionIndex: number): number => {
