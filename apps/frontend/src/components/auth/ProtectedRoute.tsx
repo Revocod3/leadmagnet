@@ -1,5 +1,7 @@
 import { Navigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
+import { PRO_MAINTENANCE_MODE } from '../../config/pro-maintenance';
+import { ProMaintenanceModal } from '../modals/ProMaintenanceModal';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -16,6 +18,16 @@ export function ProtectedRoute({ children, requirePro = false, skipOnboardingChe
   if (!isAuthenticated || !isValid) {
     // Not logged in, redirect to login
     return <Navigate to="/login" replace />;
+  }
+
+  // Global maintenance gate for the PRO experience (covers /pro and /onboarding)
+  if (PRO_MAINTENANCE_MODE) {
+    return (
+      <>
+        {children}
+        <ProMaintenanceModal isOpen />
+      </>
+    );
   }
 
   // Check if user needs to complete onboarding
