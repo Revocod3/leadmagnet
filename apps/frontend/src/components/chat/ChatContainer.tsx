@@ -659,7 +659,7 @@ export const ChatContainer = () => {
         {/* Main content - Chat Messages */}
         <div
           ref={chatContainerRef}
-          className="mobile-chat-container bg-brand-cream-100 dark:bg-neutral-900 bg-chat-lighting transition-colors duration-200"
+          className="mobile-chat-container dark:bg-neutral-900 bg-chat-lighting transition-colors duration-200 opacity-[.98]"
         >
           {/* Messages Area */}
           <main

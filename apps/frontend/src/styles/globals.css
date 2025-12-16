@@ -18,6 +18,10 @@
     --color-brand-primary: 151 170 121;
     --color-brand-cream: 247 244 238;
 
+    /* Chat Background - Warmer Cream */
+    --bg-chat-pattern: #F0EAD6;
+    --bg-chat-pattern-rgb: 240, 234, 214;
+
     /* Text */
     --color-text-primary: 23 23 23;
     --color-text-secondary: 115 115 115;
@@ -494,7 +498,7 @@
   /* Chat WhatsApp-style background with botanical pattern image */
   .bg-chat-lighting {
     /* Base cream color with mood */
-    background-color: #F8F5E6;
+    background-color: var(--bg-chat-pattern);
     /* Position for the pattern image overlay */
     position: relative;
   }
@@ -764,6 +768,7 @@
     0% {
       transform: translateX(-100%);
     }
+
     100% {
       transform: translateX(100%);
     }
