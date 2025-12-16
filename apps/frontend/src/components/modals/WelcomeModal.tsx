@@ -55,13 +55,13 @@ export const WelcomeModal = ({ isOpen, onClose }: WelcomeModalProps) => {
               duration: 0.4,
               ease: [0.23, 1, 0.32, 1], // Custom easing for smooth feel
             }}
-            className="fixed inset-0 z-[9999] flex items-center justify-center p-6"
+            className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:p-6 mx-4 md:mx-0"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="relative w-full max-w-md">
               {/* Modal Content - Glassmorphism */}
               <div
-                className="relative rounded-3xl border border-white/20 overflow-hidden shadow-2xl bg-white"
+                className="relative rounded-3xl border border-white/20 px-6overflow-hidden shadow-2xl bg-white/80 backdrop-blur-sm"
                 style={{
                   backdropFilter: 'blur(8px) saturate(120%)',
                   WebkitBackdropFilter: 'blur(8px) saturate(120%)',
@@ -82,7 +82,7 @@ export const WelcomeModal = ({ isOpen, onClose }: WelcomeModalProps) => {
                       repeat: Infinity,
                       repeatDelay: 0.5,
                     }}
-                    className="relative border-4 border-[#99AB75]/30 w-16 h-16 bg-white rounded-full flex items-center justify-center overflow-hidden shadow-lg"
+                    className="relative border-4 border-[#99AB75]/30 w-14 h-14 md:w-16 md:h-16 bg-white rounded-full flex items-center justify-center overflow-hidden shadow-lg"
                   >
                     <img
                       src="/assets/images/favicon.webp"
@@ -93,12 +93,12 @@ export const WelcomeModal = ({ isOpen, onClose }: WelcomeModalProps) => {
                 </div>
 
                 {/* Content */}
-                <div className="px-6 pb-5 text-center">
+                <div className="px-5 pb-5 md:px-6 text-center">
                   <motion.h2
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1, duration: 0.4 }}
-                    className="text-2xl font-bold text-gray-900 mb-1.5"
+                    className="text-xl md:text-2xl font-bold text-gray-900 mb-1.5"
                   >
                     ¡Aquí empieza tu transformación!
                   </motion.h2>
@@ -107,7 +107,7 @@ export const WelcomeModal = ({ isOpen, onClose }: WelcomeModalProps) => {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2, duration: 0.4 }}
-                    className="text-sm text-gray-600 mb-3.5 leading-relaxed"
+                    className="text-sm md:px-12 text-gray-600 mb-3.5 leading-relaxed"
                   >
                     Ingresa tu nombre para acceder al chat de Objetivo Vientre Plano.
                   </motion.p>
