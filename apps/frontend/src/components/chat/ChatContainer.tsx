@@ -644,202 +644,219 @@ export const ChatContainer = () => {
   return (
     <>
       {/* Wrapper con dark mode */}
-      <div className={`${isDarkMode ? 'dark' : ''}`}>
-        {/* Header flotante transparente */}
-        <ChatHeader
-          isDarkMode={isDarkMode}
-          onToggleDarkMode={toggleDarkMode}
-          progressInfo={showProgressBar && currentBlock && currentQuestionInfo ? {
-            currentBlock,
-            currentQuestionIndex: currentQuestionInfo.questionIndex,
-            totalQuestionsInBlock: currentBlock.questions.length,
-          } : null}
-        />
+      <div className={`${isDarkMode ? 'dark' : ''} min-h-[100dvh] lg:min-h-0 lg:fixed lg:inset-0 lg:flex lg:items-center lg:justify-center lg:z-40`}>
 
-        {/* Main content - Chat Messages */}
-        <div
-          ref={chatContainerRef}
-          className="mobile-chat-container dark:bg-neutral-900 bg-chat-lighting transition-colors duration-200 opacity-[.98]"
-        >
-          {/* Messages Area */}
-          <main
-            ref={messagesContainerRef}
-            className="mobile-chat-main smooth-scroll scroll-pt-4 pt-20 pb-32"
-          >
-            <div className="container-narrow pt-4 pb-4">
-              {/* Empty State - Loading state while initializing */}
-              {messages.length === 0 && !isProcessing && (
-                <div className="flex flex-col items-center justify-center min-h-[50vh] text-center px-4">
-                  <motion.div
-                    animate={{ scale: [1, 1.05, 1] }}
-                    transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-                    className="mb-6"
-                  >
-                    <div className="w-24 h-24 rounded-full overflow-hidden shadow-xl">
-                      <img
-                        src="/assets/images/favicon.webp"
-                        alt="OVP"
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  </motion.div>
-                  <h2 className="text-2xl font-bold text-foreground mb-2">
-                    Preparando tu diagnóstico
-                  </h2>
-                  <p className="text-secondary max-w-md">
-                    Un momento por favor
-                  </p>
-                </div>
-              )}
-
-              {/* Messages */}
-              <div className="space-y-3">
-                <AnimatePresence mode="popLayout">
-                  {messages.map((message, index) => {
-
-                    // Detectar si este mensaje inicia un nuevo bloque (para mostrar InfoWedge)
-                    let showInfoWedgeBefore = false;
-                    let wedgeBlock: FlowBlock | null = null;
-
-                    if (message.role === 'assistant' && index > 0) {
-                      const currentMsgQuestion = detectCurrentQuestion(message.content);
-
-                      // Detectar si es mensaje de diagnóstico (generando o listo)
-                      const isDiagnosisMessage = message.type === 'diagnosis_ready' ||
-                        message.type === 'comment' ||
-                        /diagnóstico personalizado|toda la información que necesito/i.test(message.content);
-
-                      // Buscar la pregunta del mensaje de asistente anterior
-                      let prevAssistantIndex = index - 1;
-                      while (prevAssistantIndex >= 0 && messages[prevAssistantIndex]?.role !== 'assistant') {
-                        prevAssistantIndex--;
-                      }
-
-                      if (prevAssistantIndex >= 0 && messages[prevAssistantIndex]) {
-                        const prevMsgQuestion = detectCurrentQuestion(messages[prevAssistantIndex]!.content);
-
-                        // Si cambiamos de bloque, mostrar el InfoWedge del bloque anterior
-                        if (currentMsgQuestion && prevMsgQuestion &&
-                          currentMsgQuestion.blockIndex !== prevMsgQuestion.blockIndex) {
-                          showInfoWedgeBefore = true;
-                          wedgeBlock = prevMsgQuestion.block;
-                        }
-
-                        // Si el mensaje anterior era la última pregunta del bloque emocional (pregunta 21)
-                        // y el actual es el diagnóstico, mostrar el InfoWedge del bloque emocional
-                        if (prevMsgQuestion &&
-                          prevMsgQuestion.blockIndex === 3 &&
-                          prevMsgQuestion.questionIndex === 5 &&
-                          isDiagnosisMessage) {
-                          showInfoWedgeBefore = true;
-                          wedgeBlock = prevMsgQuestion.block;
-                        }
-                      }
-                    }
-
-                    return (
-                      <div key={index}>
-                        {/* InfoWedge antes del mensaje si cambiamos de bloque */}
-                        {showInfoWedgeBefore && wedgeBlock && (
-                          <div className="mb-4">
-                            <InfoWedge
-                              content={wedgeBlock.infoWedge}
-                              blockColor={wedgeBlock.color}
-                              blockColorLight={wedgeBlock.colorLight}
-                              blockEmoji={wedgeBlock.emoji}
-                            />
-                          </div>
-                        )}
-
-                        <ChatMessage
-                          ref={message.type === 'diagnosis_ready' ? diagnosisMessageRef : undefined}
-                          message={{
-                            ...message,
-                            // Remove metadata from display to avoid breaking quick replies
-                            content: message.content
-                              .replace(/\[PREGUNTA_ACTUAL:\s*\w+\]/g, '')
-                              .replace(/PREGUNTA \d+ \(\w+\):/g, '')
-                              .trim()
-                          }}
-                          state={state}
-                          isLatest={index === messages.length - 1}
-                          onDownloadPDF={handleDownloadPDF}
-                          isGeneratingPDF={isGeneratingPDF}
-                          onTypewriterComplete={index === messages.length - 1 ? handleTypewriterComplete : undefined}
-                        />
-                      </div>
-                    );
-                  })}
-                </AnimatePresence>
-
-                {/* Quick Reply Chips - mostrar después de que el typewriter termine */}
-                {!isProcessing &&
-                  isTypewriterComplete &&
-                  currentQuestion?.type === 'multiple_choice' &&
-                  currentQuestion?.options &&
-                  currentBlock &&
-                  state.step !== 'diagnosis_ready' && (
-                    <QuickReplyChips
-                      options={currentQuestion.options}
-                      onSelect={handleChipSelect}
-                      disabled={isProcessing}
-                      blockColor={currentBlock.color}
-                    />
-                  )}
-
-                {/* Info Wedge REMOVIDO - Clara ya incluye la cuña informativa en su mensaje */}
-
-                {/* Diagnosis Generating Indicator - Special state */}
-                {/* Solo mostrar después de que el typewriter termine para mantener jerarquía visual */}
-                {state.step === 'generating_diagnosis' && !isProcessing && isTypewriterComplete && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0 }}
-                  >
-                    <DiagnosisGeneratingIndicator />
-                  </motion.div>
-                )}
-
-                {/* Typing Indicator - Normal processing */}
-                {isProcessing && state.step !== 'generating_diagnosis' && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0 }}
-                  >
-                    <TypingIndicator />
-                  </motion.div>
-                )}
-
-                <div ref={messagesEndRef} />
-              </div>
-            </div>
-          </main>
+        {/* Desktop Background */}
+        <div className="hidden lg:block absolute inset-0 z-0 pointer-events-none">
+          <div className="absolute inset-0 bg-neutral-900/80 backdrop-blur-sm" />
+          <div
+            className="absolute inset-0 opacity-[0.15]"
+            style={{
+              backgroundImage: "url('/assets/images/chat-pattern.png')",
+              backgroundSize: "400px auto",
+              backgroundRepeat: "repeat",
+              filter: "invert(1)"
+            }}
+          />
         </div>
 
-        {/* Footer flotante transparente */}
-        <ChatFooter
-          inputMessage={inputMessage}
-          setInputMessage={setInputMessage}
-          isProcessing={isProcessing}
-          onSendMessage={handleSendMessage}
-          onKeyDown={handleKeyDown}
-          isListening={isListening}
-          onVoiceInput={handleVoiceInput}
-          isSpeechSupported={isSpeechSupported}
-          isPlusMenuOpen={isPlusMenuOpen}
-          setIsPlusMenuOpen={setIsPlusMenuOpen}
-          onCameraClick={() => setIsCameraOpen(true)}
-          onFileSelect={handleFileSelect}
-          selectedImage={selectedImage}
-          setSelectedImage={setSelectedImage}
-          isUploadingImage={isUploadingImage}
-          onImageClick={handleImageClick}
-          showImageLimitMessage={showImageLimitMessage}
-          isKeyboardOpen={isKeyboardOpen}
-          onInputFocus={scrollToBottom}
-        />
+        <div className="w-full min-h-[100dvh] lg:min-h-0 lg:w-[800px] lg:h-full lg:rounded-3xl lg:relative lg:bg-brand-cream-100 lg:dark:bg-neutral-900 lg:shadow-2xl lg:overflow-hidden flex flex-col lg:transition-all lg:duration-300 relative z-10">
+          {/* Header flotante transparente */}
+          <ChatHeader
+            isDarkMode={isDarkMode}
+            onToggleDarkMode={toggleDarkMode}
+            progressInfo={showProgressBar && currentBlock && currentQuestionInfo ? {
+              currentBlock,
+              currentQuestionIndex: currentQuestionInfo.questionIndex,
+              totalQuestionsInBlock: currentBlock.questions.length,
+            } : null}
+          />
+
+          {/* Main content - Chat Messages */}
+          <div
+            ref={chatContainerRef}
+            className="mobile-chat-container dark:bg-neutral-900 bg-chat-lighting transition-colors duration-200 opacity-[.98] flex-1 lg:h-full lg:overflow-hidden"
+          >
+            {/* Messages Area */}
+            <main
+              ref={messagesContainerRef}
+              className="mobile-chat-main smooth-scroll scroll-pt-4 pt-20 pb-32 h-full overflow-y-auto"
+            >
+              <div className="container-narrow pt-4 pb-4">
+                {/* Empty State - Loading state while initializing */}
+                {messages.length === 0 && !isProcessing && (
+                  <div className="flex flex-col items-center justify-center min-h-[50vh] text-center px-4">
+                    <motion.div
+                      animate={{ scale: [1, 1.05, 1] }}
+                      transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                      className="mb-6"
+                    >
+                      <div className="w-24 h-24 rounded-full overflow-hidden shadow-xl">
+                        <img
+                          src="/assets/images/favicon.webp"
+                          alt="OVP"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    </motion.div>
+                    <h2 className="text-2xl font-bold text-foreground mb-2">
+                      Preparando tu diagnóstico
+                    </h2>
+                    <p className="text-secondary max-w-md">
+                      Un momento por favor
+                    </p>
+                  </div>
+                )}
+
+                {/* Messages */}
+                <div className="space-y-3">
+                  <AnimatePresence mode="popLayout">
+                    {messages.map((message, index) => {
+
+                      // Detectar si este mensaje inicia un nuevo bloque (para mostrar InfoWedge)
+                      let showInfoWedgeBefore = false;
+                      let wedgeBlock: FlowBlock | null = null;
+
+                      if (message.role === 'assistant' && index > 0) {
+                        const currentMsgQuestion = detectCurrentQuestion(message.content);
+
+                        // Detectar si es mensaje de diagnóstico (generando o listo)
+                        const isDiagnosisMessage = message.type === 'diagnosis_ready' ||
+                          message.type === 'comment' ||
+                          /diagnóstico personalizado|toda la información que necesito/i.test(message.content);
+
+                        // Buscar la pregunta del mensaje de asistente anterior
+                        let prevAssistantIndex = index - 1;
+                        while (prevAssistantIndex >= 0 && messages[prevAssistantIndex]?.role !== 'assistant') {
+                          prevAssistantIndex--;
+                        }
+
+                        if (prevAssistantIndex >= 0 && messages[prevAssistantIndex]) {
+                          const prevMsgQuestion = detectCurrentQuestion(messages[prevAssistantIndex]!.content);
+
+                          // Si cambiamos de bloque, mostrar el InfoWedge del bloque anterior
+                          if (currentMsgQuestion && prevMsgQuestion &&
+                            currentMsgQuestion.blockIndex !== prevMsgQuestion.blockIndex) {
+                            showInfoWedgeBefore = true;
+                            wedgeBlock = prevMsgQuestion.block;
+                          }
+
+                          // Si el mensaje anterior era la última pregunta del bloque emocional (pregunta 21)
+                          // y el actual es el diagnóstico, mostrar el InfoWedge del bloque emocional
+                          if (prevMsgQuestion &&
+                            prevMsgQuestion.blockIndex === 3 &&
+                            prevMsgQuestion.questionIndex === 5 &&
+                            isDiagnosisMessage) {
+                            showInfoWedgeBefore = true;
+                            wedgeBlock = prevMsgQuestion.block;
+                          }
+                        }
+                      }
+
+                      return (
+                        <div key={index}>
+                          {/* InfoWedge antes del mensaje si cambiamos de bloque */}
+                          {showInfoWedgeBefore && wedgeBlock && (
+                            <div className="mb-4">
+                              <InfoWedge
+                                content={wedgeBlock.infoWedge}
+                                blockColor={wedgeBlock.color}
+                                blockColorLight={wedgeBlock.colorLight}
+                                blockEmoji={wedgeBlock.emoji}
+                              />
+                            </div>
+                          )}
+
+                          <ChatMessage
+                            ref={message.type === 'diagnosis_ready' ? diagnosisMessageRef : undefined}
+                            message={{
+                              ...message,
+                              // Remove metadata from display to avoid breaking quick replies
+                              content: message.content
+                                .replace(/\[PREGUNTA_ACTUAL:\s*\w+\]/g, '')
+                                .replace(/PREGUNTA \d+ \(\w+\):/g, '')
+                                .trim()
+                            }}
+                            state={state}
+                            isLatest={index === messages.length - 1}
+                            onDownloadPDF={handleDownloadPDF}
+                            isGeneratingPDF={isGeneratingPDF}
+                            onTypewriterComplete={index === messages.length - 1 ? handleTypewriterComplete : undefined}
+                          />
+                        </div>
+                      );
+                    })}
+                  </AnimatePresence>
+
+                  {/* Quick Reply Chips - mostrar después de que el typewriter termine */}
+                  {!isProcessing &&
+                    isTypewriterComplete &&
+                    currentQuestion?.type === 'multiple_choice' &&
+                    currentQuestion?.options &&
+                    currentBlock &&
+                    state.step !== 'diagnosis_ready' && (
+                      <QuickReplyChips
+                        options={currentQuestion.options}
+                        onSelect={handleChipSelect}
+                        disabled={isProcessing}
+                        blockColor={currentBlock.color}
+                      />
+                    )}
+
+                  {/* Info Wedge REMOVIDO - Clara ya incluye la cuña informativa en su mensaje */}
+
+                  {/* Diagnosis Generating Indicator - Special state */}
+                  {/* Solo mostrar después de que el typewriter termine para mantener jerarquía visual */}
+                  {state.step === 'generating_diagnosis' && !isProcessing && isTypewriterComplete && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0 }}
+                    >
+                      <DiagnosisGeneratingIndicator />
+                    </motion.div>
+                  )}
+
+                  {/* Typing Indicator - Normal processing */}
+                  {isProcessing && state.step !== 'generating_diagnosis' && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0 }}
+                    >
+                      <TypingIndicator />
+                    </motion.div>
+                  )}
+
+                  <div ref={messagesEndRef} />
+                </div>
+              </div>
+            </main>
+          </div>
+
+          {/* Footer flotante transparente */}
+          <ChatFooter
+            inputMessage={inputMessage}
+            setInputMessage={setInputMessage}
+            isProcessing={isProcessing}
+            onSendMessage={handleSendMessage}
+            onKeyDown={handleKeyDown}
+            isListening={isListening}
+            onVoiceInput={handleVoiceInput}
+            isSpeechSupported={isSpeechSupported}
+            isPlusMenuOpen={isPlusMenuOpen}
+            setIsPlusMenuOpen={setIsPlusMenuOpen}
+            onCameraClick={() => setIsCameraOpen(true)}
+            onFileSelect={handleFileSelect}
+            selectedImage={selectedImage}
+            setSelectedImage={setSelectedImage}
+            isUploadingImage={isUploadingImage}
+            onImageClick={handleImageClick}
+            showImageLimitMessage={showImageLimitMessage}
+            isKeyboardOpen={isKeyboardOpen}
+            onInputFocus={scrollToBottom}
+          />
+        </div>
       </div>
 
       {/* Modals */}

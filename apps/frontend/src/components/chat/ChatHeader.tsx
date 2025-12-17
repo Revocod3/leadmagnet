@@ -52,9 +52,9 @@ export const ChatHeader = ({
     setShowMenu(false);
   };
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 pointer-events-none">
+    <header className="fixed lg:absolute top-0 left-0 right-0 z-50 pointer-events-none">
       {/* Gradiente de arriba hacia abajo */}
-      <div className="absolute inset-0 bg-gradient-to-b from-brand-cream-100 via-brand-cream-100/80 via-50% to-transparent dark:from-neutral-900 dark:via-neutral-900/80 dark:via-50% dark:to-transparent pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-b from-brand-cream-100 via-brand-cream-100/80 via-50% to-transparent dark:from-neutral-900 dark:via-neutral-900/80 dark:via-50% dark:to-transparent pointer-events-none lg:hidden" />
 
       <div className="container-narrow py-3 flex items-center justify-between pointer-events-auto relative z-10">
         {/* Left: ChatOVP + "En Línea" Bubble */}

@@ -87,10 +87,10 @@ export const ChatFooter = ({
 
   return (
     <footer
-      className="fixed bottom-0 left-0 right-0 z-30 pointer-events-none"
+      className="fixed lg:absolute bottom-0 left-0 right-0 z-30 pointer-events-none"
     >
       {/* Gradiente de abajo hacia arriba */}
-      <div className="absolute inset-0 bg-gradient-to-t from-brand-cream-100 via-brand-cream-100/80 via-50% to-transparent dark:from-neutral-900 dark:via-neutral-900/80 dark:via-50% dark:to-transparent pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-t from-brand-cream-100 via-brand-cream-100/80 via-50% to-transparent dark:from-neutral-900 dark:via-neutral-900/80 dark:via-50% dark:to-transparent pointer-events-none lg:hidden" />
 
       <div className="max-w-3xl mx-auto px-2 sm:px-4 py-4 pb-6 pointer-events-auto relative z-10">
         {/* Mensaje de límite de imágenes alcanzado */}
