@@ -644,7 +644,7 @@ export const ChatContainer = () => {
   return (
     <>
       {/* Wrapper con dark mode */}
-      <div className={`${isDarkMode ? 'dark' : ''} min-h-[100dvh] lg:min-h-0 lg:fixed lg:inset-0 lg:flex lg:items-center lg:justify-center lg:z-40`}>
+      <div className={`${isDarkMode ? 'dark' : ''} contents lg:fixed lg:inset-0 lg:flex lg:items-center lg:justify-center lg:z-40`}>
 
         {/* Desktop Background */}
         <div className="hidden lg:block absolute inset-0 z-0 pointer-events-none">
@@ -660,7 +660,7 @@ export const ChatContainer = () => {
           />
         </div>
 
-        <div className="w-full min-h-[100dvh] lg:min-h-0 lg:w-[800px] lg:h-full lg:rounded-3xl lg:relative lg:bg-brand-cream-100 lg:dark:bg-neutral-900 lg:shadow-2xl lg:overflow-hidden flex flex-col lg:transition-all lg:duration-300 relative z-10">
+        <div className="contents lg:w-[800px] lg:h-full lg:rounded-3xl lg:relative lg:bg-brand-cream-100 lg:dark:bg-neutral-900 lg:shadow-2xl lg:overflow-hidden lg:flex lg:flex-col lg:transition-all lg:duration-300 lg:z-10">
           {/* Header flotante transparente */}
           <ChatHeader
             isDarkMode={isDarkMode}
