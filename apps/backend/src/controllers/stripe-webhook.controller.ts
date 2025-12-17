@@ -80,8 +80,6 @@ export class StripeWebhookController {
       return;
     }
 
-    console.log('[Stripe Webhook] Event received:', event.type);
-
     try {
       // Handle different event types
       switch (event.type) {
@@ -132,8 +130,6 @@ export class StripeWebhookController {
    * Handle subscription created or updated
    */
   private async handleSubscriptionCreatedOrUpdated(subscription: Stripe.Subscription): Promise<void> {
-    console.log('[Stripe Webhook] Processing subscription:', subscription.id);
-
     // Get customer details
     const customer = await stripe.customers.retrieve(subscription.customer as string);
 
@@ -173,7 +169,6 @@ export class StripeWebhookController {
       isNewUser = true;
       resetToken = this.generateResetToken();
 
-      console.log('[Stripe Webhook] Creating new user for:', email);
       user = await prisma.user.create({
         data: {
           email,
@@ -188,7 +183,6 @@ export class StripeWebhookController {
       });
     } else {
       // Update existing user
-      console.log('[Stripe Webhook] Updating existing user:', user.id);
       user = await prisma.user.update({
         where: { id: user.id },
         data: {
@@ -233,24 +227,8 @@ export class StripeWebhookController {
       },
     });
 
-    console.log('[Stripe Webhook] ✅ Subscription synced:', {
-      userId: user.id,
-      email,
-      plan,
-      status: subscription.status,
-    });
-
-    // Send welcome email (only on subscription created, not updated)
-    // Check if this is a new subscription by looking at the status
-    console.log('[Stripe Webhook] Checking email conditions:', {
-      status: subscription.status,
-      shouldSendEmail: subscription.status === 'active' || subscription.status === 'trialing',
-      isNewUser,
-      hasResetToken: !!resetToken,
-    });
 
     if (subscription.status === 'active' || subscription.status === 'trialing') {
-      console.log('[Stripe Webhook] 📧 Attempting to send welcome email to:', email);
       try {
         await emailService.sendWelcomeEmail({
           email,
@@ -259,7 +237,6 @@ export class StripeWebhookController {
           isNewUser,
           ...(resetToken && { resetToken }),
         });
-        console.log('[Stripe Webhook] 📧 Welcome email sent successfully to:', email);
       } catch (emailError) {
         console.error('[Stripe Webhook] ❌ Failed to send welcome email:', emailError);
         // Don't throw - subscription is still valid even if email fails

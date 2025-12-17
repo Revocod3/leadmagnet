@@ -10,18 +10,8 @@ export class SessionController {
     try {
       const { userName, userEmail, language, wordpressLeadId, userId }: CreateSessionRequest & { userId?: string } = req.body;
 
-      console.log('📝 CREATE SESSION - Request body:', {
-        userId: userId || '❌ NO (FREE USER)',
-        userName,
-        userEmail: userEmail || '⚠️ NO PROPORCIONADO (OPCIONAL)',
-        language,
-        wordpressLeadId: wordpressLeadId || '❌ NO ENVIADO',
-      });
-
       // Si es usuario PRO (tiene userId), buscar sesión existente primero
       if (userId) {
-        console.log('🔍 Usuario PRO detectado, buscando sesión existente...');
-
         const existingSession = await prisma.session.findFirst({
           where: {
             userId,
@@ -35,11 +25,6 @@ export class SessionController {
         });
 
         if (existingSession) {
-          console.log('✅ SESIÓN EXISTENTE ENCONTRADA:', {
-            id: existingSession.id,
-            userName: existingSession.userName,
-            startTime: existingSession.startTime,
-          });
 
           const sessionData: SessionData = {
             id: existingSession.id,
@@ -60,7 +45,6 @@ export class SessionController {
           return;
         }
 
-        console.log('📝 No hay sesión existente, creando nueva para usuario PRO...');
       }
 
       // Validate input - Name is required, email is optional
@@ -106,13 +90,6 @@ export class SessionController {
           wordpressLeadId: wordpressLeadId || null,
           expiresAt,
         },
-      });
-
-      console.log('✅ SESSION CREATED:', {
-        id: session.id,
-        userId: session.userId || 'N/A (FREE)',
-        userName: session.userName,
-        wordpressLeadId: session.wordpressLeadId || '❌ NO GUARDADO',
       });
 
       const sessionData: SessionData = {

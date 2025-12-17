@@ -17,7 +17,6 @@ export const IntroScreen = ({ onComplete }: IntroScreenProps) => {
 
     // If name is present, auto-complete (email is now optional)
     if (nombre) {
-      console.log('🔍 Parámetros URL detectados:', { nombre, email: email || 'NO PROPORCIONADO', leadId });
       setIsLoading(true);
 
       // Small delay to show loading state

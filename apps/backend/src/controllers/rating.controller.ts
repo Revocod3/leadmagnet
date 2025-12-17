@@ -56,14 +56,6 @@ export class RatingController {
         },
       });
 
-      console.log('⭐ Nueva valoración creada:', {
-        id: chatRating.id,
-        sessionId,
-        rating,
-        flowType,
-        hasComment: !!comment,
-      });
-
       res.status(201).json({
         success: true,
         data: chatRating,

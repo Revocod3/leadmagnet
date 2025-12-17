@@ -62,15 +62,6 @@ export class WebhookController {
         });
       }
 
-      // Log de la actualización
-      console.log(`[Webhook] WordPress lead ${leadId} actualizado para ${sessions.length} sesiones`, {
-        leadId,
-        sessionsUpdated: sessions.length,
-        updates: updateData,
-        status,
-        metadata,
-      });
-
       res.json({
         success: true,
         data: {
