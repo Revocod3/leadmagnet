@@ -34,17 +34,18 @@ export const QuickReplyChips = ({
             disabled={disabled}
             className={`
               group relative text-left px-4 py-3 rounded-2xl w-full
-              bg-white dark:bg-neutral-800
-              border-2 transition-all duration-200
+              backdrop-sm bg-white/60 dark:bg-white/10
+              border transition-all duration-200
               ${disabled
-                ? 'opacity-50 cursor-not-allowed border-neutral-200 dark:border-neutral-700'
-                : 'cursor-pointer hover:scale-[1.02] active:scale-[0.98] border-neutral-200 dark:border-neutral-700 hover:shadow-md'
+                ? 'opacity-50 cursor-not-allowed border-white/30 dark:border-white/20'
+                : 'cursor-pointer hover:scale-[1.02] active:scale-[0.98] border-white/30 dark:border-white/20 hover:shadow-lg shadow-sm'
               }
             `}
             onMouseEnter={(e) => {
               if (!disabled) {
                 e.currentTarget.style.borderColor = blockColor;
-                e.currentTarget.style.backgroundColor = `${blockColor}08`;
+                // Mantener el efecto glass, solo cambiar borde
+                // e.currentTarget.style.backgroundColor = `${blockColor}08`; 
               }
             }}
             onMouseLeave={(e) => {
