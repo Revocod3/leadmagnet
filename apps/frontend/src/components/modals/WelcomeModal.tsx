@@ -37,14 +37,33 @@ export const WelcomeModal = ({ isOpen, onClose }: WelcomeModalProps) => {
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop */}
+          {/* Backdrop with Gradient and Animation */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="fixed inset-0 z-[9998] bg-black/40 backdrop-blur-xs"
-          />
+            className="fixed inset-0 z-[9998] overflow-hidden"
+            style={{
+              background: 'linear-gradient(135deg, #99AB75 0%, #A0AD5E 50%, #A5B26C 100%)'
+            }}
+          >
+            {/* Efectos de fondo animados */}
+            <div className="absolute inset-0 overflow-hidden">
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 0.1 }}
+                transition={{ duration: 1.5, ease: 'easeOut' }}
+                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full bg-white"
+              />
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1.2, opacity: 0.05 }}
+                transition={{ duration: 2, ease: 'easeOut', delay: 0.2 }}
+                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[1000px] rounded-full bg-white"
+              />
+            </div>
+          </motion.div>
 
           {/* Modal */}
           <motion.div
@@ -61,14 +80,14 @@ export const WelcomeModal = ({ isOpen, onClose }: WelcomeModalProps) => {
             <div className="relative w-full max-w-md">
               {/* Modal Content - Glassmorphism */}
               <div
-                className="relative rounded-3xl border border-white/20 px-6overflow-hidden shadow-2xl bg-white/80 backdrop-blur-sm"
+                className="relative rounded-3xl border border-white/20 overflow-hidden shadow-2xl bg-white/80 backdrop-blur-sm"
                 style={{
                   backdropFilter: 'blur(8px) saturate(120%)',
                   WebkitBackdropFilter: 'blur(8px) saturate(120%)',
                 }}
               >
                 {/* Logo with expanding ring pulse - centered */}
-                <div className="flex justify-center pt-6 pb-2">
+                <div className="flex justify-center pt-6 pb-2 md:pt-10 md:pb-4">
                   <motion.div
                     animate={{
                       boxShadow: [
@@ -93,7 +112,7 @@ export const WelcomeModal = ({ isOpen, onClose }: WelcomeModalProps) => {
                 </div>
 
                 {/* Content */}
-                <div className="px-5 pb-5 md:px-6 text-center">
+                <div className="px-5 pb-5 md:px-8 md:pb-10 text-center">
                   <motion.h2
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
