@@ -291,8 +291,9 @@ export function buildDynamicInstructions(context: {
    hasRealProblem?: boolean;
    hasImage?: boolean;
    detectedPattern?: string;
+   nameUsageCount?: number;
 }): string {
-   const { userName, turnCount, hasImage } = context;
+   const { userName, turnCount, hasImage, nameUsageCount } = context;
 
    let instructions = `
 ═══════════════════════════════════════════════════════════════
@@ -305,6 +306,15 @@ export function buildDynamicInstructions(context: {
 
 RECUERDA: Sigue el flujo de 21 preguntas estructuradas en orden.
 `;
+
+   // Guardrail para evitar repetición excesiva del nombre
+   if (nameUsageCount !== undefined && nameUsageCount >= 3) {
+      instructions += `
+⚠️ GUARDRAIL DE NOMBRE:
+Has usado el nombre del usuario (${userName}) ${nameUsageCount} veces.
+POR FAVOR, NO VUELVAS A USAR SU NOMBRE en lo que queda de conversación para no sonar repetitiva.
+`;
+   }
 
    // Turno 1: Mensaje de bienvenida
    if (turnCount === 1) {

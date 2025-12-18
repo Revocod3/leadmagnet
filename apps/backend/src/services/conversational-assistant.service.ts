@@ -138,6 +138,7 @@ export class ConversationalAssistantService {
       sessionId?: string;
       hasImage?: boolean;
       hasCompletedDiagnosis?: boolean;
+      nameUsageCount?: number;
     },
     imageBuffer?: Buffer
   ): Promise<{

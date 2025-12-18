@@ -245,6 +245,23 @@ export class ChatController {
       // Check if there's an image attached (from multer)
       const imageBuffer = (req as any).file?.buffer;
 
+      // Calculate name usage count
+      let nameUsageCount = 0;
+      if (session.userName) {
+        const assistantMessages = await prisma.message.findMany({
+          where: {
+            sessionId,
+            role: 'assistant',
+            content: {
+              contains: session.userName,
+              mode: 'insensitive',
+            },
+          },
+          select: { id: true },
+        });
+        nameUsageCount = assistantMessages.length;
+      }
+
       // Preparar contexto
       const context: {
         userName?: string;
@@ -255,6 +272,7 @@ export class ChatController {
         hasImage?: boolean;
         hasOfferedImage?: boolean;
         hasCompletedDiagnosis?: boolean;
+        nameUsageCount?: number;
       } = {
         turnCount: turnCount + 1,
         hasRealProblem,
@@ -262,6 +280,7 @@ export class ChatController {
         hasImage: !!imageBuffer, // Indicar si hay imagen en este mensaje
         hasOfferedImage: flowState?.hasOfferedImage || false,
         hasCompletedDiagnosis, // Indicar si ya se completó el diagnóstico
+        nameUsageCount,
       };
 
       if (session.userName) context.userName = session.userName;
