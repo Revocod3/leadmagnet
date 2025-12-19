@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Check, Sparkles, MessageCircle, Settings2, Mic, Video, Clock } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
-import { UrgencyBanner } from '@/components/premium';
 
 // URLs de los Payment Links de Stripe (LIVE)
 const PAYMENT_LINKS = {
@@ -172,7 +171,6 @@ export const PricingPage = () => {
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-b from-[#A2AE5A] to-[#253314] font-sans overflow-x-hidden pt-8">
-      <UrgencyBanner />
       {/* Hero / Offer Section */}
       <section className="px-5 py-10">
         <div className="max-w-[700px] mx-auto text-center">
