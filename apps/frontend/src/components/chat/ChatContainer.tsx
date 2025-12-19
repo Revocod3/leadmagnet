@@ -20,7 +20,7 @@ import { TypingIndicator } from '../animations/TypingIndicator';
 import { DiagnosisGeneratingIndicator } from '../animations/DiagnosisGeneratingIndicator';
 import { QuickReplyChips } from './QuickReplyChips';
 import { InfoWedge } from './InfoWedge';
-import { findQuestionById, getBlock, getQuestion, type FlowBlock, type FlowQuestion } from '../../config/diagnostic-flow-config';
+import { findQuestionById, getBlock, getQuestion, type FlowBlock, type FlowQuestion, DIAGNOSTIC_FLOW } from '../../config/diagnostic-flow-config';
 import { apiClient } from '../../services/api';
 import { useMobileKeyboard } from '../../hooks/useMobileKeyboard';
 import { trackMetaLead, updateMetaAdvancedMatching } from '../../services/analytics';
@@ -742,6 +742,33 @@ export const ChatContainer = () => {
                             wedgeBlock = prevMsgQuestion.block;
                           }
                         }
+                      }
+
+                      // Special handling for closing_cta to render as InfoWedge
+                      if (message.type === 'closing_cta') {
+                        return (
+                          <div key={index} className="w-full">
+                            <InfoWedge
+                              content={message.content}
+                              blockColor="#059669"
+                              blockColorLight="#D1FAE5"
+                            />
+                            <div className="mb-6 mx-2 md:mx-4">
+                              <a
+                                href="/pricing"
+                                className="group w-full py-4 sm:py-5 px-4 sm:px-6 rounded-2xl bg-gradient-to-r from-emerald-600 via-emerald-700 to-emerald-800 hover:from-emerald-700 hover:via-emerald-800 hover:to-emerald-900 text-white font-bold text-sm sm:text-base flex items-center justify-center gap-2 sm:gap-3 transition-all duration-300 shadow-2xl hover:shadow-emerald-500/50 transform hover:-translate-y-1 hover:scale-[1.02] relative overflow-hidden"
+                              >
+                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -skew-x-12 translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1000"></div>
+                                <div className="relative z-10 flex items-center gap-2 sm:gap-3">
+                                  <span className="text-center leading-tight">
+                                    {DIAGNOSTIC_FLOW.closingCTA.buttonText}
+                                  </span>
+                                  <span className="text-xl group-hover:translate-x-1 transition-transform">→</span>
+                                </div>
+                              </a>
+                            </div>
+                          </div>
+                        );
                       }
 
                       return (

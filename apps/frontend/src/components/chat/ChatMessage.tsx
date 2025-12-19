@@ -68,7 +68,7 @@ export const ChatMessage = forwardRef<HTMLDivElement, ChatMessageProps>(({
         {(!isUser || message.content !== 'Imagen adjunta') && message.type !== 'closing_cta' && (
           <div
             className={`${isUser
-              ? 'text-white rounded-3xl rounded-tr-none px-4 py-1.5 md:px-3 md:py-2 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.01] border border-white/20'
+              ? 'text-white rounded-3xl rounded-tr-none px-5 py-2 md:px-3 md:py-2 shadow-md hover:shadow-lg transition-all duration-200 hover:scale-[1.01] border border-white/20'
               : 'backdrop-sm bg-white/60 dark:bg-white/10 text-neutral-900 dark:text-neutral-100 rounded-3xl rounded-tl-none px-4 py-2 md:px-4 md:py-3 shadow-lg border border-white/30 dark:border-white/20'
               }`}
             style={isUser ? {
