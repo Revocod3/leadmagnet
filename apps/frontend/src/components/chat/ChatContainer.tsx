@@ -648,16 +648,7 @@ export const ChatContainer = () => {
 
         {/* Desktop Background */}
         <div className="hidden lg:block absolute inset-0 z-0 pointer-events-none">
-          <div className="absolute inset-0 bg-black/90 backdrop-blur-sm dark:bg-neutral-900/90" />
-          <div
-            className="absolute inset-0 opacity-[0.04] dark:opacity-[0.02]"
-            style={{
-              backgroundImage: "url('/assets/images/chat-pattern.png')",
-              backgroundSize: "400px auto",
-              backgroundRepeat: "repeat",
-              filter: "invert(1)"
-            }}
-          />
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm dark:bg-neutral-900/90" />
         </div>
 
         <div className="contents lg:w-[800px] lg:h-full lg:rounded-3xl lg:relative lg:bg-brand-cream-100 lg:dark:bg-neutral-900 lg:shadow-2xl lg:overflow-hidden lg:flex lg:flex-col lg:transition-all lg:duration-300 lg:z-10">
