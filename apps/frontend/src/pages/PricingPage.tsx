@@ -12,8 +12,18 @@ const PAYMENT_LINKS = {
 
 // Helper to get affiliate ID from multiple sources
 const getAffiliateId = (): string | null => {
-  // 1. Check URL parameter first (for direct links like ?afi=11)
+  // 1. Check URL parameter first (for direct links like ?afiliado=username or ?afi=11)
   const urlParams = new URLSearchParams(window.location.search);
+
+  // Check new format: ?afiliado=username
+  const afiliadoFromUrl = urlParams.get('afiliado');
+  if (afiliadoFromUrl) {
+    // The WordPress plugin will convert username to ID and set the cookie
+    // We'll get the ID from the cookie in the next step
+    // Don't save username to localStorage, wait for the ID from cookie
+  }
+
+  // Check old format: ?afi=11 (for backwards compatibility)
   const afiFromUrl = urlParams.get('afi');
   if (afiFromUrl) {
     // Save to localStorage for persistence
