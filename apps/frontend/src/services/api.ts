@@ -1,6 +1,7 @@
 // apps/frontend/src/services/api.ts
 
 import axios, { AxiosInstance, AxiosError } from 'axios';
+import { compressImageIfNeeded } from '../utils/imageCompression';
 import type {
   ApiResponse,
   CreateSessionRequest,
@@ -112,11 +113,12 @@ class ApiClient {
     let response;
 
     if (imageFile) {
+      const uploadFile = await compressImageIfNeeded(imageFile);
       // Send as FormData with image
       const formData = new FormData();
       formData.append('sessionId', data.sessionId);
       formData.append('message', data.message);
-      formData.append('image', imageFile);
+      formData.append('image', uploadFile);
 
       response = await this.client.post<ApiResponse<ChatMessage>>('/chat', formData, {
         headers: {
@@ -333,10 +335,11 @@ class ApiClient {
     let response;
 
     if (imageFile) {
+      const uploadFile = await compressImageIfNeeded(imageFile);
       // Send as FormData with image (same as free flow)
       const formData = new FormData();
       formData.append('message', message);
-      formData.append('image', imageFile);
+      formData.append('image', uploadFile);
 
       response = await this.client.post<ApiResponse<any>>(
         `/pro/conversations/${conversationId}/message`,

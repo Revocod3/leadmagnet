@@ -160,6 +160,7 @@ export class ConversationalAssistantService {
           const base64Image = imageBuffer.toString('base64');
           content.push({ type: 'input_image', image_url: `data:image/jpeg;base64,${base64Image}` });
         }
+
         const response = await openai.responses.create({
           model: MODELS.TEXT,
           conversation: conversationId,
