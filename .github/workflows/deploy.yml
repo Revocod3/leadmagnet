@@ -45,6 +45,10 @@ jobs:
           set -e  # Detener si hay error
           cd /var/www/leadmagnet
           
+          echo "🧹 Cleaning up local changes..."
+          git reset --hard HEAD
+          git clean -fd
+          
           echo "📥 Pulling latest changes..."
           git pull origin main
           
