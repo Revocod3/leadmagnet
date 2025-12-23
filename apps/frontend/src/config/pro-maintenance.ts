@@ -12,7 +12,9 @@ Gracias por tu confianza y por acompañarnos en esta nueva etapa.`;
 // Emails que pueden bypasear el modo mantenimiento
 export const MAINTENANCE_BYPASS_EMAILS: string[] = [
   'test@pro.com',
-  // Agregar más emails aquí
+  'objetivovientreplano@gmail.com',
+  'revocode222@gmail.com',
+  'perfecthomespain@gmail.com'
 ];
 
 /**
