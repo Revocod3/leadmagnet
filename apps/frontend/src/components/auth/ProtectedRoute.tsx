@@ -1,6 +1,6 @@
 import { Navigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
-import { PRO_MAINTENANCE_MODE } from '../../config/pro-maintenance';
+import { PRO_MAINTENANCE_MODE, canBypassMaintenance } from '../../config/pro-maintenance';
 import { ProMaintenanceModal } from '../modals/ProMaintenanceModal';
 
 interface ProtectedRouteProps {
@@ -21,7 +21,8 @@ export function ProtectedRoute({ children, requirePro = false, skipOnboardingChe
   }
 
   // Global maintenance gate for the PRO experience (covers /pro and /onboarding)
-  if (PRO_MAINTENANCE_MODE) {
+  // Bypass for whitelisted emails
+  if (PRO_MAINTENANCE_MODE && !canBypassMaintenance(user?.email)) {
     return (
       <>
         {children}

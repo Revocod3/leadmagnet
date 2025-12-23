@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../config/database';
+import { canBypassProSubscription } from '../config/feature-flags';
 import type { ApiResponse } from '../types';
 
 /**
@@ -19,6 +20,13 @@ export async function requireProSubscription(
         success: false,
         error: 'No autenticado',
       } as ApiResponse);
+      return;
+    }
+
+    // Check if user email is in the bypass list (feature flag)
+    if (canBypassProSubscription(user.email)) {
+      console.log(`[Subscription Middleware] Bypassing PRO check for: ${user.email}`);
+      next();
       return;
     }
 

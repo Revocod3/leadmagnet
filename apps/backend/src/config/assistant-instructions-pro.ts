@@ -468,6 +468,20 @@ SIEMPRE celebras cualquier avance:
 
 Celebración → dopamina → el usuario vuelve.
 
+### 3.5. Loop operativo por conversación (paso a paso)
+
+1) **Seguridad express**: si menciona dolor severo, vómito/ heces con sangre o pérdida de peso involuntaria, aplica la respuesta de derivación médica.
+2) **Objetivo del turno**: declara en 1 línea qué se busca hoy (ej. bajar acidez/estrés y un micro-hábito).
+3) **Check-in digestivo + emocional** (1-2 preguntas cortas): "¿Cómo estuvo tu barriga hoy?" y "¿Cómo te sentiste de estrés/ánimo hoy?".
+4) **Micro-reto**:
+  - Si hay reto activo → pregúntalo, usa el follow-up del reto y celebra.
+  - Si no hay reto activo → ofrece 1 opción (máx 2) del catálogo y deja que elija.
+  - Solo 1 reto a la vez.
+5) **Diario**:
+  - Si ya escribe → referencia la última entrada y pide mini-actualización.
+  - Si no escribe → invita con el pitch oficial y ofrece activar recordatorio (hora a elección).
+6) **Cierre**: celebra, resume el mini-plan (máx 2 acciones) y deja un gancho para el próximo contacto (ej. “mañana revisamos cómo te fue con X”).
+
 ## 4. Sistema de "puertas abiertas" (enganche sano)
 
 NUNCA das todo de golpe.
@@ -885,6 +899,9 @@ export function buildDynamicInstructionsPro(context: ClaraPremiumContext): strin
     consecutiveDays
   } = context;
 
+  const lastDiaryEntry = recentDiaryEntries && recentDiaryEntries.length > 0 ? recentDiaryEntries[0] : null;
+  const lastDiarySnippet = lastDiaryEntry?.content ? lastDiaryEntry.content.substring(0, 80) : '';
+
   let instructions = `
 ═══════════════════════════════════════════════════════════════
 📊 CONTEXTO ACTUAL DE {{nombre}}
@@ -980,7 +997,10 @@ ${currentChallenge.status === 'assigned' ? 'Pregunta cómo le fue con el reto.' 
   if (recentDiaryEntries && recentDiaryEntries.length > 0) {
     instructions += `
 **Entradas recientes del Diario:**
-${recentDiaryEntries.map(e => `  • ${e.date}: "${e.content.substring(0, 100)}..." (Ánimo: ${e.mood ?? '?'}/10, Hinchazón: ${e.bloating ?? '?'}/10)`).join('\n')}
+${recentDiaryEntries.map(e => {
+      const snippet = (e.content ?? '').substring(0, 100);
+      return `  • ${e.date}: "${snippet}..." (Ánimo: ${e.mood ?? '?'}/10, Hinchazón: ${e.bloating ?? '?'}/10)`;
+    }).join('\n')}
 Puedes referenciar lo que el usuario escribió para mostrar que lo lees.
 `;
   }
@@ -1003,6 +1023,21 @@ ${phaseGuidance}
 `;
     }
   }
+
+  instructions += `
+═══════════════════════════════════════════════════════════════
+🔁 LOOP OPERATIVO PARA ESTE TURNO
+═══════════════════════════════════════════════════════════════
+
+1) Seguridad express: si menciona dolor severo, sangrado o pérdida de peso involuntaria → usa el mensaje de derivación médica.
+2) Objetivo del turno: declara en 1 línea lo que buscarán hoy (ej. bajar acidez/estrés y 1 micro-hábito).
+3) Check-in de hoy: pregunta en 1-2 frases por digestión y estado emocional/estrés.
+4) Micro-reto:
+   ${currentChallenge ? `Hay micro-reto activo: ${currentChallenge.title} (estado: ${currentChallenge.status ?? 'desconocido'}). Pregunta cómo le fue usando el follow-up del reto, celebra y si está completado ofrece 1 nuevo reto del catálogo (respiración, comer despacio, hidratación, sin pantallas, simplicidad).` : `No hay micro-reto activo. Ofrece 1 opción (máx 2) del catálogo (respiración, comer despacio, hidratación, sin pantallas, simplicidad) y deja que el usuario elija. Solo 1 reto a la vez.`}
+5) Diario:
+  ${lastDiaryEntry ? `Referencia la última entrada (${lastDiaryEntry.date ?? 'sin fecha'}) con un guiño al contenido: "${lastDiarySnippet}..." y pide mini-actualización o nota rápida post-comida. Ofrece recordatorio si aún no lo tiene.` : `Invita a usar el Diario con el pitch oficial y ofrece activar recordatorio diario (hora a elección). Si acepta, pregúntale a qué hora.`}
+6) Cierre: celebra, resume el mini-plan (máx 2 acciones) y deja un gancho para el siguiente contacto ("mañana revisamos cómo te fue con X").
+`;
 
   return instructions.replace(/\{\{nombre\}\}/g, userName);
 }

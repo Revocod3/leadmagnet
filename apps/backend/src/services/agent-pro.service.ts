@@ -18,10 +18,8 @@ import {
 import {
   PRO_WELCOME_MESSAGE,
   PRO_ONBOARDING_INSTRUCTIONS,
-  TOTAL_ONBOARDING_QUESTIONS,
-  extractCurrentQuestion,
-  isOnboardingCompleted as checkOnboardingCompleted,
-  QUESTION_ID_TO_TURN,
+  extractOnboardingComplete,
+  cleanOnboardingMarker,
 } from '../config/pro-onboarding-instructions-complete';
 import { globalContextService } from './global-context.service';
 import { temporalContextService } from './temporal-context.service';
@@ -181,43 +179,10 @@ No lo digas al principio. Espera el momento adecuado en la conversación.
       let onboardingTurn = 1;
 
       if (!isOnboardingCompleted) {
-        // User hasn't completed onboarding - start or continue onboarding
-
-        // If starting fresh, use the static welcome message
-        if (currentQuestionId === 'welcome') {
-          welcomeMessage = PRO_WELCOME_MESSAGE.replace('{nombre}', firstName);
-          onboardingTurn = 1;
-
-          // Update current question
-          await prisma.userGlobalContext.update({
-            where: { userId },
-            data: { currentQuestionId: 'welcome' },
-          });
-        } else {
-          // Continue from where they left off - use the model to generate contextual greeting
-          onboardingTurn = QUESTION_ID_TO_TURN[currentQuestionId] || 1;
-
-          const response = await openai.responses.create({
-            model: MODELS.TEXT,
-            conversation: openaiConversationId,
-            instructions: PRO_ONBOARDING_INSTRUCTIONS.replace(/\{nombre\}/g, firstName),
-            input: [
-              {
-                type: 'message',
-                role: 'user',
-                content: [
-                  {
-                    type: 'input_text',
-                    text: `[SISTEMA] El usuario ${firstName} vuelve al onboarding. Continúa desde la pregunta [PREGUNTA_ACTUAL: ${currentQuestionId}]. Salúdalo brevemente y continúa el onboarding.`
-                  },
-                ],
-              },
-            ],
-          } as any);
-
-          welcomeMessage = this.extractTextFromResponse(response) ||
-            `¡Hola ${firstName}! Continuemos con el onboarding donde lo dejamos.`;
-        }
+        // User hasn't completed onboarding - start or continue conversational onboarding
+        // Always use the welcome message for new onboarding
+        welcomeMessage = PRO_WELCOME_MESSAGE.replace('{nombre}', firstName);
+        onboardingTurn = 0; // Deprecated - conversational flow doesn't track turns
 
         // Save welcome message
         await prisma.proMessage.create({
@@ -237,7 +202,7 @@ No lo digas al principio. Espera el momento adecuado en la conversación.
           },
         });
 
-        logger.info(`Clara Premium onboarding conversation started for user ${userId}, question ${currentQuestionId}, turn ${onboardingTurn}`);
+        logger.info(`Clara Premium onboarding conversation started for user ${userId}`);
 
         return {
           conversationId: conversation.id,
@@ -375,8 +340,7 @@ Contexto resumido: ${formattedGlobalContext}`
       // Get global context to include onboarding state
       const globalContext = await globalContextService.getOrCreateContext(userId);
       const isOnboarding = !globalContext.onboardingCompleted;
-      const currentQuestionId = globalContext.currentQuestionId || 'welcome';
-      const onboardingTurn = QUESTION_ID_TO_TURN[currentQuestionId] || 1;
+      const onboardingTurn = 0; // Deprecated in conversational flow
 
       return {
         messages: conversation.messages.map(m => ({
@@ -509,34 +473,26 @@ Contexto resumido: ${formattedGlobalContext}`
       let assistantMessage = this.extractTextFromResponse(response) ||
         'Lo siento, hubo un error. ¿Puedes repetirme eso?';
 
-      // Extract current question ID from Clara's response (metadata system)
-      const newQuestionId = extractCurrentQuestion(assistantMessage);
-      const onboardingStillActive = isOnboarding && newQuestionId !== 'completed';
-      const onboardingJustCompleted = isOnboarding && newQuestionId === 'completed';
+      // Check if onboarding is being completed (conversational flow)
+      const onboardingJustCompleted = isOnboarding && extractOnboardingComplete(assistantMessage);
+      const onboardingStillActive = isOnboarding && !onboardingJustCompleted;
 
-      // Update global context with new question ID if in onboarding
-      if (isOnboarding && newQuestionId) {
-        if (onboardingJustCompleted) {
-          // Mark onboarding as completed
-          await prisma.userGlobalContext.update({
-            where: { userId },
-            data: {
-              onboardingCompleted: true,
-              currentQuestionId: 'completed',
-            },
-          });
-          logger.info(`✅ Onboarding completed for user ${userId}`);
+      // Clean the marker from the message before saving
+      if (onboardingJustCompleted) {
+        assistantMessage = cleanOnboardingMarker(assistantMessage);
 
-          // Generate profile tags in background (non-blocking)
-          this.generateTagsAsync(userId);
-        } else {
-          // Update current question ID
-          await prisma.userGlobalContext.update({
-            where: { userId },
-            data: { currentQuestionId: newQuestionId },
-          });
-          logger.info(`Updated question ID for user ${userId}: ${currentQuestionId} → ${newQuestionId}`);
-        }
+        // Mark onboarding as completed
+        await prisma.userGlobalContext.update({
+          where: { userId },
+          data: {
+            onboardingCompleted: true,
+            currentQuestionId: 'completed',
+          },
+        });
+        logger.info(`✅ Conversational onboarding completed for user ${userId}`);
+
+        // Generate profile tags in background (non-blocking)
+        this.generateTagsAsync(userId);
       }
 
       // Save assistant message
@@ -584,13 +540,12 @@ Contexto resumido: ${formattedGlobalContext}`
       // - Always if context is empty
       // - First 6 messages of conversation
       // - Every N messages after that
-      // - Every 5 questions during onboarding to capture responses
-      const currentTurnForExtraction = newQuestionId ? (QUESTION_ID_TO_TURN[newQuestionId] || 1) : 1;
+      // - Every 3 messages during onboarding to capture responses
       const shouldExtractContext = isRadiography ||
         !hasContextData ||
         newMessageCount <= 6 ||
         newMessageCount % CONTEXT_EXTRACTION_INTERVAL === 0 ||
-        (onboardingStillActive && currentTurnForExtraction % 5 === 0);
+        (onboardingStillActive && newMessageCount % 3 === 0);
 
       if (shouldExtractContext) {
         logger.info(`Extracting context for user ${userId}: radiography=${isRadiography}, hasContext=${hasContextData}, msgCount=${newMessageCount}, onboarding=${onboardingStillActive}`);
@@ -648,11 +603,10 @@ Contexto resumido: ${formattedGlobalContext}`
       // Determine if we should generate title
       const shouldGenerateTitle = !conversation.title && newMessageCount >= 2;
 
-      // Calculate turn number for frontend compatibility
-      const finalQuestionId = newQuestionId || currentQuestionId;
-      const onboardingTurn = QUESTION_ID_TO_TURN[finalQuestionId] || 1;
+      // onboardingTurn is deprecated in conversational flow
+      const onboardingTurn = 0;
 
-      logger.info(`Clara Premium message processed for conversation ${conversationId}, onboarding=${onboardingStillActive}, question=${finalQuestionId}, turn=${onboardingTurn}`);
+      logger.info(`Clara Premium message processed for conversation ${conversationId}, onboarding=${onboardingStillActive}`);
 
       return {
         message: assistantMessage,
