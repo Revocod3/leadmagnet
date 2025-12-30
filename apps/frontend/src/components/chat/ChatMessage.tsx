@@ -92,19 +92,19 @@ export const ChatMessage = forwardRef<HTMLDivElement, ChatMessageProps>(({
               </motion.div>
             ) : message.type === 'limit_exceeded' ? null : (
               /* Render normal messages with Markdown and typewriter effect */
-              <div className="text-[16px] leading-normal font-normal">
+              <div className="text-[15px] leading-normal font-medium">
                 {!isUser ? (
                   /* Siempre usar TypewriterText para mensajes del asistente */
                   <TypewriterText
                     text={message.content}
                     speed={20}
-                    className="font-normal"
+                    className="font-medium"
                     shouldAnimate={isLatest && message.isNew !== false}
                     onComplete={onTypewriterComplete}
                   />
                 ) : (
                   /* Mensajes de usuario */
-                  <div className="whitespace-pre-wrap break-words font-normal">
+                  <div className="whitespace-pre-wrap break-words font-medium">
                     {message.content}
                   </div>
                 )}

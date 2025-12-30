@@ -23,6 +23,11 @@ model User {
   role                String   @default("FREE") // "FREE" | "PRO"
   stripeCustomerId    String?  @unique
 
+  // Trial - 7 days free for new users
+  trialStartDate      DateTime?
+  trialEndDate        DateTime?
+  hasUsedTrial        Boolean  @default(false)
+
   // Password reset
   passwordResetToken  String?  @unique
   passwordResetExpiry DateTime?

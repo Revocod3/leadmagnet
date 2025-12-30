@@ -319,7 +319,7 @@
   .message-bubble {
     @apply rounded-2xl px-5 py-3;
     @apply break-words;
-    @apply text-sm leading-relaxed;
+    @apply text-[15px] font-medium leading-relaxed;
     @apply whitespace-normal;
   }
 
@@ -340,7 +340,7 @@
   /* Diagnosis Message - Long Form Content */
   .diagnosis-content {
     @apply space-y-3;
-    @apply text-[16px] leading-relaxed;
+    @apply text-[15px] font-medium leading-relaxed;
   }
 
   .diagnosis-content h1 {

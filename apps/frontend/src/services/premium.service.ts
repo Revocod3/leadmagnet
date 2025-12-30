@@ -16,11 +16,13 @@ const baseURL = API_URL === '' ? '/api' : `${API_URL}/api`;
 export class SubscriptionRequiredError extends Error {
   requiresSubscription = true;
   subscriptionExpired: boolean;
+  trialExpired: boolean;
 
-  constructor(message: string, expired = false) {
+  constructor(message: string, expired = false, trialExpired = false) {
     super(message);
     this.name = 'SubscriptionRequiredError';
     this.subscriptionExpired = expired;
+    this.trialExpired = trialExpired;
   }
 }
 
@@ -61,7 +63,8 @@ function createAuthClient(): AxiosInstance {
         if (data?.data?.requiresSubscription || data?.requiresSubscription) {
           throw new SubscriptionRequiredError(
             data.error || 'Necesitas una suscripción Pro',
-            data.data?.subscriptionExpired || false
+            data.data?.subscriptionExpired || false,
+            data.data?.trialExpired || false
           );
         }
       }

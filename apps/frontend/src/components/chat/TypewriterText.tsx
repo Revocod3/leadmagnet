@@ -83,7 +83,7 @@ export const TypewriterText = ({
         <ReactMarkdown
           components={{
             p: ({ children }) => (
-              <p className="mb-2 last:mb-0 whitespace-pre-wrap break-words font-normal leading-relaxed">
+              <p className="mb-2 last:mb-0 whitespace-pre-wrap break-words font-medium leading-relaxed">
                 {children}
               </p>
             ),
@@ -93,21 +93,21 @@ export const TypewriterText = ({
               </strong>
             ),
             em: ({ children }) => (
-              <em className="italic font-normal">{children}</em>
+              <em className="italic font-medium">{children}</em>
             ),
             br: () => null, // Eliminar todos los <br> para mantener compacto
             ul: ({ children }) => (
-              <ul className="list-disc list-inside mb-2 space-y-0.5 font-normal leading-relaxed">
+              <ul className="list-disc list-inside mb-2 space-y-0.5 font-medium leading-relaxed">
                 {children}
               </ul>
             ),
             ol: ({ children }) => (
-              <ol className="list-decimal list-inside mb-2 space-y-0.5 font-normal leading-relaxed">
+              <ol className="list-decimal list-inside mb-2 space-y-0.5 font-medium leading-relaxed">
                 {children}
               </ol>
             ),
             li: ({ children }) => (
-              <li className="ml-2 font-normal leading-relaxed">{children}</li>
+              <li className="ml-2 font-medium leading-relaxed">{children}</li>
             ),
             a: ({ href, children }) => (
               <a
@@ -126,7 +126,7 @@ export const TypewriterText = ({
         </ReactMarkdown>
       ) : (
         // Durante el typing, mostrar texto plano con cursor
-        <span className="whitespace-pre-wrap break-words font-normal leading-relaxed">
+        <span className="whitespace-pre-wrap break-words font-medium leading-relaxed">
           {displayedText}
           <span className="inline-block w-[2px] h-4 ml-0.5 bg-current animate-pulse" />
         </span>

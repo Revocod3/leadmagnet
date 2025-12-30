@@ -43,7 +43,26 @@ export async function requireProSubscription(
       return;
     }
 
-    // Verify they have an active subscription in the database
+    // Get full user data to check trial status
+    const fullUser = await prisma.user.findUnique({
+      where: { id: user.userId },
+      select: {
+        trialEndDate: true,
+        hasUsedTrial: true,
+      },
+    });
+
+    // Check if user is in active trial period
+    const isInActiveTrial = fullUser?.trialEndDate && fullUser.trialEndDate > new Date();
+
+    if (isInActiveTrial) {
+      // User is in trial, allow access
+      console.log(`[Subscription Middleware] User ${user.email} is in trial period`);
+      next();
+      return;
+    }
+
+    // Not in trial, verify they have an active subscription in the database
     const activeSubscription = await prisma.subscription.findFirst({
       where: {
         userId: user.userId,
@@ -57,7 +76,7 @@ export async function requireProSubscription(
     });
 
     if (!activeSubscription) {
-      // User has PRO role but no active subscription - downgrade them
+      // User has PRO role but no active subscription and trial expired - downgrade them
       try {
         await prisma.user.update({
           where: { id: user.userId },
@@ -75,12 +94,18 @@ export async function requireProSubscription(
         console.error('[Subscription Middleware] Error downgrading user:', error);
       }
 
+      // Determine if trial expired or subscription expired
+      const trialExpired = fullUser?.hasUsedTrial && fullUser?.trialEndDate && fullUser.trialEndDate < new Date();
+
       res.status(403).json({
         success: false,
-        error: 'Tu suscripción ha expirado. Por favor, renueva tu plan Pro.',
+        error: trialExpired
+          ? 'Tu prueba gratuita de 7 días ha terminado. ¡Suscríbete para continuar!'
+          : 'Tu suscripción ha expirado. Por favor, renueva tu plan Pro.',
         data: {
           requiresSubscription: true,
           subscriptionExpired: true,
+          trialExpired: trialExpired || false,
         },
       } as ApiResponse);
       return;
@@ -152,9 +177,20 @@ export async function attachSubscriptionInfo(
 }
 
 /**
- * Check if user has any valid subscription (doesn't block)
+ * Check if user has any valid subscription OR is in active trial (doesn't block)
  */
 export async function hasActiveSubscription(userId: string): Promise<boolean> {
+  // First check if user is in active trial
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { trialEndDate: true },
+  });
+
+  if (user?.trialEndDate && user.trialEndDate > new Date()) {
+    return true; // User is in active trial
+  }
+
+  // Check for paid subscription
   const subscription = await prisma.subscription.findFirst({
     where: {
       userId,
@@ -171,7 +207,7 @@ export async function hasActiveSubscription(userId: string): Promise<boolean> {
 }
 
 /**
- * Sync user's role with their subscription status
+ * Sync user's role with their subscription/trial status
  * Call this periodically or on-demand
  */
 export async function syncUserRoleWithSubscription(userId: string): Promise<void> {

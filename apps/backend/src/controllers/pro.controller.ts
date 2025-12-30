@@ -431,6 +431,9 @@ export class ProController {
           name: true,
           email: true,
           role: true,
+          trialStartDate: true,
+          trialEndDate: true,
+          hasUsedTrial: true,
         },
       });
 
@@ -449,6 +452,14 @@ export class ProController {
         where: { userId },
       });
 
+      // Calculate trial status
+      const now = new Date();
+      const isInTrial = user?.trialEndDate && user.trialEndDate > now;
+      const trialExpired = user?.hasUsedTrial && user?.trialEndDate && user.trialEndDate < now;
+      const daysRemaining = isInTrial && user?.trialEndDate
+        ? Math.ceil((user.trialEndDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+        : 0;
+
       res.json({
         success: true,
         data: {
@@ -457,12 +468,19 @@ export class ProController {
             email: user?.email,
             role: user?.role,
           },
+          trial: {
+            isInTrial: isInTrial || false,
+            trialExpired: trialExpired || false,
+            trialEndDate: user?.trialEndDate || null,
+            daysRemaining,
+            hasUsedTrial: user?.hasUsedTrial || false,
+          },
           subscription: subscription ? {
             status: subscription.status,
             plan: subscription.plan,
             currentPeriodEnd: subscription.currentPeriodEnd,
             cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
-            isActive: subscription.status === 'active' && subscription.currentPeriodEnd > new Date(),
+            isActive: ['active', 'trialing'].includes(subscription.status) && subscription.currentPeriodEnd > new Date(),
           } : null,
           stats: {
             conversationCount,

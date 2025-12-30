@@ -47,7 +47,12 @@ export class AuthService {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create user with appropriate role
+    // Calculate trial dates for new users (7 days free)
+    const trialStartDate = new Date();
+    const trialEndDate = new Date();
+    trialEndDate.setDate(trialEndDate.getDate() + 7);
+
+    // Create user - all new users start as PRO (either from subscription or trial)
     const user = await prisma.user.create({
       data: {
         email,
@@ -55,11 +60,16 @@ export class AuthService {
         name,
         provider: 'email',
         emailVerified: false, // TODO: Implement email verification
-        role: hasActiveSubscription ? 'PRO' : 'FREE',
+        role: 'PRO', // All new users start as PRO (trial or subscription)
+        // Trial fields - only set if no existing subscription
+        trialStartDate: hasActiveSubscription ? null : trialStartDate,
+        trialEndDate: hasActiveSubscription ? null : trialEndDate,
+        hasUsedTrial: !hasActiveSubscription, // Mark trial as used
       },
     });
 
-    logger.info(`User registered: ${user.email} (role: ${user.role})`);
+    const trialInfo = hasActiveSubscription ? '' : ' (7-day trial)';
+    logger.info(`User registered: ${user.email} (role: ${user.role}${trialInfo})`);
 
     // Generate JWT
     const token = this.generateToken(user);
@@ -154,6 +164,11 @@ export class AuthService {
       // Check if email has a subscription from WordPress
       const hasActiveSubscription = await this.checkEmailHasStripeSubscription(email);
 
+      // Calculate trial dates for new users (7 days free)
+      const trialStartDate = new Date();
+      const trialEndDate = new Date();
+      trialEndDate.setDate(trialEndDate.getDate() + 7);
+
       user = await prisma.user.create({
         data: {
           email,
@@ -161,13 +176,18 @@ export class AuthService {
           googleId,
           provider: 'google',
           emailVerified: true,
-          role: hasActiveSubscription ? 'PRO' : 'FREE',
+          role: 'PRO', // All new users start as PRO (trial or subscription)
           password: null, // No password for OAuth users
+          // Trial fields - only set if no existing subscription
+          trialStartDate: hasActiveSubscription ? null : trialStartDate,
+          trialEndDate: hasActiveSubscription ? null : trialEndDate,
+          hasUsedTrial: !hasActiveSubscription, // Mark trial as used
         },
         include: { subscriptions: true },
       });
 
-      logger.info(`New user created via Google OAuth: ${user.email} (role: ${user.role})`);
+      const trialInfo = hasActiveSubscription ? '' : ' (7-day trial)';
+      logger.info(`New user created via Google OAuth: ${user.email} (role: ${user.role}${trialInfo})`);
     } else {
       // Sync existing user's role
       user = await this.syncUserRoleWithSubscription(user.id);
@@ -249,9 +269,34 @@ export class AuthService {
   }
 
   /**
-   * Sync user role with their subscription status
+   * Sync user role with their subscription OR trial status
    */
   private async syncUserRoleWithSubscription(userId: string) {
+    // First get user with trial info
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { subscriptions: true },
+    });
+
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    const isInActiveTrial = user.trialEndDate && user.trialEndDate > new Date();
+
+    // If in trial, ensure role is PRO
+    if (isInActiveTrial) {
+      if (user.role !== 'PRO') {
+        return await prisma.user.update({
+          where: { id: userId },
+          data: { role: 'PRO' },
+          include: { subscriptions: true },
+        });
+      }
+      return user;
+    }
+
+    // Otherwise check for paid subscription
     const activeSubscription = await prisma.subscription.findFirst({
       where: {
         userId,

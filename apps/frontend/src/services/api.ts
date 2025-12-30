@@ -60,6 +60,7 @@ class ApiClient {
           const subscriptionError = new Error(responseData.error || 'Necesitas una suscripción Pro');
           (subscriptionError as any).requiresSubscription = true;
           (subscriptionError as any).subscriptionExpired = responseData.data?.subscriptionExpired || false;
+          (subscriptionError as any).trialExpired = responseData.data?.trialExpired || false;
           throw subscriptionError;
         }
 
