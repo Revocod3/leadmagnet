@@ -1,4 +1,4 @@
-export const PRO_MAINTENANCE_MODE = true;
+export const PRO_MAINTENANCE_MODE = false;
 
 export const PRO_MAINTENANCE_MESSAGE = `Debido a la alta demanda registrada en los últimos días, estamos realizando una ampliación de la capacidad de nuestros servidores para garantizar una experiencia óptima y estable en el Chat 24/7.
 

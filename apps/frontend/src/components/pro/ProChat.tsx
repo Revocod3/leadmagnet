@@ -247,9 +247,16 @@ export const ProChat = ({ onSubscriptionExpired, activeTab, onTabChange }: ProCh
   return (
     <>
       {/* Main layout with sidebar */}
-      <div className={`${isDarkMode ? 'dark' : ''} flex h-screen overflow-hidden`}>
-        {/* Conversations Sidebar */}
-        <ConversationsSidebar
+      <div className={`${isDarkMode ? 'dark' : ''} contents lg:fixed lg:inset-0 lg:flex lg:items-center lg:justify-center lg:z-40`}>
+        {/* Desktop Background - Black sides like free chat */}
+        <div className="hidden lg:block absolute inset-0 z-0 pointer-events-none">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm dark:bg-neutral-900/90" />
+        </div>
+
+        {/* Main container with max width */}
+        <div className="flex h-screen overflow-hidden lg:w-[900px] lg:h-full lg:rounded-3xl lg:relative lg:bg-brand-cream-100 lg:dark:bg-neutral-900 lg:shadow-2xl lg:overflow-hidden lg:z-10">
+          {/* Conversations Sidebar */}
+          <ConversationsSidebar
           isOpen={showSidebar}
           onClose={() => setShowSidebar(false)}
           onSelectConversation={handleSelectConversation}
@@ -467,6 +474,7 @@ export const ProChat = ({ onSubscriptionExpired, activeTab, onTabChange }: ProCh
               onInputFocus={scrollToBottom}
             />
           )}
+        </div>
         </div>
       </div>
 
